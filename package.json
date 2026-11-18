@@ -1,0 +1,21 @@
+{
+  "name": "peleja",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "server": "node server/index.js",
+    "online": "vite build && node server/index.js",
+    "tunnel": "ngrok http 7788",
+    "sim": "node scripts/simtest.js"
+  },
+  "dependencies": {
+    "three": "^0.170.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  }
+}

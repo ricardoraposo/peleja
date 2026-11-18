@@ -1,0 +1,475 @@
+// Tudo que dá pra balancear mora aqui.
+
+export const TEAMS = [
+  { name: 'Azul', color: '#4aa3ff', side: -1 },
+  { name: 'Vermelho', color: '#f43f5e', side: 1 },
+];
+
+export const MAP = {
+  laneHalf: 70,
+  laneWidth: 9,
+  baseX: 84,
+  baseR: 17,
+  fountainX: 96,
+  fountainLaser: 13,
+  // obstáculos do lado azul (x < 0); o lado vermelho é espelhado
+  obstacles: [
+    [-15, 5.8, 1.6],
+    [-23, -6.2, 1.3],
+    [-40, 6.4, 1.4],
+    [-56, -6.6, 1.2],
+    [0, 7.4, 1.1],
+  ],
+  // frutas de cura no meio da ponte
+  packs: [
+    [-9, -5.5],
+    [-38, -1],
+  ],
+};
+
+export const MATCH = {
+  teamSize: 5,
+  draftTime: 30,
+  startLevel: 3,
+  maxLevel: 18,
+  startGold: 1400,
+  goldPerSec: 4,
+  xpPerSec: 5,
+  firstWave: 12,
+  waveEvery: 26,
+  packRespawn: 40,
+  packHeal: 110,
+  packHealPct: 0.08,
+  assistWindow: 10,
+  killGold: 300,
+  firstBloodGold: 100,
+  towerGold: 150,
+  seloRespawn: 150,
+  endDelay: 15,
+  xpRange: 18,
+};
+
+// xp pra sair do nível L
+export const xpToNext = (L) => 80 + 70 * L;
+// renascer demora mais no fim do jogo, pra brigas decidirem a partida
+export const respawnTime = (L, minutes = 0) => Math.min(40, 4 + 1.2 * L + Math.max(0, minutes - 10) * 1.1);
+
+export const STRUCTS = [
+  { key: 't1', kind: 'tower', x: -30, z: 2.6, hp: 2600, req: [] },
+  { key: 't2', kind: 'tower', x: -48, z: -2.6, hp: 2800, req: ['t1'] },
+  { key: 'selo', kind: 'selo', x: -63, z: 0, hp: 2100, req: ['t2'] },
+  { key: 't3a', kind: 'tower', x: -73, z: 4.6, hp: 2400, req: ['selo'] },
+  { key: 't3b', kind: 'tower', x: -73, z: -4.6, hp: 2400, req: ['selo'] },
+  { key: 'core', kind: 'core', x: -84, z: 0, hp: 4200, req: ['t3a', 't3b'] },
+];
+
+export const TOWER = {
+  range: 12.5,
+  armor: 55,
+  mres: 55,
+  dmg: 165,
+  dmgPerMin: 9,
+  rampPerHit: 0.4,
+  rampMax: 1.2,
+  attackSpeed: 0.85,
+  projSpeed: 24,
+  backdoorRange: 15,
+  backdoorMult: 0.5,
+  vsMinion: { melee: 0.45, ranged: 0.7, siege: 0.14, super: 0.08 },
+};
+
+export const STRUCT_SIZE = { tower: 1.5, selo: 1.9, core: 3.2 };
+
+export const MINIONS = {
+  melee: { hp: 470, atk: 13, armor: 8, mres: 0, as: 1.0, range: 1.4, ms: 4.4, r: 0.5, gold: 21, xp: 58 },
+  ranged: { hp: 290, atk: 23, armor: 0, mres: 0, as: 0.75, range: 7.5, ms: 4.4, r: 0.45, gold: 15, xp: 30, proj: 20 },
+  siege: { hp: 900, atk: 42, armor: 20, mres: 0, as: 0.5, range: 9.5, ms: 4.2, r: 0.75, gold: 52, xp: 92, proj: 16 },
+  super: { hp: 1600, atk: 70, armor: 30, mres: 30, as: 0.85, range: 1.8, ms: 4.6, r: 0.8, gold: 40, xp: 90 },
+  aggro: 9,
+  growHp: 0.07, // por minuto
+  growAtk: 0.06,
+};
+
+// Feitiços de todo mundo
+export const SPELLS = {
+  d: { name: 'Fôlego', icon: 'leaf', kind: 'self', cd: 110, cast: 0, heal: { b: 90, l: 16 }, buff: { t: 1.6, ms: 0.35 }, desc: 'Cura um pouco e acelera por um instante.' },
+  f: { name: 'Salto', icon: 'blink', kind: 'blink', cd: 55, cast: 0, range: 6.5, desc: 'Teleporte curto pra onde o mouse aponta.' },
+};
+
+// dmg/heal/shield: b = base, l = por nível, ad = × ataque, ap = × poder, hp = × vida máxima
+// fx: slow [porcentagem, segundos], stun, root, knockup (segundos), knockback (distância)
+export const HEROES = {
+  faisca: {
+    name: 'Faísca',
+    title: 'Atiradora',
+    role: 'atirador',
+    color: '#ff6b35',
+    look: { weapon: 'pistol', hat: 'visor', extra: 'poncho' },
+    ranged: true,
+    stats: { hp: 570, hpL: 92, atk: 62, atkL: 3.4, armor: 26, armorL: 4, mres: 30, mresL: 1.3, as: 0.68, asL: 0.032, ms: 5.95, range: 8.6, regen: 1.6, regenL: 0.15 },
+    abilities: {
+      q: { name: 'Rajada', icon: 'bolt', kind: 'proj', cd: 6, cast: 0.15, range: 13, speed: 34, width: 0.8, dmg: { b: 55, l: 17, ad: 1.05, type: 'phys' }, color: '#ffb35c', desc: 'Disparo reto que fere o primeiro inimigo.' },
+      w: { name: 'Arrancada', icon: 'dash', kind: 'dash', cd: 12, cast: 0, range: 5, speed: 26, buff: { t: 3, as: 0.45 }, desc: 'Avança e ganha velocidade de ataque.' },
+      e: { name: 'Bombinha', icon: 'bomb', kind: 'aoe', cd: 10, cast: 0.15, range: 11, radius: 3, delay: 0.55, dmg: { b: 50, l: 15, ad: 0.45, ap: 0.4, type: 'magic' }, fx: { slow: [0.35, 1.5] }, color: '#ff8a3d', desc: 'Explode numa área e deixa lento.' },
+      r: { name: 'Chuva de Faíscas', icon: 'comet', kind: 'proj', cd: 60, cast: 0.3, range: 42, speed: 27, width: 1.6, heroesOnly: true, dmg: { b: 210, l: 30, ad: 1.0, type: 'phys' }, color: '#ffd166', desc: 'Um cometa que atravessa a ponte e atinge o primeiro herói.' },
+    },
+  },
+  trovao: {
+    name: 'Trovão',
+    title: 'Brigão',
+    role: 'lutador',
+    color: '#8b5cf6',
+    look: { weapon: 'hammer', hat: 'helm', scale: 1.1, bulk: 1.15, extra: 'pauldrons' },
+    ranged: false,
+    stats: { hp: 660, hpL: 104, atk: 66, atkL: 3.6, armor: 35, armorL: 4.4, mres: 32, mresL: 1.6, as: 0.66, asL: 0.024, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.22 },
+    abilities: {
+      q: { name: 'Martelada', icon: 'hammer', kind: 'cone', cd: 6, cast: 0.2, range: 3.8, angle: 75, dmg: { b: 70, l: 19, ad: 1.0, type: 'phys' }, fx: { slow: [0.3, 1.5] }, color: '#c4b5fd', desc: 'Pancada em leque que deixa lento.' },
+      w: { name: 'Couraça', icon: 'shield', kind: 'self', cd: 14, cast: 0, shield: { b: 80, l: 24, hp: 0.08, t: 3 }, buff: { t: 3, armor: 25 }, desc: 'Escudo e armadura por 3 segundos.' },
+      e: { name: 'Salto-foguete', icon: 'leap', kind: 'dash', cd: 13, cast: 0.05, range: 8, speed: 20, arc: true, end: { radius: 2.7, dmg: { b: 60, l: 15, ad: 0.6, type: 'phys' }, fx: { knockup: 0.65 } }, color: '#a78bfa', desc: 'Salta e joga pra cima quem estiver na queda.' },
+      r: { name: 'Trovoada', icon: 'storm', kind: 'nova', cd: 70, cast: 0.15, radius: 5.5, delay: 0.55, dmg: { b: 170, l: 30, ad: 0.8, type: 'magic' }, fx: { stun: 1.3 }, color: '#8b5cf6', desc: 'Depois de um instante, atordoa todos ao redor.' },
+    },
+  },
+  coruja: {
+    name: 'Coruja',
+    title: 'Franco-atiradora',
+    role: 'atirador',
+    color: '#14b8a6',
+    look: { weapon: 'bow', hat: 'tufts', extra: 'quiver' },
+    ranged: true,
+    stats: { hp: 550, hpL: 88, atk: 64, atkL: 3.5, armor: 24, armorL: 3.8, mres: 30, mresL: 1.3, as: 0.64, asL: 0.03, ms: 5.9, range: 9.6, regen: 1.5, regenL: 0.15 },
+    abilities: {
+      q: { name: 'Agulha', icon: 'needle', kind: 'proj', cd: 8, cast: 0.25, range: 16, speed: 44, width: 0.55, dmg: { b: 80, l: 21, ad: 1.2, type: 'phys' }, color: '#5eead4', desc: 'Tiro longo e fino, muito dano.' },
+      w: { name: 'Rede', icon: 'net', kind: 'proj', cd: 13, cast: 0.15, range: 10, speed: 28, width: 1.1, dmg: { b: 40, l: 10, ap: 0.3, type: 'magic' }, fx: { root: 1.3 }, color: '#99f6e4', desc: 'Prende o primeiro inimigo no lugar.' },
+      e: { name: 'Revoada', icon: 'feather', kind: 'blink', cd: 14, cast: 0, range: 6, desc: 'Some e reaparece mais adiante.' },
+      r: { name: 'Tiro Certeiro', icon: 'scope', kind: 'proj', cd: 55, cast: 1.0, range: 34, speed: 70, width: 0.9, heroesOnly: true, dmg: { b: 240, l: 44, ad: 1.4, type: 'phys' }, color: '#2dd4bf', desc: 'Mira por um segundo e dispara do outro lado da ponte.' },
+    },
+  },
+  vespa: {
+    name: 'Vespa',
+    title: 'Caçadora',
+    role: 'assassino',
+    color: '#eab308',
+    look: { weapon: 'stingers', hat: 'antennae', scale: 0.95, extra: 'wings' },
+    ranged: false,
+    stats: { hp: 600, hpL: 95, atk: 68, atkL: 3.8, armor: 30, armorL: 4, mres: 30, mresL: 1.4, as: 0.7, asL: 0.03, ms: 6.25, range: 1.9, regen: 1.9, regenL: 0.2 },
+    abilities: {
+      q: { name: 'Ferroada', icon: 'sting', kind: 'target', cd: 7, cast: 0, range: 6.5, dashTo: true, dmg: { b: 60, l: 19, ad: 1.0, type: 'phys' }, color: '#fde047', desc: 'Avança no alvo e fere.' },
+      w: { name: 'Adrenalina', icon: 'heart', kind: 'self', cd: 14, cast: 0, heal: { b: 55, l: 17, ad: 0.3 }, buff: { t: 2.5, ms: 0.3, as: 0.3 }, desc: 'Cura e acelera ataque e passo.' },
+      e: { name: 'Enxame', icon: 'swarm', kind: 'nova', cd: 9, cast: 0.1, radius: 3.3, delay: 0, dmg: { b: 50, l: 15, ad: 0.5, ap: 0.5, type: 'magic' }, fx: { slow: [0.4, 1.5] }, color: '#facc15', desc: 'Nuvem de ferrões ao redor que deixa lento.' },
+      r: { name: 'Ferrão Mortal', icon: 'skull', kind: 'target', cd: 45, cast: 0, range: 5, dashTo: true, heroesOnly: true, exec: 1.2, dmg: { b: 140, l: 28, ad: 1.0, type: 'phys' }, color: '#eab308', desc: 'Golpe que fica mais forte quanto menos vida o alvo tem.' },
+    },
+  },
+  mandacaru: {
+    name: 'Mandacaru',
+    title: 'Tanque',
+    role: 'tanque',
+    color: '#65a30d',
+    look: { weapon: 'shield', hat: 'spikes', scale: 1.18, bulk: 1.3 },
+    ranged: false,
+    stats: { hp: 700, hpL: 112, atk: 60, atkL: 3.2, armor: 38, armorL: 4.6, mres: 32, mresL: 1.9, as: 0.62, asL: 0.02, ms: 6.0, range: 1.9, regen: 2.6, regenL: 0.25 },
+    abilities: {
+      q: { name: 'Espinhos', icon: 'thorns', kind: 'proj', cd: 10, cast: 0.2, range: 11, speed: 24, width: 1.2, dmg: { b: 60, l: 15, ap: 0.4, hp: 0.03, type: 'magic' }, fx: { stun: 0.9 }, color: '#a3e635', desc: 'Arremessa espinhos que atordoam.' },
+      w: { name: 'Casca Grossa', icon: 'bark', kind: 'self', cd: 15, cast: 0, shield: { b: 60, l: 20, hp: 0.1, t: 4 }, buff: { t: 4, armor: 30, mres: 30 }, desc: 'Escudo, armadura e resistência mágica.' },
+      e: { name: 'Raízes', icon: 'roots', kind: 'nova', cd: 9, cast: 0.1, radius: 4, delay: 0, dmg: { b: 40, l: 12, hp: 0.03, type: 'magic' }, fx: { slow: [0.5, 2] }, color: '#4d7c0f', desc: 'Raízes ao redor deixam todo mundo lento.' },
+      r: { name: 'Florada', icon: 'flower', kind: 'dash', cd: 70, cast: 0.2, range: 10, speed: 22, path: { width: 2.4, dmg: { b: 140, l: 25, ap: 0.5, hp: 0.04, type: 'magic' }, fx: { knockup: 1.0 } }, color: '#bef264', desc: 'Investida que joga pra cima quem estiver no caminho.' },
+    },
+  },
+  iara: {
+    name: 'Iara',
+    title: 'Suporte',
+    role: 'suporte',
+    color: '#3b82f6',
+    look: { weapon: 'staff', hat: 'hair', robe: true, extra: 'scales' },
+    ranged: true,
+    stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 3.8, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
+    abilities: {
+      q: { name: 'Onda', icon: 'wave', kind: 'proj', cd: 7, cast: 0.2, range: 12, speed: 22, width: 1.3, pierce: true, dmg: { b: 60, l: 16, ap: 0.55, type: 'magic' }, fx: { slow: [0.25, 1.5] }, color: '#60a5fa', desc: 'Onda que atravessa todo mundo e deixa lento.' },
+      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 70, l: 20, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
+      e: { name: 'Bolha', icon: 'bubble', kind: 'ally', cd: 14, cast: 0, range: 0, radius: 6, shield: { b: 60, l: 20, ap: 0.35, t: 2.5 }, color: '#bae6fd', desc: 'Escudo em você e nos aliados por perto.' },
+      r: { name: 'Maré Alta', icon: 'tide', kind: 'proj', cd: 75, cast: 0.3, range: 18, speed: 17, width: 4.2, pierce: true, dmg: { b: 150, l: 28, ap: 0.6, type: 'magic' }, fx: { knockback: 4, slow: [0.4, 2] }, color: '#3b82f6', desc: 'Uma onda gigante que empurra e fere todos.' },
+    },
+  },
+  boitata: {
+    name: 'Boitatá',
+    title: 'Mago',
+    role: 'mago',
+    color: '#ec4899',
+    look: { weapon: 'hands', hat: 'flame', robe: true, extra: 'embers' },
+    ranged: true,
+    stats: { hp: 545, hpL: 88, atk: 52, atkL: 2.8, armor: 24, armorL: 3.6, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 5.95, range: 8.3, regen: 1.6, regenL: 0.15 },
+    abilities: {
+      q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 80, l: 22, ap: 0.7, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
+      w: { name: 'Fogo-fátuo', icon: 'wisp', kind: 'aoe', cd: 12, cast: 0.15, range: 10, radius: 2.6, delay: 0.75, dmg: { b: 70, l: 19, ap: 0.6, type: 'magic' }, fx: { stun: 1.1 }, color: '#f9a8d4', desc: 'Depois de um instante, atordoa quem estiver na área.' },
+      e: { name: 'Serpentear', icon: 'snake', kind: 'dash', cd: 13, cast: 0, range: 6, speed: 30, buff: { t: 2, ms: 0.25 }, desc: 'Desliza rápido e ganha velocidade.' },
+      r: { name: 'Incêndio', icon: 'blaze', kind: 'zone', cd: 70, cast: 0.25, range: 11, radius: 4.6, dur: 4, tick: 0.5, dmg: { b: 50, l: 10, ap: 0.18, type: 'magic' }, fx: { slow: [0.3, 0.6] }, color: '#ec4899', desc: 'Incendeia o chão: queima e deixa lento por 4 s.' },
+    },
+  },
+  saci: {
+    name: 'Saci',
+    title: 'Duelista',
+    role: 'lutador',
+    color: '#dc2626',
+    look: { weapon: 'sword', hat: 'cap', oneLeg: true, pipe: true },
+    ranged: false,
+    stats: { hp: 620, hpL: 98, atk: 66, atkL: 3.7, armor: 32, armorL: 4.2, mres: 30, mresL: 1.5, as: 0.7, asL: 0.028, ms: 6.3, range: 1.9, regen: 2, regenL: 0.2 },
+    abilities: {
+      q: { name: 'Redemoinho', icon: 'spin', kind: 'nova', cd: 6, cast: 0.1, radius: 3.4, delay: 0, dmg: { b: 70, l: 19, ad: 0.9, type: 'phys' }, color: '#f87171', desc: 'Gira e fere todo mundo em volta.' },
+      w: { name: 'Pulo de uma perna', icon: 'hop', kind: 'dash', cd: 10, cast: 0, range: 6, speed: 26, arc: true, end: { radius: 2.2, dmg: { b: 40, l: 12, ad: 0.6, type: 'phys' }, fx: { slow: [0.35, 1.2] } }, color: '#fca5a5', desc: 'Pula e deixa lento quem estiver na queda.' },
+      e: { name: 'Gorro Encantado', icon: 'cap', kind: 'self', cd: 14, cast: 0, buff: { t: 3, ms: 0.4, as: 0.45 }, desc: 'Fica muito rápido por 3 segundos.' },
+      r: { name: 'Ventania', icon: 'tornado', kind: 'self', cd: 60, cast: 0.1, buff: { t: 4, ms: 0.3, aura: { radius: 3.4, tick: 0.5, dmg: { b: 45, l: 9, ad: 0.3, type: 'phys' } } }, color: '#dc2626', desc: 'Vira um redemoinho por 4 s, ferindo quem chegar perto.' },
+    },
+  },
+};
+
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci'];
+
+// Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
+// `group`: só um item do grupo por herói (as botas e suas melhorias).
+export const ITEMS = {
+  // ----- básicos -----
+  botas: { name: 'Botas Ligeiras', icon: 'boots', cost: 350, stats: { ms: 0.8 }, group: 'botas' },
+  lamina: { name: 'Lâmina de Aço', icon: 'sword', cost: 850, stats: { atk: 20 } },
+  arco: { name: 'Arco Leve', icon: 'bow', cost: 800, stats: { as: 0.25 } },
+  pena: { name: 'Pena de Gavião', icon: 'feather', cost: 700, stats: { crit: 0.15 } },
+  cristal: { name: 'Cristal Azul', icon: 'gem', cost: 850, stats: { pow: 35 } },
+  livro: { name: 'Livro Velho', icon: 'book', cost: 600, stats: { haste: 10 } },
+  colete: { name: 'Colete de Couro', icon: 'vest', cost: 750, stats: { armor: 30 } },
+  capa: { name: 'Capa de Seda', icon: 'cloak', cost: 750, stats: { mres: 30 } },
+  pedra: { name: 'Coração de Pedra', icon: 'heart', cost: 800, stats: { hp: 300 } },
+  figa: { name: 'Figa de Madeira', icon: 'flower', cost: 500, stats: { regen: 4, hp: 100 } },
+
+  // ----- intermediários -----
+  alpercata: { name: 'Alpercata de Couro', icon: 'boots', cost: 1250, from: ['botas', 'colete'], stats: { ms: 1.1, armor: 25 }, group: 'botas' },
+  tamanco: { name: 'Tamanco Firme', icon: 'boots', cost: 1250, from: ['botas', 'capa'], stats: { ms: 1.1, mres: 25, ten: 0.25 }, group: 'botas' },
+  chinela: { name: 'Chinela Veloz', icon: 'boots', cost: 1300, from: ['botas', 'arco'], stats: { ms: 1.2, as: 0.2 }, group: 'botas' },
+  sandalia: { name: 'Sandália do Sábio', icon: 'boots', cost: 1100, from: ['botas', 'livro'], stats: { ms: 1.1, haste: 15 }, group: 'botas' },
+  espadao: { name: 'Espadão', icon: 'sword', cost: 1900, from: ['lamina', 'lamina'], stats: { atk: 45 } },
+  punhal: { name: 'Punhal Ligeiro', icon: 'dash', cost: 1700, from: ['arco', 'pena'], stats: { as: 0.3, crit: 0.2 } },
+  ferrao: { name: 'Ferrão de Marimbondo', icon: 'sting', cost: 1850, from: ['arco', 'cristal'], stats: { as: 0.25, pow: 30, onhit: 20 } },
+  varinha: { name: 'Varinha de Aroeira', icon: 'bolt', cost: 1900, from: ['cristal', 'cristal'], stats: { pow: 80 } },
+  grimorio: { name: 'Grimório', icon: 'book', cost: 1650, from: ['cristal', 'livro'], stats: { pow: 45, haste: 15 } },
+  couraca: { name: 'Couraça', icon: 'vest', cost: 1750, from: ['colete', 'pedra'], stats: { armor: 40, hp: 320 } },
+  veu: { name: 'Véu da Neblina', icon: 'cloak', cost: 1750, from: ['capa', 'pedra'], stats: { mres: 40, hp: 320 } },
+  gibao: { name: 'Gibão de Espinho', icon: 'bark', cost: 1700, from: ['colete', 'colete'], stats: { armor: 65, thorns: 20 } },
+  patua: { name: 'Patuá', icon: 'bubble', cost: 1500, from: ['pedra', 'figa'], stats: { hp: 350, regen: 6, hsp: 0.08 } },
+
+  // ----- grandes: ataque -----
+  facao: { name: 'Facão Sedento', icon: 'blade', cost: 2700, from: ['espadao'], stats: { atk: 55, ls: 0.15 } },
+  peixeira: { name: 'Peixeira Fatal', icon: 'skull', cost: 3000, from: ['espadao', 'pena'], stats: { atk: 60, crit: 0.25 } },
+  furador: { name: 'Furador de Couro', icon: 'needle', cost: 2900, from: ['espadao', 'livro'], stats: { atk: 50, pen: 0.3, haste: 10 } },
+  vento: { name: 'Arco do Vento', icon: 'wind', cost: 2900, from: ['punhal', 'arco'], stats: { atk: 20, as: 0.5, crit: 0.2, ms: 0.3 } },
+  enxame: { name: 'Enxame Real', icon: 'swarm', cost: 2950, from: ['ferrao', 'arco'], stats: { as: 0.45, pow: 50, onhit: 35 } },
+  lanca: { name: 'Lança Rubra', icon: 'spear', cost: 2900, from: ['lamina', 'pedra', 'livro'], stats: { atk: 45, haste: 25, hp: 200 } },
+  machado: { name: 'Machado do Lenhador', icon: 'axe', cost: 3000, from: ['lamina', 'couraca'], stats: { atk: 40, hp: 450, armor: 40 } },
+  // ----- grandes: poder -----
+  tiara: { name: 'Tiara do Sábio', icon: 'crown', cost: 2900, from: ['grimorio', 'cristal'], stats: { pow: 90, haste: 25 } },
+  gema: { name: 'Gema Sombria', icon: 'orb', cost: 3000, from: ['varinha', 'pedra'], stats: { pow: 110, hp: 200 } },
+  cajado: { name: 'Cajado do Trovão', icon: 'storm', cost: 3200, from: ['varinha', 'cristal'], stats: { pow: 140 } },
+  olho: { name: 'Olho de Brasa', icon: 'scope', cost: 2900, from: ['varinha', 'livro'], stats: { pow: 85, mpen: 0.3 } },
+  calice: { name: 'Cálice Vivo', icon: 'drop', cost: 2800, from: ['grimorio', 'pedra'], stats: { pow: 65, hp: 250, haste: 15, sv: 0.12 } },
+  // ----- grandes: apoio -----
+  fonte: { name: 'Pingente da Fonte', icon: 'wave', cost: 2500, from: ['patua', 'livro'], stats: { hp: 350, haste: 20, regen: 8, pow: 30, hsp: 0.15 } },
+  tambor: { name: 'Tambor de Guerra', icon: 'drum', cost: 2650, from: ['patua', 'colete'], stats: { hp: 400, armor: 35, haste: 15, hsp: 0.1 } },
+  // ----- grandes: defesa -----
+  jabuti: { name: 'Casco de Jabuti', icon: 'shell', cost: 2800, from: ['couraca', 'colete'], stats: { hp: 450, armor: 70 } },
+  lua: { name: 'Manto da Lua', icon: 'moon', cost: 2800, from: ['veu', 'capa'], stats: { hp: 450, mres: 70 } },
+  espinhos: { name: 'Armadura de Mandacaru', icon: 'thorns', cost: 2850, from: ['gibao', 'pedra'], stats: { armor: 80, hp: 350, thorns: 45 } },
+  muralha: { name: 'Escudo da Muralha', icon: 'shield', cost: 3000, from: ['couraca', 'capa'], stats: { hp: 500, armor: 45, mres: 45 } },
+  raiz: { name: 'Raiz Firme', icon: 'roots', cost: 2700, from: ['veu', 'figa'], stats: { hp: 400, mres: 45, ten: 0.3, regen: 6 } },
+};
+
+export const ITEM_ORDER = Object.keys(ITEMS);
+
+// 0 = básico, 1 = intermediário, 2 = grande
+export function itemTier(id) {
+  const it = ITEMS[id];
+  if (!it.from) return 0;
+  return it.from.some((c) => ITEMS[c].from) || it.cost >= 2400 ? 2 : 1;
+}
+
+export const STAT_LABEL = {
+  hp: 'vida',
+  atk: 'ataque',
+  pow: 'poder',
+  armor: 'armadura',
+  mres: 'resist. mágica',
+  as: 'vel. de ataque',
+  ms: 'passo',
+  haste: 'aceleração',
+  ls: 'roubo de vida',
+  regen: 'vida/s',
+  crit: 'chance de crítico',
+  pen: 'perfuração de armadura',
+  mpen: 'perfuração mágica',
+  onhit: 'dano mágico por ataque',
+  thorns: 'espinhos (fere quem te bate)',
+  hsp: 'cura e escudo',
+  ten: 'firmeza (prisões duram menos)',
+  sv: 'cura pelo dano de habilidade',
+};
+export const STAT_PCT = ['as', 'ls', 'crit', 'pen', 'mpen', 'hsp', 'ten', 'sv'];
+export const CRIT_MULT = 1.75;
+
+// Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
+export const AFFINITY_BONUS = 0.2;
+export const AFFINITY = {
+  atirador: ['as', 'crit', 'onhit'],
+  assassino: ['atk', 'pen', 'crit'],
+  lutador: ['atk', 'hp', 'ls'],
+  tanque: ['hp', 'armor', 'mres', 'thorns'],
+  mago: ['pow', 'mpen', 'haste'],
+  suporte: ['haste', 'hsp', 'regen'],
+};
+export const affinityOf = (heroId) => AFFINITY[HEROES[heroId]?.role] || [];
+
+// atributos de um item já com a afinidade do herói
+export function itemStatsFor(heroId, id) {
+  const aff = affinityOf(heroId);
+  const out = {};
+  for (const [k, v] of Object.entries(ITEMS[id].stats)) out[k] = aff.includes(k) ? v * (1 + AFFINITY_BONUS) : v;
+  return out;
+}
+
+// preço de um item pra quem já tem `items`: desconta as peças (e as peças das peças) que a pessoa tiver
+export function itemPrice(items, id) {
+  const owned = [...items];
+  const use = [];
+  const walk = (cid) => {
+    let cost = ITEMS[cid].cost;
+    for (const c of ITEMS[cid].from || []) {
+      const i = owned.indexOf(c);
+      if (i >= 0) {
+        owned.splice(i, 1);
+        use.push(c);
+        cost -= ITEMS[c].cost;
+      } else if (ITEMS[c].from) cost -= ITEMS[c].cost - walk(c);
+    }
+    return cost;
+  };
+  const cost = walk(id);
+  const it = ITEMS[id];
+  const clash = !!it.group && owned.some((o) => ITEMS[o].group === it.group);
+  return { cost, use, fits: items.length - use.length + 1 <= 6, clash };
+}
+
+// o que comprar agora pra chegar em `id` com esse ouro: o próprio item ou a maior peça que der
+export function nextBuy(items, gold, id) {
+  if (gold >= itemPrice(items, id).cost) return id;
+  const owned = [...items];
+  for (const c of ITEMS[id].from || []) {
+    const i = owned.indexOf(c);
+    if (i >= 0) {
+      owned.splice(i, 1);
+      continue;
+    }
+    const r = nextBuy(items, gold, c);
+    if (r) return r;
+  }
+  return null;
+}
+
+// peças básicas que ainda faltam pra um item
+export function missingBasics(items, id) {
+  const owned = [...items];
+  const out = [];
+  const walk = (cid) => {
+    for (const c of ITEMS[cid].from || []) {
+      const i = owned.indexOf(c);
+      if (i >= 0) owned.splice(i, 1);
+      else if (ITEMS[c].from) walk(c);
+      else out.push(c);
+    }
+  };
+  if (ITEMS[id].from) walk(id);
+  else if (!items.includes(id)) out.push(id);
+  return out;
+}
+
+// build principal de cada classe e uma alternativa com outro estilo
+export const BUILDS = {
+  atirador: ['chinela', 'vento', 'facao', 'peixeira', 'furador', 'lua'],
+  mago: ['sandalia', 'tiara', 'cajado', 'olho', 'gema', 'calice'],
+  suporte: ['sandalia', 'fonte', 'tambor', 'tiara', 'lua', 'jabuti'],
+  tanque: ['alpercata', 'jabuti', 'lua', 'espinhos', 'muralha', 'raiz'],
+  lutador: ['alpercata', 'lanca', 'machado', 'facao', 'lua', 'espinhos'],
+  assassino: ['chinela', 'furador', 'peixeira', 'facao', 'lanca', 'lua'],
+};
+export const BUILDS_ALT = {
+  atirador: { name: 'Ferroada: cada tiro dói por dentro', items: ['chinela', 'enxame', 'vento', 'facao', 'olho', 'lua'] },
+  mago: { name: 'Mago casca-grossa', items: ['sandalia', 'gema', 'calice', 'tiara', 'lua', 'jabuti'] },
+  suporte: { name: 'Suporte que machuca', items: ['sandalia', 'tiara', 'fonte', 'olho', 'gema', 'lua'] },
+  tanque: { name: 'Tanque que bate', items: ['tamanco', 'machado', 'espinhos', 'lua', 'lanca', 'jabuti'] },
+  lutador: { name: 'Só dano', items: ['chinela', 'facao', 'peixeira', 'furador', 'lanca', 'jabuti'] },
+  assassino: { name: 'Briga longa', items: ['alpercata', 'facao', 'lanca', 'machado', 'peixeira', 'lua'] },
+};
+
+// por que cada classe compra o que compra (aparece na loja, em "Recomendados")
+export const BUILD_WHY = {
+  atirador: 'Atirador: velocidade de ataque e dano pra bater de longe sem parar. Defesa só no fim.',
+  mago: 'Mago: poder deixa as habilidades mais fortes e aceleração faz elas voltarem mais rápido.',
+  suporte: 'Suporte: aceleração e vida pra curar e proteger o time o tempo todo.',
+  tanque: 'Tanque: vida, armadura e resistência pra entrar na frente e aguentar o tranco.',
+  lutador: 'Lutador: ataque com vida, pra bater forte e sobreviver no meio da briga.',
+  assassino: 'Assassino: muito ataque e roubo de vida pra derrubar um alvo rápido e sair inteiro.',
+};
+
+export const DIFFICULTY = {
+  facil: { label: 'Fácil', reaction: 0.5, aim: 0.35, aimErr: 1.4, abilityRate: 0.45, aggro: 0.3, lastHit: 0.35, kite: 0, think: 0.26 },
+  normal: { label: 'Normal', reaction: 0.3, aim: 0.75, aimErr: 0.7, abilityRate: 0.75, aggro: 0.55, lastHit: 0.7, kite: 0.5, think: 0.17 },
+  dificil: { label: 'Difícil', reaction: 0.16, aim: 1, aimErr: 0.3, abilityRate: 1, aggro: 0.75, lastHit: 0.95, kite: 1, think: 0.11 },
+};
+
+export const BOT_NAMES = [
+  'Caju',
+  'Paçoca',
+  'Tatu',
+  'Mandioca',
+  'Biscoito',
+  'Jabuti',
+  'Pitanga',
+  'Sabiá',
+  'Quindim',
+  'Capivara',
+  'Pamonha',
+  'Siriema',
+  'Jambo',
+  'Cuscuz',
+  'Bem-te-vi',
+  'Goiaba',
+  'Tapioca',
+  'Graúna',
+  'Jaca',
+  'Cocada',
+];
+
+export const SLOTS = ['q', 'w', 'e', 'r', 'd', 'f'];
+
+export function abilityOf(heroId, slot) {
+  if (slot === 'd' || slot === 'f') return SPELLS[slot];
+  return HEROES[heroId].abilities[slot];
+}
+
+// ---------- evolução de habilidades ----------
+// Cada nível dá 1 ponto. Q/W/E vão até 5; o R até 3 (níveis 6, 11 e 16).
+export const RANK_SLOTS = ['q', 'w', 'e', 'r'];
+export const RANK_MAX = { q: 5, w: 5, e: 5, r: 3 };
+export const ULT_LEVELS = [6, 11, 16];
+
+export function skillPoints(level, ranks) {
+  return level - RANK_SLOTS.reduce((n, s) => n + (ranks[s] || 0), 0);
+}
+
+// uma habilidade comum não pode passar da metade do nível do herói (arredondada pra cima)
+export function canRankUp(level, ranks, slot) {
+  if (!RANK_MAX[slot] || skillPoints(level, ranks) <= 0) return false;
+  const r = ranks[slot] || 0;
+  if (r >= RANK_MAX[slot]) return false;
+  return slot === 'r' ? level >= ULT_LEVELS[r] : r < Math.ceil(level / 2);
+}
+
+// "nível efetivo" pra conta do dano/cura: metade vem do nível do herói, metade do nível da habilidade
+export function effectiveLevel(level, slot, rank) {
+  if (!RANK_MAX[slot]) return level;
+  const eq = slot === 'r' ? [1, 6, 12, 18][rank] || 1 : 1 + (Math.max(1, rank) - 1) * 4.25;
+  return (level + eq) / 2;
+}

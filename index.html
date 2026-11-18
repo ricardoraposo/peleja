@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Peleja</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23f4c430%27/%3E%3Cpath d=%27M6 22 16 6l10 16-10-4z%27 fill=%27%231a0f08%27/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Rubik:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="cursor"></div>
+
+    <div id="hud" class="hidden">
+      <div id="top">
+        <div class="ts blue"><span id="k-blue">0</span></div>
+        <div class="tc"><div id="clock">0:00</div><div id="wave-in"></div></div>
+        <div class="ts red"><span id="k-red">0</span></div>
+      </div>
+      <div id="feed"></div>
+      <div id="announce"><div class="an-title"></div><div class="an-sub"></div></div>
+      <div id="online-tag" class="hidden"></div>
+
+      <div id="dead" class="hidden">
+        <div class="dead-title">Você caiu</div>
+        <div class="dead-timer">Volta em <b id="dead-count">0</b></div>
+        <div class="dead-hint">Aproveite pra comprar: <kbd>B</kbd></div>
+      </div>
+
+      <div id="bottom">
+        <div id="hero-box">
+          <div id="portrait"><span id="portrait-letter"></span><div id="lvl">3</div></div>
+          <div id="xp-bar"><div id="xp-fill"></div></div>
+        </div>
+        <div id="center-box">
+          <div id="skills"></div>
+          <div id="bars">
+            <div id="hp-bar"><div id="hp-fill"></div><div id="hp-shield"></div><span id="hp-text"></span></div>
+          </div>
+        </div>
+        <div id="side-box">
+          <div id="stats"></div>
+          <div id="items"></div>
+          <button id="gold" title="Loja (B)"><span class="coin"></span><b id="gold-num">0</b><small>loja <kbd>B</kbd></small></button>
+        </div>
+      </div>
+
+      <canvas id="minimap" width="300" height="104"></canvas>
+      <div id="cam-hint"><kbd>Y</kbd> <span id="cam-mode">câmera presa</span></div>
+    </div>
+
+    <div id="debug" class="hidden">
+      <div class="dbg-head"><b>Treino</b><button data-act="hide" title="Esconder (F1)">F1</button></div>
+      <div class="dbg-body">
+        <h4>Herói</h4>
+        <div id="dbg-heroes" class="dbg-row"></div>
+        <h4>Nível <b id="dbg-lvl">3</b></h4>
+        <div class="dbg-row"><button data-lvl="-1">−1</button><button data-lvl="1">+1</button><button data-lvl="max">Máx</button></div>
+        <h4>Você</h4>
+        <div class="dbg-row">
+          <button data-c="heal">Curar</button><button data-c="ranks">Zerar habilidades</button><button data-c="cd">Zerar recargas</button><button data-c="gold">+5000 ouro</button><button data-c="items">Tirar itens</button>
+          <button data-toggle="nocd">Sem recarga</button><button data-toggle="god">Imortal</button>
+        </div>
+        <h4>Criar <small>botão: na sua frente · tecla: no mouse</small></h4>
+        <div class="dbg-row">
+          <button data-c="dummy">Boneco <kbd>1</kbd></button><button data-c="bot">Bot inimigo <kbd>2</kbd></button><button data-c="bot" data-ally="1">Bot aliado <kbd>3</kbd></button>
+          <button data-c="minions">Tropas inimigas <kbd>4</kbd></button><button data-c="minions" data-ally="1">Tropas aliadas <kbd>5</kbd></button><button data-c="wave">Onda dos dois lados</button>
+        </div>
+        <h4>Mundo</h4>
+        <div class="dbg-row">
+          <button data-toggle="waves">Ondas automáticas</button><button data-toggle="towers" class="on">Torres atiram</button>
+        </div>
+        <div class="dbg-row"><button data-speed="0.25">¼x</button><button data-speed="0.5">½x</button><button data-speed="1" class="on">1x</button><button data-speed="2">2x</button></div>
+        <div class="dbg-row"><button data-c="clear">Limpar tudo</button><button data-act="restart">Reiniciar</button></div>
+        <h4>Seu dano <button data-act="meter" class="dbg-mini">zerar</button></h4>
+        <div class="dbg-meter"><span><b id="dbg-dps">0</b> por s</span><span><b id="dbg-total">0</b> total</span><span><b id="dbg-best">0</b> maior</span></div>
+        <p><kbd>T</kbd> teleporta pro mouse. O boneco não reage, se cura sozinho e volta se cair. A loja abre em qualquer lugar.</p>
+      </div>
+    </div>
+
+    <div id="shop" class="hidden">
+      <div class="shop-inner">
+        <div class="shop-main">
+          <div class="shop-tabs">
+            <button data-tab="rec" class="on">Recomendados</button>
+            <button data-tab="all">Todos os itens</button>
+            <span id="shop-where"></span>
+          </div>
+          <div id="shop-filters" class="hidden"></div>
+          <div class="shop-list">
+            <div id="shop-rec"></div>
+            <div id="shop-all" class="hidden"></div>
+          </div>
+          <div class="shop-foot">
+            <button id="shop-sell" disabled>Vender</button>
+            <div class="shop-gold"><span class="coin"></span><b id="shop-gold">0</b></div>
+            <small>Botão direito compra ou vende · vender antes de sair da base devolve tudo</small>
+          </div>
+        </div>
+        <div class="shop-side">
+          <button id="shop-close" title="Fechar (B)">✕</button>
+          <h3>Seus itens</h3>
+          <div id="shop-inv"></div>
+          <div id="shop-tree"></div>
+          <button id="shop-buy" class="play">COMPRAR</button>
+          <div id="shop-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="board" class="hidden">
+      <div class="board-inner">
+        <div class="board-team blue"><h3>Azul <b id="bk-blue">0</b></h3><table><tbody id="board-blue"></tbody></table></div>
+        <div class="board-team red"><h3>Vermelho <b id="bk-red">0</b></h3><table><tbody id="board-red"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="pause" class="hidden">
+      <div class="pause-inner">
+        <h2 id="pause-title">Pausa</h2>
+        <button id="resume" class="play">CONTINUAR</button>
+        <button id="quit" class="ghost">Sair pro menu</button>
+      </div>
+    </div>
+
+    <div id="draft" class="hidden">
+      <div class="draft-inner">
+        <div class="draft-head">
+          <div class="draft-title">Escolha seu herói</div>
+          <div class="draft-sub">Cada herói só entra uma vez por time. Se o tempo acabar, você vai com o que estiver marcado.</div>
+          <div class="draft-timer"><b id="draft-count">0</b> s</div>
+        </div>
+        <div id="draft-grid"></div>
+        <div id="draft-me"></div>
+        <div class="draft-team"><h3>Seu time</h3><div id="draft-allies"></div></div>
+        <div class="draft-actions">
+          <button id="reroll" class="ghost big">Aleatório</button>
+          <button id="ready" class="play">PRONTO!</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="menu">
+      <div class="menu-inner">
+        <div class="brand">
+          <div class="logo">PELEJA</div>
+          <div class="tagline">Uma ponte, dois times, cada um com seu herói. Derrube o núcleo do outro lado.</div>
+        </div>
+        <div class="menu-grid">
+          <div class="panel">
+            <label class="field"><span>Seu nome</span><input id="name" maxlength="14" placeholder="Jogador" /></label>
+            <div class="row2">
+              <div class="field">
+                <span>Bots</span>
+                <div class="seg" id="diff">
+                  <button data-v="facil">Fácil</button><button data-v="normal" class="on">Normal</button><button data-v="dificil">Difícil</button>
+                </div>
+              </div>
+              <div class="field">
+                <span>Tamanho</span>
+                <div class="seg" id="size">
+                  <button data-v="3">3 x 3</button><button data-v="5" class="on">5 x 5</button>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <span>Mouse na partida</span>
+              <div class="seg" id="grab">
+                <button data-v="0" class="on" title="Cursor do próprio sistema, sem atraso. A câmera anda quando o mouse encosta ou sai pela borda da janela.">Normal</button><button data-v="2" title="Igual ao Normal, em tela cheia: o mouse não tem pra onde sair.">Tela cheia</button><button data-v="1" title="O jogo segura o mouse dentro da janela e desenha o cursor. Tem um pequeno atraso.">Preso</button>
+              </div>
+            </div>
+            <label class="field"><span>Volume <b id="vol-val">70</b></span><input type="range" id="vol" min="0" max="1" step="0.05" value="0.7" /></label>
+            <div class="play-row">
+              <button id="play" class="play">CONTRA BOTS</button>
+              <button id="play-online" class="play online">ONLINE</button>
+            </div>
+            <button id="play-sandbox" class="ghost sandbox hidden">Treino livre: teste heróis, itens e mecânicas sem partida</button>
+            <div id="net-msg" class="net-msg hidden"></div>
+            <div class="roster-title">Heróis</div>
+            <div id="menu-heroes"></div>
+          </div>
+          <div class="panel help">
+            <h3>Como jogar</h3>
+            <p>Cada time tem <b>duas torres</b>, um <b>selo</b>, mais <b>duas torres</b> e o <b>núcleo</b>. Derrube tudo em ordem e quebre o núcleo inimigo. Tropas marcham a cada 26 s.</p>
+            <p>Não dá pra voltar pra base curar: pegue as <b>frutas</b> na ponte. A loja só abre na base ou quando você cai.</p>
+            <ul class="keys">
+              <li><kbd>Botão direito</kbd> andar · atacar</li>
+              <li><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> habilidades (solte pra lançar)</li>
+              <li><kbd>Shift</kbd> + <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> evolui a habilidade ao subir de nível</li>
+              <li><kbd>D</kbd> Fôlego · <kbd>F</kbd> Salto</li>
+              <li><kbd>A</kbd> + clique: atacar o que aparecer</li>
+              <li><kbd>S</kbd> parar · <kbd>B</kbd> loja</li>
+              <li>Mouse na borda move a câmera · <kbd>Espaço</kbd> centraliza · <kbd>Y</kbd> prende no herói</li>
+              <li><kbd>Tab</kbd> placar · <kbd>Esc</kbd> pausa e solta o mouse</li>
+            </ul>
+            <p class="tip">Torres batem forte em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="end" class="hidden">
+      <div class="end-inner">
+        <div class="end-title" id="end-title">Fim de partida</div>
+        <div class="end-sub" id="end-sub"></div>
+        <div class="end-tables">
+          <div class="board-team blue"><h3>Azul</h3><table><tbody id="end-blue"></tbody></table></div>
+          <div class="board-team red"><h3>Vermelho</h3><table><tbody id="end-red"></tbody></table></div>
+        </div>
+        <div id="end-next" class="end-next hidden"></div>
+        <div class="end-actions"><button id="again" class="play">JOGAR DE NOVO</button><button id="to-menu" class="ghost">Menu</button></div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
