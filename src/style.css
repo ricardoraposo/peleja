@@ -438,6 +438,10 @@ kbd {
   color: #fff;
 }
 
+.skill.stolen {
+  box-shadow: 0 0 0 2px #facc15, 0 0 14px rgba(250, 204, 21, 0.55);
+}
+
 .skill .sk-charge {
   position: absolute;
   top: -7px;

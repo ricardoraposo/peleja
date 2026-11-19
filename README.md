@@ -24,7 +24,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 
 ## Heróis
 
-Onze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
+Doze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
 
 | Herói | Papel | Alcance |
 | --- | --- | --- |
@@ -39,6 +39,7 @@ Onze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e
 | **Cuca** | Bruxa-jacaré (lutadora com Fúria) | Corpo a corpo |
 | **Curupira** | Mago de fogo | À distância |
 | **Boto** | Encantador | À distância |
+| **Caipora** | Traquina | À distância |
 
 Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
 

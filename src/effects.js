@@ -184,6 +184,31 @@ export class Effects {
         g.userData.spinAxis = 'x';
         break;
       }
+      case 'coco': {
+        // coquinho girando com um brilho de vaga-lume em volta
+        const k = Math.max(0.6, sc);
+        const spin = new THREE.Group();
+        add(SPHERE, shared('#8b5a2b'), 0.3 * k, 0.3 * k, 0.34 * k, 0, 0, 0, spin);
+        add(SPHERE, shared('#3b2412'), 0.06 * k, 0.06 * k, 0.06 * k, 0.2 * k, 0.08 * k, 0.1 * k, spin);
+        add(SPHERE, shared('#3b2412'), 0.06 * k, 0.06 * k, 0.06 * k, 0.2 * k, 0.08 * k, -0.1 * k, spin);
+        g.add(spin);
+        g.userData.spin = spin;
+        g.userData.spinAxis = 'z';
+        const halo = new THREE.Group();
+        add(RING, shared(color, 0.9), 0.5 * k, 0.5 * k, 1, 0, 0, 0, halo);
+        halo.rotation.x = Math.PI / 2;
+        g.add(halo);
+        break;
+      }
+      case 'smoke': {
+        // baforada de fumaça: bolotas claras que pulsam
+        const k = Math.max(1, width);
+        add(SPHERE, shared('#ede9fe', 0.75), 0.34 * k, 0.3 * k, 0.34 * k);
+        add(SPHERE, shared('#ddd6fe', 0.6), 0.26 * k, 0.24 * k, 0.26 * k, -0.3 * k, 0.1 * k, 0.12 * k);
+        add(SPHERE, shared('#ddd6fe', 0.6), 0.22 * k, 0.2 * k, 0.22 * k, -0.25 * k, -0.08 * k, -0.18 * k);
+        g.userData.pulse = add(SPHERE, shared(color, 0.3, true), 0.5 * k, 0.5 * k, 0.5 * k);
+        break;
+      }
       case 'pearl': {
         // pérola grande com brilho e um anel d'água em volta
         const k = Math.max(0.9, width * 0.8);
@@ -287,6 +312,13 @@ export class Effects {
       case 'pearl':
         this.puff(x, pos.y, z, 'rose', 8, 3, 0.12, 0.35);
         break;
+      case 'coco':
+        this.burst(x, pos.y, z, '#6b4423', 6, 4, 0.12, 0.35);
+        this.puff(x, pos.y, z, 'firefly', 8, 4, 0.1, 0.4);
+        break;
+      case 'smoke':
+        this.burst(x, pos.y, z, '#ede9fe', 14, 2.5, 0.22, 0.7);
+        break;
       case 'fish':
         this.puff(x, pos.y, z, 'water', 7, 4, 0.1, 0.35);
         this.ripple(x, z, 0.8, p.c, 0.3);
@@ -333,6 +365,12 @@ export class Effects {
         break;
       case 'pearl':
         this.spawn(pos.x + r() * 0.3, pos.y + r() * 0.3, pos.z + r() * 0.3, 0, 0.3, 0, Math.random() < 0.5 ? '#ffc2d1' : '#bae6fd', 0.35, 0.1, 4);
+        break;
+      case 'coco':
+        if (Math.random() < 0.7) this.spawn(pos.x + r() * 0.3, pos.y + r() * 0.3, pos.z + r() * 0.3, 0, 0.5, 0, Math.random() < 0.5 ? '#e879f9' : '#d9f99d', 0.35, 0.07, -1);
+        break;
+      case 'smoke':
+        this.spawn(pos.x + r() * 0.4, pos.y + r() * 0.3, pos.z + r() * 0.4, 0, 0.6, 0, '#ede9fe', 0.5, 0.16, -1);
         break;
       case 'fish':
         if (Math.random() < 0.6) this.spawn(pos.x, pos.y - 0.05, pos.z, 0, 0, 0, '#bae6fd', 0.25, 0.07, 8);

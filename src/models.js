@@ -221,6 +221,20 @@ function hat(kind, M, color) {
     core.castShadow = false;
     g.add(core);
     g.userData.flames = flames;
+  } else if (kind === 'cocar') {
+    // cabeleira desgrenhada na cor do herói (de cima é quase só o que se vê dela) e um cocar de penas abertas
+    const hair = mat(color);
+    g.add(part(hair, 0.56, 0.2, 0.56, 0, 0.32, -0.02));
+    g.add(part(hair, 0.6, 0.56, 0.16, 0, 0.04, -0.27));
+    for (const x of [-0.27, 0.27]) g.add(part(hair, 0.12, 0.4, 0.3, x, 0.08, -0.1));
+    g.add(part(mat('#fde68a'), 0.58, 0.07, 0.58, 0, 0.27, 0));
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 6 - 0.5) * 2.8;
+      const f = part(mat(i % 2 ? '#f8fafc' : '#a3e635'), 0.13, 0.4 - Math.abs(i - 3) * 0.04, 0.05, Math.sin(a) * 0.36, 0.5 - Math.abs(i - 3) * 0.03, -Math.cos(a) * 0.36 + 0.06);
+      f.rotation.y = -a;
+      f.rotation.x = -0.55;
+      g.add(f);
+    }
   } else if (kind === 'boater') {
     // chapéu de aba reta com fita branca: o boto nunca tira, é o que esconde o furo no alto da cabeça.
     // Vai na cor do herói porque, de cima, o chapéu é quase tudo o que se vê dele.
@@ -812,6 +826,9 @@ STYLES.pearl = {
   }],
 };
 
+// coquinho na mão: os mesmos gestos (arremesso por baixo, rodopio e o sopro com a mão na boca)
+STYLES.coco = STYLES.pearl;
+
 // poses genéricas (feitiços de todo mundo e o que um estilo não definir)
 const GENERIC = {
   flex: [0, 0.5, (P, pw, pr, e, arc) => {
@@ -979,6 +996,13 @@ export class HeroModel {
         arm.add(fl);
         this.furyBits.push(fl);
       }
+    } else if (w === 'coco') {
+      for (const arm of [this.armR, this.armL]) arm.add(part(M.skin, 0.13, 0.12, 0.13, 0, -0.5, 0));
+      this.armR.add(part(mat('#6b4423'), 0.17, 0.17, 0.17, 0, -0.64, 0.05, SPHERE));
+      const spark = part(glowMat(def.color, 0.8), 0.07, 0.07, 0.07, 0.1, -0.56, 0.1, SPHERE);
+      spark.castShadow = false;
+      this.armR.add(spark);
+      this.glows.push(spark);
     } else if (w === 'pearl') {
       // mãos da cor da pele saindo do paletó e a pérola brilhando na direita
       for (const arm of [this.armR, this.armL]) arm.add(part(M.skin, 0.13, 0.12, 0.13, 0, -0.5, 0));
@@ -1059,6 +1083,28 @@ export class HeroModel {
       this.torso.add(band);
       for (const arm of [this.armR, this.armL]) arm.add(part(leaf, 0.18, 0.08, 0.18, 0, -0.3, 0));
       this.torso.add(part(mat('#b91c1c'), 0.06, 0.2, 0.06, 0.12, 0.6, 0.18));
+    } else if (extra === 'boar') {
+      // saiote de palha, colar e o porquinho-do-mato que anda do lado dela
+      const straw = mat('#d6b36a');
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const l = part(straw, 0.16, 0.3, 0.05, Math.sin(a) * 0.26, -0.1, Math.cos(a) * 0.2);
+        l.rotation.y = a;
+        l.rotation.x = 0.25;
+        this.hips.add(l);
+      }
+      this.torso.add(part(mat(def.color), 0.4, 0.06, 0.05, 0, 0.5, 0.18));
+      const fur = mat('#4a3526');
+      const boar = new THREE.Group();
+      boar.add(part(fur, 0.3, 0.26, 0.5, 0, 0.28, 0));
+      boar.add(part(fur, 0.24, 0.22, 0.2, 0, 0.3, 0.32));
+      boar.add(part(mat('#c98b7a'), 0.14, 0.11, 0.08, 0, 0.26, 0.45));
+      boar.add(part(mat('#2b1a12'), 0.08, 0.1, 0.4, 0, 0.44, -0.02));
+      for (const x of [-0.07, 0.07]) boar.add(part(mat('#f8fafc'), 0.03, 0.07, 0.03, x, 0.3, 0.44));
+      for (const [x, z] of [[-0.1, 0.16], [0.1, 0.16], [-0.1, -0.16], [0.1, -0.16]]) boar.add(part(fur, 0.08, 0.16, 0.08, x, 0.08, z));
+      boar.position.set(-0.75, 0, -0.25);
+      this.body.add(boar);
+      this.boar = boar;
     } else if (extra === 'fin') {
       // nadadeira nas costas rasgando o paletó, gravata-borboleta e faixa na cintura
       const pink = mat(def.color);
@@ -1356,7 +1402,8 @@ export class HeroModel {
 
     if (this.hat.userData.flame) this.hat.userData.flame.scale.y = 0.45 + Math.sin(time * 14) * 0.08;
 
-    this.stars.visible = !!(f & F.stun) || !!(f & F.air);
+    this.stars.visible = !!(f & F.stun) || !!(f & F.air) || !!(f & F.sleep);
+    if (this.boar) this.boar.position.y = moving ? Math.abs(Math.sin(this.walk * 1.3)) * 0.08 : 0;
     this.stars.rotation.y = time * 5;
     this.hearts.visible = !!(f & F.charm);
     this.hearts.rotation.y = -time * 3;

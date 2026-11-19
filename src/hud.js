@@ -39,7 +39,11 @@ export const ICONS = {
   tornado: S('<path d="M3 4h18M5 8h14M7 12h10M9 16h6M11 20h2"/>'),
   pearl: S('<circle cx="7" cy="12" r="4"/><path d="M14 8h7M18 5l3 3-3 3M21 16h-7M17 13l-3 3 3 3"/>'),
   fish: S('<path d="M3 12c3-5 9-5 13 0-4 5-10 5-13 0zM16 12l5-4v8z"/><path d="M7.5 11h.01"/>'),
-  dive: S('<path d="M3 13c2-6 9-9 14-5l4-2-2 5c0 4-3 6-7 6M2 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>'),
+  coco: S('<circle cx="10" cy="14" r="6"/><path d="M8 13h.01M12 13h.01M10 16h.01M15 9l5-5M17 4h3v3"/>'),
+  mask: S('<path d="M3 8c3-2 6-2 9 0 3-2 6-2 9 0 0 5-2 9-5 9-2 0-3-2-4-2s-2 2-4 2c-3 0-5-4-5-9z"/><path d="M7 11h2M15 11h2"/>'),
+  sleep: S('<path d="M4 6h7l-7 8h7M14 10h6l-6 7h6"/>'),
+  portal: S('<ellipse cx="12" cy="17" rx="8" ry="3"/><path d="M8 11V5M5 8l3-3 3 3M16 5v6M13 8l3 3 3-3"/>'),
+  dive: S('<path d=""M3 13c2-6 9-9 14-5l4-2-2 5c0 4-3 6-7 6M2 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>'),
   leaf: S('<path d="M5 19C5 10 10 4 20 4c0 10-6 15-15 15zM5 19l7-7"/>'),
   blink: S('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="3"/><path d="M8 16l2-2M12 12l2-2" stroke-dasharray="2 2"/>'),
   boots: S('<path d="M7 3v10l-3 3v4h16v-3l-6-2V3z"/>'),
@@ -111,6 +115,7 @@ function fxText(fx) {
   if (fx.slow) out.push(`deixa ${Math.round(fx.slow[0] * 100)}% mais lento por ${fx.slow[1]} s`);
   if (fx.stun) out.push(`atordoa por ${fx.stun} s`);
   if (fx.root) out.push(`prende no lugar por ${fx.root} s`);
+  if (fx.drowsy) out.push(`dá sono: lento por ${fx.drowsy[0]} s e depois dorme por ${fx.drowsy[1]} s; o golpe que acordar o alvo causa o mesmo dano de novo, como dano verdadeiro, até o teto`);
   if (fx.charm) out.push(`encanta por ${fx.charm} s: o alvo anda devagar até você e não faz mais nada`);
   if (fx.knockup) out.push(`joga pra cima por ${fx.knockup} s`);
   if (fx.knockback) out.push(`empurra ${fx.knockback} passos`);
@@ -126,6 +131,7 @@ export function abilityTip(ab, slot, ctx = null) {
   const lines = [];
   const dmg = (label, d, extra = '') => valueLine(`${label} ${DMG_NAME[d.type] || ''}${extra}`, d, slot, c, DMG_CLASS[d.type]);
   if (ab.dmg) lines.push(dmg(ab.kind === 'zone' ? `Dano a cada ${ab.tick} s,` : 'Dano', ab.dmg));
+  if (ab.fx?.wake) lines.push(valueLine('Teto do dano extra ao acordar', ab.fx.wake, null, c, 'd-true'));
   if (ab.back) lines.push(valueLine('Dano verdadeiro na volta,', ab.back.dmg || ab.dmg, slot, c, DMG_CLASS[ab.back.type || ab.dmg.type]));
   if (ab.bolts) lines.push(dmg(`Dano de cada um dos ${ab.bolts.n},`, ab.bolts.dmg));
   if (ab.end?.dmg) lines.push(dmg('Dano na chegada,', ab.end.dmg));
@@ -157,6 +163,11 @@ export function abilityTip(ab, slot, ctx = null) {
     if (bits.length) notes.push(`${bits.join(', ')} por ${b.t} s`);
   }
   if (ab.bolts?.repeat < 1) notes.push(`repetir o alvo causa ${Math.round(ab.bolts.repeat * 100)}% do dano`);
+  if (ab.grow) notes.push(`+${Math.round(ab.grow.per * 100)}% de dano a cada passo voado, até +${Math.round(ab.grow.max * 100)}%`);
+  if (ab.hover) notes.push(`se não acertar, para no ar por ${ab.hover.t} s e dá pra lançar de novo`);
+  if (ab.trap) notes.push(`se errar, vira armadilha no chão por ${ab.trap.dur} s`);
+  if (ab.steal) notes.push(`copia o feitiço que um herói inimigo usou nos últimos ${ab.steal.window} s; o ícone mostra qual`);
+  if (ab.ret) notes.push(`volta pro ponto de partida depois de ${ab.ret} s`);
   if (ab.charges) notes.push(`${ab.charges.n} usos em ${ab.charges.t} s; a recarga começa depois do último`);
   if (ab.heroesOnly) notes.push('só acerta heróis');
   if (ab.pierce) notes.push('atravessa os inimigos');
@@ -386,6 +397,15 @@ export class Hud {
       const ranks = { q: st.rk[0], w: st.rk[1], e: st.rk[2], r: st.rk[3] };
       const rank = ranks[slot] ?? 1;
       const locked = !!RANK_MAX[slot] && rank <= 0;
+      if (s.ab.steal) {
+        // feitiço copiado pronto pra usar: o ícone da habilidade vira o do feitiço
+        const got = st.st || '';
+        if (got !== s.stolen) {
+          s.stolen = got;
+          s.root.querySelector('.sk-icon').innerHTML = ICONS[(SPELL_POOL[got] || s.ab).icon] || '';
+          s.root.classList.toggle('stolen', !!got);
+        }
+      }
       if (s.charge) {
         // usos que ainda restam de uma habilidade de várias cargas
         const left = st.ch || 0;

@@ -29,7 +29,7 @@ import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -75,6 +75,8 @@ class Unit {
     this.shredT = 0;
     this.airT = 0;
     this.charmT = 0;
+    this.sleepT = 0;
+    this.drowsy = null;
     this.charmBy = null;
     this.slows = [];
     this.shields = [];
@@ -105,7 +107,7 @@ class Unit {
   }
 
   get cc() {
-    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0 || this.charmT > 0;
+    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0 || this.charmT > 0 || this.sleepT > 0;
   }
 
   shieldTotal() {
@@ -259,7 +261,8 @@ export class Sim {
     const full = (u) => {
       this.calcStats(u);
       u.hp = u.stats.maxHp;
-      u.stunT = u.rootT = u.airT = u.charmT = 0;
+      u.stunT = u.rootT = u.airT = u.charmT = u.sleepT = 0;
+      u.drowsy = null;
       u.slows = [];
     };
     switch (m.c) {
@@ -443,7 +446,10 @@ export class Sim {
     h.z = z;
     h.alive = true;
     h.facing = h.team === 0 ? 0 : Math.PI;
-    h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = 0;
+    h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = h.sleepT = 0;
+    h.drowsy = null;
+    h.goBack = null;
+    h.orb = null;
     h.bolts = null;
     h.charge = null;
     this.endStasis(h);
@@ -819,6 +825,41 @@ export class Sim {
     return true;
   }
 
+  // último feitiço que um herói inimigo lançou, se ainda estiver dentro do prazo de quem copia
+  stolenFor(h, ab) {
+    const st = this.lastSpell?.[1 - h.team];
+    return st && SPELL_POOL[st.id] && this.time - st.t <= ab.steal.window ? st : null;
+  }
+
+  // lança de graça o feitiço copiado; os que precisam de alvo pegam o herói inimigo mais perto do mouse
+  castStolen(h, ab, slot, x, z) {
+    const st = this.stolenFor(h, ab);
+    if (!st) return;
+    const sp = SPELL_POOL[st.id];
+    let tg = null;
+    if (sp.kind === 'target') {
+      let best = Infinity;
+      for (const u of this.units) {
+        if (!this.abilityTargetable(h, u, sp) || edgeDist(h, u) > sp.range) continue;
+        const d = Math.hypot(u.x - x, u.z - z);
+        if (d < best) {
+          best = d;
+          tg = u;
+        }
+      }
+      if (!tg) return;
+    }
+    this.lastSpell[1 - h.team] = null;
+    this.execute(h, slot, { ...sp, cast: 0 }, tg ? tg.x : x, tg ? tg.z : z, tg);
+  }
+
+  // dano de um projétil que fica mais forte quanto mais longe voa (grow)
+  projDmg(p, u) {
+    if (!p.grow) return p.dmg;
+    const far = (p.grown || 0) + Math.hypot(u.x - p.x0, u.z - p.z0);
+    return p.dmg * (1 + Math.min(p.grow.max, p.grow.per * far));
+  }
+
   // encantado: anda devagar até quem encantou, sem poder fazer mais nada
   charmWalk(u) {
     const src = u.charmBy;
@@ -862,17 +903,46 @@ export class Sim {
       dz /= d;
     }
     const color = ab.color || h.def?.color || '#ffffff';
+    // feitiço (D ou F) lançado por um herói: fica anotado pra quem sabe copiar (ver steal)
+    if ((slot === 'd' || slot === 'f') && h.isHero && SPELL_POOL[h.spells?.[slot]] === ab) (this.lastSpell ||= [null, null])[h.team] = { id: h.spells[slot], t: this.time };
+    let px = h.x + dx * 0.6;
+    let pz = h.z + dz * 0.6;
+    let grown = 0;
+    let second = false;
+    if (ab.kind === 'proj' && ab.hover) {
+      // segundo lançamento: o projétil que estava parado no ar sai de onde está pra onde o mouse aponta
+      const o = h.recasting ? h.orb : null;
+      h.recasting = false;
+      h.orb = null;
+      if (o && this.projectiles.includes(o)) {
+        this.projectiles = this.projectiles.filter((q) => q !== o);
+        this.emit({ e: 'pjx', id: o.id, x: r1(o.x), z: r1(o.z) });
+        second = true;
+        grown = o.traveled;
+        px = o.x;
+        pz = o.z;
+        const ld = Math.hypot(x - px, z - pz);
+        if (ld > 0.05) {
+          dx = (x - px) / ld;
+          dz = (z - pz) / ld;
+        }
+      }
+    }
     switch (ab.kind) {
       case 'proj':
         this.spawnProj({
           owner: h,
           team: h.team,
-          x: h.x + dx * 0.6,
-          z: h.z + dz * 0.6,
+          x: px,
+          z: pz,
           dx,
           dz,
-          speed: ab.speed,
-          range: ab.range,
+          speed: second ? ab.hover.speed || ab.speed : ab.speed,
+          range: second ? ab.hover.range : ab.range,
+          hover: second ? 0 : ab.hover?.t || 0,
+          grow: ab.grow || null,
+          grown,
+          trap: ab.trap || null,
           width: ab.width,
           dmg: this.val(h, ab.dmg, ab),
           type: ab.dmg?.type || 'magic',
@@ -933,6 +1003,9 @@ export class Sim {
         h.z = tz;
         this.resolveStatic(h);
         this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color, fl: ab.flash ? 1 : 0 });
+        if (ab.bolts) this.fireBolts(h, ab, slot, color);
+        // pulo de ida e volta: depois de um instante o herói reaparece de onde saiu
+        if (ab.ret) h.goBack = { x: fx0, z: fz0, t: ab.ret, c: color };
         if (ab.origin) this.addDelayed(h, fx0, fz0, ab.origin.radius, ab.origin.delay, this.val(h, ab.origin.dmg, ab), ab.origin.dmg.type, ab.origin.fx, color);
         break;
       }
@@ -952,6 +1025,7 @@ export class Sim {
         }
         this.applySelf(h, h, ab);
         if (ab.furyGain) this.addFury(h, ab.furyGain);
+        if (ab.steal) this.castStolen(h, ab, slot, x, z);
         // os projéteis esperam um pouco por alguém ao alcance antes de se perderem
         if (ab.bolts && !this.fireBolts(h, ab, slot, color)) h.bolts = { ab, slot, color, t: ab.bolts.wait || 0 };
         this.emit({ e: 'buff', id: h.id, s: slot, c: color });
@@ -1119,6 +1193,11 @@ export class Sim {
       const dmg = this.val(src, bd);
       if (!t.burn || t.burn.dmg <= dmg || t.burn.t < fx.burn) t.burn = { src, dmg, type: bd.type || 'magic', t: fx.burn, tick: bd.tick, tickT: bd.tick };
     }
+    if (fx.drowsy && !(t.sleepT > 0)) {
+      // sono: primeiro fica lento, depois dorme; o golpe que acordar dói a mais (wake)
+      t.drowsy = { t: fx.drowsy[0], sleep: fx.drowsy[1] * firm, bonus: fx.wake && src ? this.val(src, fx.wake) : 0, src };
+      t.slows.push({ p: 0.3, t: fx.drowsy[0] });
+    }
     if (fx.charm && src && src !== t) {
       t.charmT = Math.max(t.charmT, fx.charm * firm);
       t.charmBy = src;
@@ -1157,6 +1236,14 @@ export class Sim {
 
   damage(t, src, amount, type = 'phys', opts = {}) {
     if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god || t.stasisT > 0) return 0;
+    if (t.sleepT > 0) {
+      // acordou com o golpe: leva o mesmo tanto de novo (até o teto) como dano verdadeiro
+      t.sleepT = 0;
+      const bonus = Math.min(amount, t.sleepBonus || 0);
+      t.sleepBonus = 0;
+      if (bonus > 0) this.damage(t, t.sleepBy?.alive ? t.sleepBy : src, bonus, 'true', { extra: true });
+      if (!t.alive) return 0;
+    }
     if (t.isStructure) {
       if (t.invuln) return 0;
       if (src && src.isHero && !this.minionsNear(t, src.team, TOWER.backdoorRange)) amount *= TOWER.backdoorMult;
@@ -1303,7 +1390,9 @@ export class Sim {
     t.buffs = [];
     t.shields = [];
     t.slows = [];
-    t.stunT = t.rootT = t.airT = t.fearT = t.charmT = 0;
+    t.stunT = t.rootT = t.airT = t.fearT = t.charmT = t.sleepT = 0;
+    t.drowsy = null;
+    t.goBack = null;
     t.bolts = null;
     if (t.charge) this.endCharges(t);
     this.endStasis(t);
@@ -1504,6 +1593,30 @@ export class Sim {
       }
     }
     if (u.charmT > 0) u.charmT -= dt;
+    if (u.sleepT > 0) u.sleepT -= dt;
+    if (u.drowsy && (u.drowsy.t -= dt) <= 0) {
+      u.sleepT = u.drowsy.sleep;
+      u.sleepBonus = u.drowsy.bonus;
+      u.sleepBy = u.drowsy.src;
+      u.drowsy = null;
+      u.windup = 0;
+      if (u.castT > 0) {
+        u.castT = 0;
+        u.pending = null;
+        this.emit({ e: 'cancel', id: u.id });
+      }
+    }
+    if (u.goBack && (u.goBack.t -= dt) <= 0) {
+      const g = u.goBack;
+      u.goBack = null;
+      if (!u.dash && u.stasisT <= 0) {
+        const from = [r1(u.x), r1(u.z)];
+        u.x = g.x;
+        u.z = g.z;
+        this.resolveStatic(u);
+        this.emit({ e: 'blink', id: u.id, a: from, b: [r1(u.x), r1(u.z)], c: g.c, fl: 0 });
+      }
+    }
     if (u.bolts) {
       if (this.fireBolts(u, u.bolts.ab, u.bolts.slot, u.bolts.color)) u.bolts = null;
       else if ((u.bolts.t -= dt) <= 0) u.bolts = null;
@@ -1772,7 +1885,7 @@ export class Sim {
         break;
       }
       default: {
-        if (!this.attackable(h, h.target) || !this.inAttackRange(h, h.target, 0.3)) h.target = this.nearestEnemy(h, h.stats.range + 0.2, false);
+        if (!this.attackable(h, h.target) || !this.inAttackRange(h, h.target, 0.3) || h.target.sleepT > 0 || h.target.drowsy) h.target = this.nearestEnemy(h, h.stats.range + 0.2, false);
         if (h.target && this.inAttackRange(h, h.target, 0.3)) this.attackStep(h, h.target, dt);
         else h.windup = 0;
       }
@@ -1786,6 +1899,8 @@ export class Sim {
       if (!this.attackable(h, u)) continue;
       if (heroesOnly && !u.isHero) continue;
       if (u.isStructure && !structures) continue;
+      // quem dorme não é escolhido sozinho como alvo: acordar ele tem que ser decisão de quem joga
+      if (u.isHero && (u.sleepT > 0 || u.drowsy)) continue;
       const d = edgeDist(h, u);
       if (d > range) continue;
       const score = d - (u.isHero ? 1.5 : 0);
@@ -1975,6 +2090,8 @@ export class Sim {
 
   spawnProj(p) {
     p.id = this.projSeq++;
+    p.x0 = p.x;
+    p.z0 = p.z;
     p.traveled = 0;
     p.hit = new Set();
     this.projectiles.push(p);
@@ -2044,6 +2161,15 @@ export class Sim {
         p.z += (dz / d) * step;
         continue;
       }
+      if (p.hoverT > 0) {
+        // parado no ar esperando o segundo lançamento
+        p.hoverT -= dt;
+        if (p.hoverT <= 0 || !p.owner.alive) {
+          done.push(p);
+          if (p.owner.orb === p) p.owner.orb = null;
+        }
+        continue;
+      }
       const step = Math.min(p.speed * dt, p.range - p.traveled);
       const nx = p.x + p.dx * step;
       const nz = p.z + p.dz * step;
@@ -2072,8 +2198,18 @@ export class Sim {
         p.z = nz;
         p.traveled += step;
       }
+      if (!stopped && p.traveled >= p.range - 0.01 && p.hover && p.slot && p.owner.alive && !p.owner.recast) {
+        p.hoverT = p.hover;
+        p.hover = 0;
+        p.owner.orb = p;
+        p.owner.recast = { slot: p.slot, t: p.hoverT, cd: p.owner.cds[p.slot] };
+        p.owner.cds[p.slot] = 0;
+        continue;
+      }
       if (stopped || p.traveled >= p.range - 0.01) {
         done.push(p);
+        // errou: a fumaça fica no chão como armadilha pro primeiro que pisar
+        if (!stopped && p.trap) this.spawnZone(p.owner, p.x, p.z, { r: p.trap.r, dur: p.trap.dur, tick: 0.1, dmg: p.dmg, type: p.type, fx: p.fx, once: true }, p.color);
         if (!stopped && p.back && p.owner.alive) {
           back.push({ owner: p.owner, team: p.team, x: p.x, z: p.z, homing: p.owner, sweep: true, speed: p.back.speed || p.speed, dmg: p.backDmg, type: p.back.type || p.type, width: p.width, color: p.color, slot: p.slot, kind: 's', size: p.width });
         }
@@ -2088,18 +2224,19 @@ export class Sim {
 
   skillHit(p, u) {
     const owner = p.owner;
+    const dmg = this.projDmg(p, u);
     if (p.explode) {
       for (const o of this.units) {
         if (!o.alive || o.team === p.team || o.isStructure) continue;
         if (o !== u && dist(o, u) > p.explode + o.r) continue;
-        this.damage(o, owner, p.dmg, p.type);
+        this.damage(o, owner, dmg, p.type);
         this.applyFx(o, p.fx, owner);
       }
       this.emit({ e: 'boom', x: r1(u.x), z: r1(u.z), r: p.explode, c: p.color, o: owner.id });
       return;
     }
     owner.lastProjDir = [p.dx, p.dz];
-    this.damage(u, owner, p.dmg, p.type);
+    this.damage(u, owner, dmg, p.type);
     this.applyFx(u, p.fx, owner);
     owner.lastProjDir = null;
   }
@@ -2116,7 +2253,7 @@ export class Sim {
   }
 
   spawnZone(h, x, z, o, color) {
-    const zn = { id: this.zoneSeq++, owner: h, team: h.team, x, z, r: o.r, t: o.dur, tick: o.tick, tickT: 0, dmg: o.dmg, type: o.type || 'magic', fx: o.fx, line: o.line || null, color };
+    const zn = { id: this.zoneSeq++, owner: h, team: h.team, x, z, r: o.r, t: o.dur, tick: o.tick, tickT: 0, dmg: o.dmg, type: o.type || 'magic', fx: o.fx, line: o.line || null, once: !!o.once, color };
     this.zones.push(zn);
     const m = { e: 'zone', id: zn.id, x: r1(x), z: r1(z), r: zn.r, t: zn.t, c: color, tm: h.team, o: h.id };
     if (zn.line) m.l = zn.line;
@@ -2139,6 +2276,11 @@ export class Sim {
         } else if (Math.hypot(u.x - zn.x, u.z - zn.z) > zn.r + u.r) continue;
         this.damage(u, zn.owner, zn.dmg, zn.type);
         this.applyFx(u, zn.fx, zn.owner);
+        if (zn.once) {
+          // armadilha: dispara no primeiro que pisar e some
+          zn.t = 0;
+          break;
+        }
       }
     }
     const gone = this.zones.filter((z) => z.t <= 0);
@@ -2306,6 +2448,7 @@ export class Sim {
     if (u.invuln) f |= F.invuln;
     if (u.stasisT > 0) f |= F.stasis;
     if (u.charmT > 0) f |= F.charm;
+    if (u.sleepT > 0) f |= F.sleep;
     if (u.bolts) f |= F.orbs;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;
@@ -2366,6 +2509,7 @@ export class Sim {
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
       ch: h.charge ? h.charge.left : 0,
+      st: h.def?.abilities?.w?.steal ? this.stolenFor(h, h.def.abilities.w)?.id || '' : undefined,
       fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,
     };
   }
