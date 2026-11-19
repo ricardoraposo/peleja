@@ -1037,7 +1037,10 @@ queueBolts(h, ab, slot, color) {
         this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color, fl: ab.flash ? 1 : 0 });
         if (ab.bolts) this.queueBolts(h, ab, slot, color);
         // pulo de ida e volta: depois de um instante o herói reaparece de onde saiu
-        if (ab.ret) h.goBack = { x: fx0, z: fz0, t: ab.ret, c: color };
+        if (ab.ret) {
+          h.goBack = { x: fx0, z: fz0, t: ab.ret, c: color };
+          this.emit({ e: 'mark', id: h.id, x: r1(fx0), z: r1(fz0), t: ab.ret, c: color });
+        }
         if (ab.origin) this.addDelayed(h, fx0, fz0, ab.origin.radius, ab.origin.delay, this.val(h, ab.origin.dmg, ab), ab.origin.dmg.type, ab.origin.fx, color);
         break;
       }

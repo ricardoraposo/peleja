@@ -794,6 +794,28 @@ export class Effects {
     z.g.traverse((o) => o.material?.dispose?.());
   }
 
+  // marca no chão de onde o herói saiu e pra onde vai voltar: um buraco com um anel que fecha até a hora da volta
+  mark(m) {
+    const g = new THREE.Group();
+    const hole = flat(new THREE.Mesh(DISC, basic('#140a1c', 0.75)), 0.06);
+    hole.scale.setScalar(0.8);
+    const edge = flat(new THREE.Mesh(RING, basic(m.c, 0.95, true)), 0.08);
+    edge.scale.setScalar(0.9);
+    const clock = flat(new THREE.Mesh(RING, basic('#ffffff', 0.9, true)), 0.09);
+    g.add(hole, edge, clock);
+    g.position.set(m.x, 0, m.z);
+    let puffT = 0;
+    this.temp(g, m.t, (k) => {
+      if (k <= 0) for (const o of [hole, edge, clock]) o.material.dispose();
+      clock.scale.setScalar(0.25 + k * 1.5);
+      edge.material.opacity = 0.65 + Math.sin(k * 40) * 0.3;
+      if ((puffT += 1) % 4 === 0) {
+        const an = Math.random() * Math.PI * 2;
+        this.spawn(m.x + Math.cos(an) * 0.7, 0.15, m.z + Math.sin(an) * 0.7, -Math.cos(an) * 0.6, 2.2, -Math.sin(an) * 0.6, m.c, 0.45, 0.09, -1);
+      }
+    });
+  }
+
   blink(a, b, color, el = 'neutral') {
     this.streak(a[0], a[1], b[0], b[1], color, 0.5, 0.28, 0.6);
     if (el === 'neutral') {

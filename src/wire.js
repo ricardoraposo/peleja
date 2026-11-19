@@ -49,6 +49,7 @@ const EVENTS = {
   // retrato só com o que mudou desde o anterior (ver SnapDelta lá embaixo)
   emp: { id: 'u', s: 's' },
   bite: { id: 'u', v: 'u', n: 'u', emp: 'u' },
+  mark: { id: 'u', x: 'd1', z: 'd1', t: 'n', c: 's' },
   sd: { t: 'd2', pt: 'd1', gt: 'd1', wv: 'd1', ph: 's?', k: 'u*?', pk: 'u*?', x: 'u*', c: 'i*', n: ['u', 'u', 'u', 'd1', 'd1', 'd2', 'u', 'u', 'u', 'u', 'i', 'u', 'd1'] },
 };
 

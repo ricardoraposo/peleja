@@ -295,6 +295,9 @@ export class Game {
         if (st.el === 'ember') playSound('crackle', { x: m.x, z: m.z });
       }
         break;
+      case 'mark':
+        this.effects.mark(m);
+        break;
       case 'zonex':
         this.effects.endZone(m.id);
         break;
