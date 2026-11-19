@@ -57,7 +57,16 @@ Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
 
 ## Loja
 
-São **45 itens**, entre básicos, montagens e consumíveis de usar. Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele) e a loja já sugere por onde começar, a build principal na ordem e um caminho alternativo.
+São **47 itens** do folclore e do sertão, em três camadas (básicos, intermediários e grandes), montados a partir das peças. Itens só dão atributos: ataque, poder, aceleração de habilidade, velocidade de ataque, crítico, armadura, resistência mágica e vida (e passo nas botas). A única exceção é a **Carranca**, que vira estátua por 2,5 s.
+
+| Linha | Itens grandes |
+| --- | --- |
+| Ataque | Garra do Lobisomem, Presa da Cobra-Grande, Borduna de Anhangá, Gume do Cangaceiro, Lança das Icamiabas |
+| Atirador | Arco da Caipora, Agouro da Acauã, Rasga-Mortalha, Assobio da Matinta |
+| Poder | Cajado de Tupã, Cocar do Pajé, Coração da Mãe-do-Ouro, Véu da Mãe-d'Água, Carranca, Cuia da Benzedeira |
+| Defesa | Casco de Jabuti, Manto de Jaci, Couro do Mapinguari, Armadura de Xique-xique, Raiz de Sumaúma, Tambor do Boi-Bumbá |
+
+Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele) e a loja já sugere por onde começar, a build principal na ordem e um caminho alternativo.
 
 <p align="center">
   <img src="docs/loja.jpg" alt="Loja com itens recomendados e árvore de montagem" />
