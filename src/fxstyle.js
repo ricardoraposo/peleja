@@ -68,6 +68,12 @@ export const HERO_FX = {
     proj: { q: 'coco', e: 'smoke' },
     snd: { shoot: 'bow', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
   },
+  fulozinha: {
+    el: 'thorn',
+    auto: 'braid',
+    proj: { q: 'braid' },
+    snd: { shoot: 'bow', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
+  },
   boto: {
     el: 'rose',
     auto: 'orb',

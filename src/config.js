@@ -110,6 +110,7 @@ export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_S
 // bolts: n projéteis teleguiados nos inimigos próximos, heróis primeiro; repeat = fração do dano quando repete o alvo;
 //        wait = segundos que eles esperam alguém chegar ao alcance
 // charges: a habilidade pode ser usada n vezes em t segundos, com gap entre uma e outra; a recarga começa no fim
+// fx.pull: puxa o alvo até tantos passos pra perto de quem lançou · fetch (em ally): arrasta o aliado mais perto do ponto pro seu lado
 // grow: o projétil fere mais quanto mais longe voa (per = fração a mais por passo, até max)
 // hover: se não acertar ninguém, o projétil para no ar por t segundos e dá pra lançar de novo (no segundo voo vai até onde o mouse aponta, no máximo a reach do herói, com speed)
 // trap: se errar, o projétil vira uma armadilha no chão (raio r, dura dur segundos, dispara no primeiro que pisar)
@@ -287,6 +288,22 @@ export const HEROES = {
       r: { name: 'Buraco de Tatu', icon: 'portal', kind: 'blink', cd: 16, cast: 0, range: 6.5, ret: 1, bolts: { n: 3, range: 7, speed: 24, repeat: 0.4, dmg: { b: 35, l: 8, ap: 0.35, type: 'magic' } }, color: '#d946ef', desc: 'Some num buraco e sai onde o mouse aponta, solta três vaga-lumes e, depois de 1 s, volta pelo mesmo buraco pra onde estava. Não dá pra andar enquanto está do outro lado.' },
     },
   },
+  fulozinha: {
+    name: 'Fulozinha',
+    title: 'Pegadora',
+    role: 'suporte',
+    color: '#14b8a6',
+    look: { weapon: 'braid', hat: 'braids', robe: true, extra: 'leaves', body: '#3f6212', skin: '#a8704a' },
+    ranged: true,
+    skillOrder: ['q', 'e', 'w'],
+    stats: { hp: 600, hpL: 98, atk: 52, atkL: 2.8, armor: 30, armorL: 3.1, mres: 31, mresL: 1.4, as: 0.62, asL: 0.02, ms: 6.0, range: 6.2, regen: 1.9, regenL: 0.18 },
+    abilities: {
+      q: { name: 'Laço de Trança', icon: 'braid', kind: 'proj', cd: 13, cast: 0.25, range: 11, speed: 24, width: 1.1, dmg: { b: 55, l: 14, ap: 0.45, type: 'magic' }, fx: { pull: 6, stun: 0.5 }, color: '#2dd4bf', desc: 'Joga a trança: o primeiro inimigo que ela pegar é puxado pra perto de você e fica atordoado.' },
+      w: { name: 'Cipó Amigo', icon: 'vine', kind: 'ally', cd: 15, cast: 0.1, range: 10, radius: 2.6, shield: { b: 55, l: 18, ap: 0.4, t: 3 }, fetch: true, color: '#5eead4', desc: 'Lança um cipó num aliado: ele ganha um escudo e é puxado pro seu lado.' },
+      e: { name: 'Chicotada', icon: 'whip', kind: 'cone', cd: 10, cast: 0.2, range: 5.5, angle: 70, dmg: { b: 50, l: 13, ap: 0.4, type: 'magic' }, fx: { root: 1.1 }, color: '#14b8a6', desc: 'Chicoteia com a trança num leque à frente e prende os inimigos no lugar.' },
+      r: { name: 'Redemoinho de Folhas', icon: 'whirl', kind: 'nova', cd: 80, cast: 0.3, radius: 6, dmg: { b: 110, l: 24, ap: 0.5, type: 'magic' }, fx: { pull: 5, stun: 1 }, color: '#14b8a6', desc: 'Um redemoinho arrasta todos os inimigos em volta pra junto de você e atordoa.' },
+    },
+  },
   boto: {
     name: 'Boto',
     title: 'Encantador',
@@ -304,7 +321,7 @@ export const HEROES = {
   },
 };
 
-export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora'];
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).

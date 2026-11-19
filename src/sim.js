@@ -1074,11 +1074,28 @@ queueBolts(h, ab, slot, color) {
           cx = h.x + dx * k;
           cz = h.z + dz * k;
         }
+        let fetched = null;
+        let fetchD = Infinity;
         for (const a of this.heroes) {
           if (!a.alive || a.team !== h.team) continue;
-          if (Math.hypot(a.x - cx, a.z - cz) > ab.radius + a.r) continue;
+          const ad = Math.hypot(a.x - cx, a.z - cz);
+          if (ad > ab.radius + a.r) continue;
           this.applySelf(a, h, ab);
+          if (ab.fetch && a !== h && !a.dash && a.stasisT <= 0 && ad < fetchD) {
+            fetchD = ad;
+            fetched = a;
+          }
         }
+        if (fetched) {
+          // resgate: o aliado mais perto do ponto escolhido é arrastado pro lado de quem lançou
+          const fd = Math.hypot(fetched.x - h.x, fetched.z - h.z);
+          const k = fd - 1.6;
+          if (k > 0.1) {
+            const T = 0.3;
+            fetched.disp = { vx: (((h.x - fetched.x) / fd) * k) / T, vz: (((h.z - fetched.z) / fd) * k) / T, t: T };
+          }
+        }
+        if (ab.bolts) this.queueBolts(h, ab, slot, color);
         this.emit({ e: 'boom', x: r1(cx), z: r1(cz), r: ab.radius, c: color, al: 1, o: h.id });
         break;
       }
@@ -1241,6 +1258,17 @@ queueBolts(h, ab, slot, color) {
       t.airT = Math.max(t.airT, fx.knockup);
       t.airMax = t.airT;
     }
+    if (fx.pull && src) {
+      // puxão: arrasta o alvo até perto de quem lançou (ou do centro da área), no máximo `pull` passos
+      const px = ox ?? src.x;
+      const pz = oz ?? src.z;
+      const d = Math.hypot(t.x - px, t.z - pz);
+      const k = Math.min(fx.pull, d - 1.6);
+      if (k > 0.1) {
+        const T = 0.3;
+        t.disp = { vx: (((px - t.x) / d) * k) / T, vz: (((pz - t.z) / d) * k) / T, t: T };
+      }
+    }
     if (fx.knockback && src) {
       let dx = t.x - (ox ?? src.x);
       let dz = t.z - (oz ?? src.z);
@@ -1249,7 +1277,7 @@ queueBolts(h, ab, slot, color) {
       const T = 0.25;
       t.disp = { vx: ((dx / d) * fx.knockback) / T, vz: ((dz / d) * fx.knockback) / T, t: T };
     }
-    if (fx.stun || fx.knockup || fx.knockback || fx.fear || fx.charm) {
+    if (fx.stun || fx.knockup || fx.knockback || fx.pull || fx.fear || fx.charm) {
       t.windup = 0;
       if (t.castT > 0) {
         t.castT = 0;

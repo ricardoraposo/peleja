@@ -435,6 +435,16 @@ export class BotBrain {
       return null;
     }
     if (ab.kind === 'ally') {
+      if (ab.fetch) {
+        // resgate: puxa pra perto o aliado machucado que está com inimigo em cima
+        let pick = null;
+        for (const a of ctx.alliesNear) {
+          const da = dist(a, h);
+          if (hpf(a) > 0.5 || da < 3.5 || da > ab.range || !near.some((e) => dist(e, a) < 6)) continue;
+          if (!pick || hpf(a) < hpf(pick)) pick = a;
+        }
+        return pick ? [pick.x, pick.z, 0] : null;
+      }
       if (ab.heal) {
         let pick = null;
         for (const a of [h, ...ctx.alliesNear]) {

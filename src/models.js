@@ -221,6 +221,23 @@ function hat(kind, M, color) {
     core.castShadow = false;
     g.add(core);
     g.userData.flames = flames;
+  } else if (kind === 'braids') {
+    // cabeleira preta comprida até a cintura, duas tranças grossas e uma flor na cor do herói
+    const hair = mat('#1c1917');
+    g.add(part(hair, 0.56, 0.2, 0.56, 0, 0.32, -0.02));
+    g.add(part(hair, 0.6, 1.05, 0.16, 0, -0.2, -0.28));
+    for (const x of [-0.3, 0.3]) {
+      for (let i = 0; i < 5; i++) g.add(part(hair, 0.15, 0.2, 0.15, x, 0.12 - i * 0.2, 0.06 - i * 0.02, SPHERE));
+      g.add(part(mat(color), 0.1, 0.08, 0.1, x, -0.82, -0.02));
+    }
+    // coroa de folhas e flores: de cima é o que identifica ela
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const bit = part(mat(i % 2 ? '#f9a8d4' : color), 0.2, 0.14, 0.2, Math.sin(a) * 0.26, 0.45, Math.cos(a) * 0.26 - 0.02, SPHERE);
+      g.add(bit);
+    }
+    g.add(part(mat(color), 0.3, 0.06, 0.3, 0, 0.43, -0.02));
+    for (let i = 0; i < 4; i++) g.add(part(mat(color), 0.5, 0.05, 0.18, 0, 0.2 - i * 0.26, -0.37));
   } else if (kind === 'cocar') {
     // cabeleira desgrenhada na cor do herói (de cima é quase só o que se vê dela) e um cocar de penas abertas
     const hair = mat(color);
@@ -828,6 +845,7 @@ STYLES.pearl = {
 
 // coquinho na mão: os mesmos gestos (arremesso por baixo, rodopio e o sopro com a mão na boca)
 STYLES.coco = STYLES.pearl;
+STYLES.braid = STYLES.pearl;
 
 // poses genéricas (feitiços de todo mundo e o que um estilo não definir)
 const GENERIC = {
@@ -996,6 +1014,9 @@ export class HeroModel {
         arm.add(fl);
         this.furyBits.push(fl);
       }
+    } else if (w === 'braid') {
+      // mãos livres: a trança é o chicote
+      for (const arm of [this.armR, this.armL]) arm.add(part(M.skin, 0.13, 0.12, 0.13, 0, -0.5, 0));
     } else if (w === 'coco') {
       for (const arm of [this.armR, this.armL]) arm.add(part(M.skin, 0.13, 0.12, 0.13, 0, -0.5, 0));
       this.armR.add(part(mat('#6b4423'), 0.17, 0.17, 0.17, 0, -0.64, 0.05, SPHERE));

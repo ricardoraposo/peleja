@@ -184,6 +184,13 @@ export class Effects {
         g.userData.spinAxis = 'x';
         break;
       }
+      case 'braid': {
+        // ponta da trança: gomos escuros em fila com um laço na cor do herói
+        const k = Math.max(1, width);
+        for (let i = 0; i < 5; i++) add(SPHERE, shared('#1c1917'), 0.2 * k, 0.16 * k, 0.2 * k, -i * 0.3 * k, Math.sin(i * 1.4) * 0.05, Math.cos(i * 1.4) * 0.06);
+        add(SPHERE, shared(color, 0.9, true), 0.2 * k, 0.2 * k, 0.2 * k, 0.16 * k, 0, 0);
+        break;
+      }
       case 'coco': {
         // coquinho girando com um brilho de vaga-lume em volta
         const k = Math.max(0.6, sc);

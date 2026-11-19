@@ -39,6 +39,18 @@ export const ICONS = {
   tornado: S('<path d="M3 4h18M5 8h14M7 12h10M9 16h6M11 20h2"/>'),
   pearl: S('<circle cx="7" cy="12" r="4"/><path d="M14 8h7M18 5l3 3-3 3M21 16h-7M17 13l-3 3 3 3"/>'),
   fish: S('<path d="M3 12c3-5 9-5 13 0-4 5-10 5-13 0zM16 12l5-4v8z"/><path d="M7.5 11h.01"/>'),
+  braid: S('<path d="M8 3c4 2 4 4 0 6 4 2 4 4 0 6 4 2 4 4 0 6M16 3c-4 2-4 4 0 6-4 2-4 4 0 6-4 2-4 4 0 6"/>'),
+  vine: S('<path d="M4 20c0-8 4-14 14-16M9 11c-2-1-4 0-5 2 2 1 4 0 5-2zM14 7c0-2-1-4-3-5-1 2 0 4 3 5zM11 15c2 0 4 1 5 3-2 1-4 0-5-3z"/>'),
+  whip: S('<path d="M4 20l5-5M9 15c2-6 8-2 6-8-1-3 3-5 5-3"/><circle cx="4.500" cy="19.500" r="1.500"/>'),
+  whirl: S('<path d="M12 12c0-3 4-3 4 0 0 5-8 5-8 0 0-7 12-7 12 0 0 4-2 7-5 8"/>'),
+  note: S('<path d="M9 18V5l10-2v13"/><circle cx="6.500" cy="18" r="2.500"/><circle cx="16.500" cy="16" r="2.500"/>'),
+  song: S('<path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0M12 3v3M12 18v3"/>'),
+  wingfoot: S('<path d="M4 18h9l3-4V8M13 18l5 1M9 8c-3 0-5 2-6 5 3 0 5-1 6-5zM9 8c0-2 1-4 3-5 1 2 0 4-3 5z"/>'),
+  bird: S('<path d="M3 13c3-6 8-8 13-6l5-2-3 5c0 5-4 8-9 8l-4 3 1-5c-2-1-3-2-3-3z"/><path d="M15 9h.01"/>'),
+  candle: S('<path d="M9 21h6V11H9zM12 11V9M12 3c-2 2-2 4 0 6 2-2 2-4 0-6z"/>'),
+  bless: S('<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M12 8v7M9 11h6"/>'),
+  hoof: S('<path d="M7 20c-3-6-2-13 5-16 7 3 8 10 5 16h-4v-5h-2v5z"/>'),
+  herd: S('<path d="M2 16c3-1 4-5 8-5l2-4 1 3c3 0 5 2 6 5l3 2M6 16v4M14 16v4M10 11c2 1 3 2 3 5"/>'),
   coco: S('<circle cx="10" cy="14" r="6"/><path d="M8 13h.01M12 13h.01M10 16h.01M15 9l5-5M17 4h3v3"/>'),
   mask: S('<path d="M3 8c3-2 6-2 9 0 3-2 6-2 9 0 0 5-2 9-5 9-2 0-3-2-4-2s-2 2-4 2c-3 0-5-4-5-9z"/><path d="M7 11h2M15 11h2"/>'),
   sleep: S('<path d="M4 6h7l-7 8h7M14 10h6l-6 7h6"/>'),
@@ -117,6 +129,7 @@ function fxText(fx) {
   if (fx.root) out.push(`prende no lugar por ${fx.root} s`);
   if (fx.drowsy) out.push(`dá sono: lento por ${fx.drowsy[0]} s e depois dorme por ${fx.drowsy[1]} s; o golpe que acordar o alvo causa o mesmo dano de novo, como dano verdadeiro, até o teto`);
   if (fx.charm) out.push(`encanta por ${fx.charm} s: o alvo anda devagar até você e não faz mais nada`);
+  if (fx.pull) out.push(`puxa o alvo até ${fx.pull} passos pra perto de você`);
   if (fx.knockup) out.push(`joga pra cima por ${fx.knockup} s`);
   if (fx.knockback) out.push(`empurra ${fx.knockback} passos`);
   if (fx.fear) out.push(`faz fugir de medo por ${fx.fear} s`);
@@ -158,11 +171,14 @@ export function abilityTip(ab, slot, ctx = null) {
     const bits = [];
     if (b.as) bits.push(`+${Math.round(b.as * 100)}% vel. de ataque`);
     if (b.ms) bits.push(`+${Math.round(b.ms * 100)}% de passo`);
+    if (b.atk) bits.push(`+${b.atk} de ataque`);
+    if (b.pow) bits.push(`+${b.pow} de poder`);
     if (b.armor) bits.push(`+${b.armor} armadura`);
     if (b.mres) bits.push(`+${b.mres} resist. mágica`);
     if (bits.length) notes.push(`${bits.join(', ')} por ${b.t} s`);
   }
   if (ab.bolts?.repeat < 1) notes.push(`repetir o alvo causa ${Math.round(ab.bolts.repeat * 100)}% do dano`);
+  if (ab.fetch) notes.push('o aliado mais perto do ponto escolhido é puxado pro seu lado');
   if (ab.grow) notes.push(`+${Math.round(ab.grow.per * 100)}% de dano a cada passo voado, até +${Math.round(ab.grow.max * 100)}%`);
   if (ab.hover) notes.push(`se não acertar, para no ar por ${ab.hover.t} s e dá pra rebater até ${ab.hover.reach} de alcance de onde você estiver`);
   if (ab.trap) notes.push(`se errar, vira armadilha no chão por ${ab.trap.dur} s`);
