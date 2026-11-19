@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 import { HERO_ORDER, ITEM_ORDER, SPELL_ORDER } from '../src/config.js';
+import { decode, encode, fallbacks, pack } from '../src/wire.js';
 
 const SECS = Number(process.argv[2]) || 40;
 const N = Number(process.argv[3]) || 10;
@@ -69,12 +70,12 @@ class Fake {
         this.frames++;
         let list;
         try {
-          list = JSON.parse(data.toString());
+          list = decode(data, 'e');
         } catch {
           this.events.lixo = (this.events.lixo || 0) + 1;
           return;
         }
-        for (const m of Array.isArray(list) ? list : [list]) this.on(m, data.length);
+        for (const m of list) this.on(m);
       });
     });
   }
@@ -101,12 +102,12 @@ class Fake {
       this.lastSnap = now;
       this.phase = m.ph;
       this.units = m.u;
-      this.snapBytes.push(JSON.stringify(m).length);
+      this.snapBytes.push(pack(m).length);
     }
   }
 
   send(m) {
-    if (this.ws.readyState === 1) this.ws.send(JSON.stringify(m));
+    if (this.ws.readyState === 1) this.ws.send(encode([m]));
   }
 
   draft() {
@@ -212,6 +213,10 @@ try {
   say('intervalo entre retratos', `mediana ${pct(gaps, 0.5).toFixed(0)} ms · p99 ${pct(gaps, 0.99).toFixed(0)} ms · pior ${Math.max(...gaps).toFixed(0)} ms (alternam 33 e 67)`);
   say('resposta a um comando (compra)', rtt.length ? `mediana ${pct(rtt, 0.5).toFixed(0)} ms · p95 ${pct(rtt, 0.95).toFixed(0)} ms (${rtt.length} amostras)` : 'sem amostras');
   const mean = gaps.reduce((a, b) => a + b, 0) / (gaps.length || 1);
+  const viaJson = Object.entries(fallbacks);
+  const broken = fakes.reduce((a, f) => a + (f.events.lixo || 0), 0);
+  say('formato binário', `${viaJson.length ? `caíram no JSON: ${viaJson.map(([k, v]) => `${k} ×${v}`).join(', ')}` : 'todas as mensagens pela tabela'}${broken ? ` · ${broken} PACOTES ILEGÍVEIS` : ''}`);
+  if (broken) problems.push(`${broken} pacotes do servidor não puderam ser lidos`);
   say('retratos por segundo', `${(1000 / mean).toFixed(1)} (o servidor promete 20)`);
   if (1000 / mean < 18) problems.push(`servidor entrega ${(1000 / mean).toFixed(1)} retratos por segundo em vez de 20`);
   if (pct(gaps, 0.99) > 120) problems.push(`retratos atrasando: p99 de ${pct(gaps, 0.99).toFixed(0)} ms`);
@@ -230,15 +235,19 @@ try {
   const spam = fakes[0];
   const before = spam.frames;
   for (let i = 0; i < 3000; i++) spam.send({ t: 'mv', x: Math.random() * 100 - 50, z: 0 });
-  spam.ws.send('isso não é json');
-  spam.ws.send(JSON.stringify({ t: 'c', s: '__proto__', x: 'a', z: null }));
-  spam.ws.send(JSON.stringify({ t: 'buy', i: 'constructor' }));
-  spam.ws.send(JSON.stringify({ t: 'pick', h: 'toString' }));
-  spam.ws.send(JSON.stringify({ t: 'spell', s: 'd', v: '__proto__' }));
-  spam.ws.send(JSON.stringify({ t: 'sell', n: -5 }));
-  spam.ws.send(JSON.stringify({ t: 'at', id: 'x' }));
-  spam.ws.send(JSON.stringify([1, 2, 3]));
-  spam.ws.send(JSON.stringify(null));
+  spam.ws.send('isso é texto, não é pacote');
+  spam.ws.send(JSON.stringify({ t: 'mv', x: 1, z: 2 }));
+  for (let i = 0; i < 200; i++) spam.ws.send(Uint8Array.from({ length: 1 + Math.floor(Math.random() * 80) }, () => Math.floor(Math.random() * 256)));
+  spam.ws.send(pack({ e: 'snap', t: 1, ph: 'playing', pt: 0, gt: 0, k: [9, 9], wv: 0, u: [], pk: [] }));
+  spam.ws.send(new Uint8Array([0, 255, 255, 255, 255, 15]));
+  spam.send({ t: 'c', s: '__proto__', x: 'a', z: null });
+  spam.send({ t: 'buy', i: 'constructor' });
+  spam.send({ t: 'pick', h: 'toString' });
+  spam.send({ t: 'spell', s: 'd', v: '__proto__' });
+  spam.send({ t: 'sell', n: -5 });
+  spam.send({ t: 'at', id: 'x' });
+  spam.send([1, 2, 3]);
+  spam.send(null);
   await sleep(1500);
   say('enxurrada + mensagens quebradas', serverDead ? 'SERVIDOR CAIU' : `servidor de pé, ${spam.frames - before} pacotes recebidos em 1,5 s`);
   if (serverDead) problems.push('servidor caiu com mensagens quebradas');

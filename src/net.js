@@ -1,4 +1,5 @@
 import { Sim } from './sim.js';
+import { decode, encode } from './wire.js';
 
 const STEP = 1 / 30;
 
@@ -76,20 +77,21 @@ export class SocketTransport {
     this.open = false;
     this.closed = false;
     this.ws = new WebSocket(url);
+    this.ws.binaryType = 'arraybuffer';
     this.ws.addEventListener('open', () => {
       this.open = true;
-      for (const m of this.pending) this.ws.send(JSON.stringify(m));
+      if (this.pending.length) this.ws.send(encode(this.pending));
       this.pending = [];
     });
     this.ws.addEventListener('message', (ev) => {
-      let msg;
+      if (typeof ev.data === 'string') return;
+      let list;
       try {
-        msg = JSON.parse(ev.data);
+        list = decode(new Uint8Array(ev.data), 'e');
       } catch {
         return;
       }
-      if (Array.isArray(msg)) for (const m of msg) this.handler?.(m);
-      else this.handler?.(msg);
+      for (const m of list) this.handler?.(m);
     });
     this.ws.addEventListener('close', () => {
       this.closed = true;
@@ -110,7 +112,7 @@ export class SocketTransport {
       this.pending.push(msg);
       return;
     }
-    this.ws.send(JSON.stringify(msg));
+    this.ws.send(encode([msg]));
   }
 
   update() {}

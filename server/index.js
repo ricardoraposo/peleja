@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Sim } from '../src/sim.js';
+import { decode, encode, pack } from '../src/wire.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const PORT = Number(process.env.PORT) || 7788;
@@ -114,10 +115,12 @@ class Room {
       msg = { ...msg, next: BACK_TO_LOBBY };
       this.backT = BACK_TO_LOBBY;
     }
+    // o que vai pra sala toda é montado em binário uma vez só e o mesmo pedaço entra no pacote de cada um
+    const out = opts?.to ? msg : pack(msg);
     for (const m of this.members) {
       if (!m.hero) continue;
       if (opts?.to && m.hero.id !== opts.to) continue;
-      m.queue.push(msg);
+      m.queue.push(out);
     }
   }
 
@@ -184,7 +187,7 @@ class Room {
     if (this.snapAcc >= SNAP) {
       // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
       this.snapAcc = Math.min(this.snapAcc - SNAP, SNAP);
-      const snap = this.sim.snapshot();
+      const snap = pack(this.sim.snapshot());
       for (const m of this.members) {
         if (!m.hero) continue;
         m.queue.push(snap);
@@ -240,22 +243,10 @@ wss.on('connection', (ws) => {
   const c = { ws, id: nextClientId++, name: 'Jogador', room: null, team: 0, hero: null, queue: [], budget: MAX_MSGS_PER_SEC, budgetT: Date.now() };
   clients.set(ws, c);
   const refuse = (e) => {
-    ws.send(JSON.stringify([{ e }]));
+    ws.send(encode([{ e }]));
     ws.close();
   };
-  ws.on('message', (data) => {
-    const now = Date.now();
-    if (now - c.budgetT > 1000) {
-      c.budget = MAX_MSGS_PER_SEC;
-      c.budgetT = now;
-    }
-    if (--c.budget < 0) return;
-    let msg;
-    try {
-      msg = JSON.parse(data.toString());
-    } catch {
-      return;
-    }
+  const handle = (msg) => {
     if (!msg || typeof msg !== 'object') return;
     if (c.room) {
       c.room.handle(c, msg);
@@ -275,6 +266,26 @@ wss.on('connection', (ws) => {
       if (!room) refuse('noroom');
       else if (!room.add(c, msg.name)) refuse('full');
     }
+  };
+  ws.on('message', (data, isBinary) => {
+    const now = Date.now();
+    if (now - c.budgetT > 1000) {
+      c.budget = MAX_MSGS_PER_SEC;
+      c.budgetT = now;
+    }
+    if (--c.budget < 0 || !isBinary) return;
+    let list;
+    try {
+      list = decode(data, 't');
+    } catch {
+      return;
+    }
+    // um pacote pode trazer vários comandos: cada um gasta do mesmo limite por segundo
+    for (let i = 0; i < list.length; i++) {
+      if (i > 0 && --c.budget < 0) return;
+      if (ws.readyState !== 1) return;
+      handle(list[i]);
+    }
   });
   ws.on('close', () => {
     clients.delete(ws);
@@ -286,7 +297,7 @@ wss.on('connection', (ws) => {
 function flush() {
   for (const c of clients.values()) {
     if (c.queue.length === 0) continue;
-    if (c.ws.readyState === 1 && c.ws.bufferedAmount < 1024 * 1024) c.ws.send(JSON.stringify(c.queue));
+    if (c.ws.readyState === 1 && c.ws.bufferedAmount < 1024 * 1024) c.ws.send(encode(c.queue));
     c.queue = [];
   }
 }
