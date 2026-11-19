@@ -37,7 +37,7 @@ Regras que não se quebram:
 - **A simulação não conhece o navegador.** Ela roda no Node: nada de `window`, `document` ou Three.js em `sim.js`, `bot.js`, `config.js`, `geo.js` e `wire.js`.
 - **Mensagem nova entra na tabela do `wire.js`** (eventos em `EVENTS`, comandos em `COMMANDS`). Fora da tabela ela ainda chega, como JSON, mas o `npm run wire` acusa. Campo opcional leva `?`.
 - **Estado do herói que o cliente precisa ver vai nas flags** (`F` em `sim.js`, um bit por estado) ou no `meState`, não em evento solto.
-- **Estado novo no herói precisa ser zerado** nos mesmos lugares em que os outros são (procure por `charmT = 0` em `sim.js`: são três pontos, incluindo morte e renascimento).
+- **Estado novo no herói precisa ser zerado** nos mesmos lugares em que os outros são (procure por `charmT =` em `sim.js` e acrescente o seu em cada ponto que zera os estados, incluindo morte e renascimento).
 - **Sem dependência nova e sem arquivo de arte ou som.** Só Three.js, Vite e ws; modelos, ícones, efeitos e sons são gerados em código.
 
 ## Habilidades
