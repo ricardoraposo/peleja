@@ -329,6 +329,8 @@ export class Game {
           u.x = m.b[0];
           u.z = m.b[1];
         }
+        // teleporte longo (a volta pra base): a câmera pula junto, mesmo solta
+        if (m.id === this.myId && Math.hypot(m.b[0] - m.a[0], m.b[1] - m.a[1]) > 25) this.camSnap = true;
         if (m.fl) {
           this.effects.flash(m.a, m.b, m.c);
           playSound('flash', { x: m.b[0], z: m.b[1] });
