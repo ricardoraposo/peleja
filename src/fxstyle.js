@@ -82,7 +82,7 @@ export const HERO_FX = {
     proj: { q: 'note', r: 'song' },
     snd: { shoot: 'bubble', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
   },
-  negrinho: {
+  pastoreio: {
     el: 'candle',
     auto: 'ember',
     proj: { r: 'herd' },

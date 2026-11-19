@@ -42,7 +42,7 @@ Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E
 | **Caipora** | Traquina | À distância |
 | **Fulozinha** | Pegadora (suporte) | À distância |
 | **Uirapuru** | Cantador (suporte) | À distância |
-| **Negrinho** | Protetor (suporte) | À distância |
+| **Negrinho do Pastoreio** | Protetor (suporte) | À distância |
 
 Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
 

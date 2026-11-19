@@ -320,8 +320,8 @@ export const HEROES = {
       r: { name: 'Canto do Uirapuru', icon: 'bird', kind: 'proj', cd: 85, cast: 0.35, range: 14, speed: 18, width: 4, pierce: true, dmg: { b: 120, l: 24, ap: 0.5, type: 'magic' }, fx: { stun: 1.3 }, color: '#ef4444', desc: 'O canto que faz a mata inteira parar pra ouvir: uma onda larga que atordoa todos os inimigos que atravessa.' },
     },
   },
-  negrinho: {
-    name: 'Negrinho',
+  pastoreio: {
+    name: 'Negrinho do Pastoreio',
     title: 'Protetor',
     role: 'suporte',
     color: '#fde68a',
@@ -353,7 +353,7 @@ export const HEROES = {
   },
 };
 
-export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'negrinho'];
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'pastoreio'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).
