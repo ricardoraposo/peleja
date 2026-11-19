@@ -370,6 +370,8 @@ let binding = '';
 
 function renderHelp() {
   const k = (...ids) => ids.map((id) => `<kbd>${esc(keyName(settings.keys[id]))}</kbd>`).join('');
+  // as dicas fixas da tela (botão do ouro, aviso de morto) acompanham a tecla escolhida pra loja
+  for (const el of document.querySelectorAll('.k-shop')) el.textContent = keyName(settings.keys.shop);
   const how = { release: 'solte pra lançar', instant: 'lançam na hora', click: 'clique pra lançar' }[settings.cast];
   $('help-keys').innerHTML = [
     '<kbd>Botão direito</kbd> andar · atacar',
