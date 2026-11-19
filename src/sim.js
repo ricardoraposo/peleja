@@ -108,13 +108,15 @@ class Unit {
 }
 
 export class Sim {
-  constructor({ difficulty = 'normal', teamSize = MATCH.teamSize, persistent = false, emit = () => {}, draftTime = MATCH.draftTime, sandbox = false, readyDelay = persistent ? 3 : 0 } = {}) {
+  constructor({ difficulty = 'normal', teamSize = MATCH.teamSize, teams = null, persistent = false, emit = () => {}, draftTime = MATCH.draftTime, sandbox = false, readyDelay = persistent ? 3 : 0 } = {}) {
     // treino: sem sorteio, sem tropas automáticas e com comandos de teste (só no modo local)
     this.sandbox = sandbox;
     this.dbg = { waves: false, towers: true, noCd: false };
     if (sandbox) teamSize = 1;
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.teamSize = Math.max(1, Math.min(5, teamSize));
+    // `teams` = quantos heróis em cada lado, quando os times não são do mesmo tamanho (sala online sem todos os bots)
+    const counts = [0, 1].map((t) => (teams && !sandbox ? Math.max(1, Math.min(5, Math.round(Number(teams[t])) || 1)) : this.teamSize));
     this.persistent = persistent;
     // todo mundo pronto: quanto falta pra começar (online dá uns segundos; contra bots é na hora)
     this.readyDelay = readyDelay;
@@ -135,7 +137,7 @@ export class Sim {
     this.botNames = shuffle([...BOT_NAMES]);
     this.heroes = [];
     for (let team = 0; team < 2; team++) {
-      for (let i = 0; i < this.teamSize; i++) {
+      for (let i = 0; i < counts[team]; i++) {
         const h = new Unit(this.nextId++, 'hero', team, fountainX(team), 0, 0.65);
         h.isBot = true;
         h.name = this.nextBotName();

@@ -2676,6 +2676,43 @@ em.aff {
   margin-left: auto;
 }
 
+.lb-slot.open {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+}
+
+button.lb-slot.open {
+  cursor: pointer;
+}
+
+button.lb-slot.open:hover {
+  color: var(--text, #fff);
+  border-color: var(--gold);
+}
+
+.lb-bot {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lb-bot:hover {
+  color: #fff;
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 30%, transparent);
+}
+
 #lobby-cfg {
   display: grid;
   grid-template-columns: auto 1fr 1.4fr;

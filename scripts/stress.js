@@ -304,6 +304,41 @@ try {
     if (!ok2) problems.push('a segunda partida na mesma sala não começou');
   }
 
+  // ---------- bots da sala ----------
+  {
+    const boss = new Fake(70);
+    const guest = new Fake(71);
+    await boss.connect({ t: 'create', size: 3, diff: 'facil' });
+    await sleep(300);
+    await guest.connect({ t: 'join', room: boss.room.code });
+    await sleep(300);
+    const mineT = boss.room.members.find((m) => m[0] === boss.room.you)[2];
+    const start0 = boss.room.bots.join(' e ');
+    guest.send({ t: 'bot', tm: mineT, d: -1 });
+    await sleep(200);
+    const guestBlocked = boss.room.bots.join(' e ') === start0;
+    for (let i = 0; i < 6; i++) boss.send({ t: 'bot', tm: mineT, d: -1 });
+    for (let i = 0; i < 6; i++) boss.send({ t: 'bot', tm: 1 - mineT, d: -1 });
+    await sleep(300);
+    const emptied = boss.room.bots.join(' e ');
+    boss.send({ t: 'bot', tm: 1 - mineT, d: 1 });
+    await sleep(300);
+    const added = boss.room.bots[1 - mineT];
+    // o convidado muda de lado: o time que ficou vazio ganha um bot pra não ficar sem ninguém
+    guest.send({ t: 'team' });
+    await sleep(300);
+    const after = boss.room;
+    const sizes = [0, 1].map((t) => after.members.filter((m) => m[2] === t).length + after.bots[t]);
+    boss.send({ t: 'start' });
+    await sleep(500);
+    const heroes = [0, 1].map((t) => boss.units.filter((u) => u[1] === 0 && u[2] === t).length);
+    const ok = guestBlocked && start0 === '2 e 2' && emptied === '0 e 0' && added === 1 && sizes.every((n) => n >= 1) && heroes[0] === sizes[0] && heroes[1] === sizes[1];
+    say('bots da sala', ok ? `dono tira e põe (de ${start0} pra ${emptied}), convidado não mexe, partida saiu ${heroes[0]} x ${heroes[1]}` : `ERRADO: início ${start0}, sem bots ${emptied}, +1 deu ${added}, convidado barrado ${guestBlocked}, sala ${sizes.join(' x ')}, partida ${heroes.join(' x ')}`);
+    if (!ok) problems.push('pôr e tirar bots da sala não funcionou como esperado');
+    boss.ws.close();
+    guest.ws.close();
+  }
+
   for (const f of fakes) f.ws.close();
   await sleep(800);
   const gone = new Fake(50);

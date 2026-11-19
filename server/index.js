@@ -26,7 +26,7 @@ const TYPES = {
 
 // ---------- salas ----------
 // Cada sala tem um código de 4 letras. Ela começa no saguão (as pessoas entram, escolhem o time e o dono
-// ajusta a partida); quando o dono manda começar, a sala cria a simulação e todo mundo vai pra escolha de herói.
+// ajusta a partida e põe ou tira bots de cada time); quando o dono manda começar, a sala cria a simulação e todo mundo vai pra escolha de herói.
 // Acabou a partida, a sala volta pro saguão com as mesmas pessoas.
 
 const rooms = new Map();
@@ -45,6 +45,8 @@ class Room {
     this.size = clampSize(size);
     this.diff = DIFFS.includes(diff) ? diff : DIFFICULTY;
     this.members = new Set();
+    // vagas que o dono deixou sem bot em cada time; as outras vagas livres são de bots
+    this.closed = [0, 0];
     this.host = null;
     this.state = 'lobby';
     this.sim = null;
@@ -61,10 +63,20 @@ class Room {
     return n;
   }
 
+  bots(team) {
+    return Math.max(0, this.size - this.count(team) - this.closed[team]);
+  }
+
   // manda o estado da sala pra todo mundo (cada um recebe também quem ele é)
   announce() {
+    // gente entrando ocupa primeiro o lugar de um bot e depois as vagas fechadas; nenhum time fica sem ninguém
+    for (const t of [0, 1]) {
+      const n = this.count(t);
+      this.closed[t] = Math.max(0, Math.min(this.closed[t], this.size - Math.max(1, n)));
+    }
     const members = [...this.members].map((m) => [m.id, m.name, m.team]);
-    for (const m of this.members) m.queue.push({ e: 'room', code: this.code, you: m.id, host: this.host?.id || 0, state: this.state, size: this.size, diff: this.diff, members });
+    const bots = [this.bots(0), this.bots(1)];
+    for (const m of this.members) m.queue.push({ e: 'room', code: this.code, you: m.id, host: this.host?.id || 0, state: this.state, size: this.size, diff: this.diff, bots, members });
   }
 
   add(c, name) {
@@ -128,7 +140,7 @@ class Room {
 
   start() {
     if (this.state !== 'lobby') return;
-    this.sim = new Sim({ difficulty: this.diff, teamSize: this.size, readyDelay: 3, emit: (msg, opts) => this.route(msg, opts) });
+    this.sim = new Sim({ difficulty: this.diff, teamSize: this.size, teams: [0, 1].map((t) => this.count(t) + this.bots(t)), readyDelay: 3, emit: (msg, opts) => this.route(msg, opts) });
     this.state = 'match';
     this.stream.reset();
     this.acc = this.snapAcc = this.boardAcc = this.backT = 0;
@@ -167,6 +179,15 @@ class Room {
         const size = clampSize(msg.size ?? this.size);
         if (size >= this.count(0) && size >= this.count(1)) this.size = size;
         if (DIFFS.includes(msg.diff)) this.diff = msg.diff;
+        this.announce();
+        break;
+      }
+      case 'bot': {
+        // o dono tira (d < 0) ou põe (d > 0) um bot no time `tm`
+        const tm = msg.tm === 1 ? 1 : 0;
+        if (c !== this.host) break;
+        if (msg.d > 0 && this.closed[tm] > 0) this.closed[tm]--;
+        else if (msg.d < 0 && this.bots(tm) > 0) this.closed[tm]++;
         this.announce();
         break;
       }

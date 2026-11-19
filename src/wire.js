@@ -41,7 +41,7 @@ const EVENTS = {
   roster: { l: ['u', 'u', 's', 'u', 'i', 's*'] },
   board: { l: ['u', 'u', 'u', 'u', 'u', 'u', 's*', 'u', 'u', 'u'] },
   end: { w: 'i', next: 'n', t: 'u', k: 'u*' },
-  room: { code: 's', you: 'u', host: 'u', state: 's', size: 'u', diff: 's', members: ['u', 's', 'u'] },
+  room: { code: 's', you: 'u', host: 'u', state: 's', size: 'u', diff: 's', bots: 'u*', members: ['u', 's', 'u'] },
   full: {},
   noroom: {},
   busy: {},
@@ -67,6 +67,7 @@ const COMMANDS = {
   team: {},
   cfg: { size: 'n?', diff: 's?' },
   start: {},
+  bot: { tm: 'u', d: 'i' },
 };
 
 // quantas mensagens saíram/chegaram pelo caminho do JSON, por tipo (serve pra achar buraco na tabela)

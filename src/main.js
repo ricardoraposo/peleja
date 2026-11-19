@@ -107,7 +107,7 @@ function playSandbox() {
 
 // ---------- online: salas ----------
 // ONLINE abre a caixinha de criar sala ou entrar com código. Dentro da sala (saguão) cada um escolhe o time,
-// o dono ajusta tamanho e bots e manda começar; daí todo mundo vai pra escolha de herói.
+// o dono ajusta tamanho, põe ou tira bots de cada time e manda começar; daí todo mundo vai pra escolha de herói.
 
 const DIFF_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
 const inviteLink = (code) => `${location.origin}${location.pathname}?sala=${code}`;
@@ -153,7 +153,7 @@ function renderLobby(r) {
   const host = r.members.find((m) => m[0] === r.host);
   const amHost = r.you === r.host;
   $('lobby-code').textContent = r.code;
-  $('lobby-sub').textContent = amHost ? 'Você é o dono da sala. Chame a galera e comece quando quiser: os bots completam as vagas.' : `Esperando ${host ? host[1] : 'o dono da sala'} começar a partida.`;
+  $('lobby-sub').textContent = amHost ? 'Você é o dono da sala. Chame a galera, ponha ou tire bots de cada time e comece quando quiser.' : `Esperando ${host ? host[1] : 'o dono da sala'} começar a partida.`;
   $('lobby-link').value = inviteLink(r.code);
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   const warn = $('lobby-warn');
@@ -162,7 +162,11 @@ function renderLobby(r) {
   for (const t of [0, 1]) {
     const list = r.members.filter((m) => m[2] === t);
     const rows = list.map((m) => `<div class="lb-slot${m[0] === r.you ? ' me' : ''}"><b>${esc(m[1])}</b>${m[0] === r.host ? '<small>dono</small>' : ''}${m[0] === r.you ? '<small>você</small>' : ''}</div>`);
-    for (let i = list.length; i < r.size; i++) rows.push(`<div class="lb-slot bot"><b>Bot</b><small>${DIFF_NAMES[r.diff]}</small></div>`);
+    const bots = r.bots?.[t] ?? r.size - list.length;
+    // o último do time não sai: nenhum lado pode ficar vazio
+    const canDrop = amHost && list.length + bots > 1;
+    for (let i = 0; i < bots; i++) rows.push(`<div class="lb-slot bot"><b>Bot</b><small>${DIFF_NAMES[r.diff]}</small>${canDrop ? `<button class="lb-bot" data-tm="${t}" data-d="-1" title="Tirar este bot" aria-label="Tirar este bot">✕</button>` : ''}</div>`);
+    for (let i = list.length + bots; i < r.size; i++) rows.push(amHost ? `<button class="lb-slot open" data-tm="${t}" data-d="1">+ Adicionar bot</button>` : '<div class="lb-slot open">Vaga sem bot</div>');
     $(t === 0 ? 'lobby-blue' : 'lobby-red').innerHTML = rows.join('');
   }
   const otherFull = r.members.filter((m) => m[2] === 1 - mine[2]).length >= r.size;
@@ -364,6 +368,12 @@ $('lobby-copy').addEventListener('click', async () => {
   }
   $('lobby-copy').textContent = 'Copiado!';
   setTimeout(() => ($('lobby-copy').textContent = 'Copiar link'), 1500);
+});
+document.querySelector('.lobby-teams').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-d]');
+  if (!b) return;
+  game.send({ t: 'bot', tm: Number(b.dataset.tm), d: Number(b.dataset.d) });
+  playSound('click');
 });
 $('lobby-cfg').addEventListener('click', (e) => {
   const b = e.target.closest('button');
