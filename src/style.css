@@ -678,8 +678,8 @@ kbd {
 .st-ah i {
   background: #22d3ee;
 }
-.st-ls i {
-  background: #ef4444;
+.st-crit i {
+  background: #fde047;
 }
 
 #items {

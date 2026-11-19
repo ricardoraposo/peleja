@@ -35,7 +35,6 @@ export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
 const MINION = new Set(['melee', 'ranged', 'siege', 'super']);
 const r1 = (v) => Math.round(v * 10) / 10;
-const EXTRA_STATS = ['crit', 'pen', 'mpen', 'onhit', 'thorns', 'hsp', 'ten', 'sv'];
 const r2 = (v) => Math.round(v * 100) / 100;
 
 export function shuffle(a) {
@@ -60,7 +59,7 @@ class Unit {
     this.facing = team === 0 ? 0 : Math.PI;
     this.alive = true;
     this.hp = 1;
-    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, ls: 0, regen: 0 };
+    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, regen: 0 };
     this.atkCd = 0;
     this.windup = 0;
     this.target = null;
@@ -373,7 +372,7 @@ export class Sim {
       for (const d of structLayout(team)) {
         const s = new Unit(this.nextId++, d.kind, team, d.x, d.z, d.r);
         s.key = d.key;
-        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, ls: 0, regen: 0 };
+        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, crit: 0, regen: 0 };
         s.hp = d.hp;
         s.reqKeys = d.req;
         s.ramp = 0;
@@ -444,7 +443,6 @@ export class Sim {
     h.facing = h.team === 0 ? 0 : Math.PI;
     h.stunT = h.rootT = h.airT = h.castT = h.fearT = 0;
     this.endStasis(h);
-    h.hot = null;
     this.clearHeroState(h);
     h.slows = [];
     h.shields = [];
@@ -573,11 +571,10 @@ export class Sim {
       ms: d.ms,
       range: d.range,
       haste: 0,
-      ls: 0,
+      crit: 0,
       regen: d.regen + d.regenL * L,
     };
     let asBonus = 0;
-    for (const k of EXTRA_STATS) s[k] = 0;
     for (const id of h.items) {
       const it = itemStatsFor(h.heroId, id);
       if (it.hp) s.maxHp += it.hp;
@@ -588,14 +585,9 @@ export class Sim {
       if (it.as) asBonus += it.as;
       if (it.ms) s.ms += it.ms;
       if (it.haste) s.haste += it.haste;
-      if (it.ls) s.ls += it.ls;
-      if (it.regen) s.regen += it.regen;
-      for (const k of EXTRA_STATS) if (it[k]) s[k] += it[k];
+      if (it.crit) s.crit += it.crit;
     }
     s.crit = Math.min(1, s.crit);
-    s.pen = Math.min(0.6, s.pen);
-    s.mpen = Math.min(0.6, s.mpen);
-    s.ten = Math.min(0.6, s.ten);
     let msBonus = 0;
     for (const b of h.buffs) {
       if (b.ms) msBonus += b.ms;
@@ -631,7 +623,7 @@ export class Sim {
       ms: d.ms,
       range: d.range,
       haste: 0,
-      ls: 0,
+      crit: 0,
       regen: 0,
     };
   }
@@ -926,7 +918,7 @@ export class Sim {
   applySelf(target, src, ab) {
     if (ab.heal) this.heal(target, this.val(src, ab.heal, ab), src);
     if (ab.shield) {
-      target.shields.push({ amt: this.val(src, ab.shield, ab) * (1 + (src.stats.hsp || 0)), t: ab.shield.t || 3 });
+      target.shields.push({ amt: this.val(src, ab.shield, ab), t: ab.shield.t || 3 });
     }
     if (ab.buff) {
       const b = { ...ab.buff, t: ab.buff.t, src };
@@ -1037,11 +1029,10 @@ export class Sim {
   applyFx(t, fx, src, ox, oz) {
     if (!fx || !t.alive || t.isStructure || t.stasisT > 0) return;
     if (fx.slow) t.slows.push({ p: fx.slow[0], t: fx.slow[1] });
-    const firm = 1 - (t.stats?.ten || 0);
-    if (fx.stun) t.stunT = Math.max(t.stunT, fx.stun * firm);
-    if (fx.root) t.rootT = Math.max(t.rootT, fx.root * firm);
+    if (fx.stun) t.stunT = Math.max(t.stunT, fx.stun);
+    if (fx.root) t.rootT = Math.max(t.rootT, fx.root);
     if (fx.fear) {
-      t.fearT = Math.max(t.fearT, fx.fear * firm);
+      t.fearT = Math.max(t.fearT, fx.fear);
       t.fearX = ox ?? src?.x ?? t.x;
       t.fearZ = oz ?? src?.z ?? t.z;
     }
@@ -1089,8 +1080,6 @@ export class Sim {
       if (src && src.isHero && !this.minionsNear(t, src.team, TOWER.backdoorRange)) amount *= TOWER.backdoorMult;
     }
     let res = type === 'phys' ? t.stats.armor : type === 'magic' ? t.stats.mres : 0;
-    const pierce = type === 'phys' ? src?.stats?.pen : type === 'magic' ? src?.stats?.mpen : 0;
-    if (pierce) res *= 1 - pierce;
     if (type === 'phys' && t.shredT > 0) res *= 1 - t.shredP;
     amount *= 100 / (100 + Math.max(0, res));
     let left = amount;
@@ -1112,13 +1101,6 @@ export class Sim {
     if (src?.isHero || t.isHero || t.isStructure) {
       this.emit({ e: 'hit', v: t.id, a: src?.id || 0, d: Math.round(amount), k: DMG_TYPE[type] ?? 0, au: opts.auto ? 1 : 0, cr: opts.crit ? 1 : 0 });
     }
-    if (opts.auto && src?.stats.ls > 0) this.heal(src, amount * src.stats.ls, null, true);
-    if (!opts.auto && !opts.extra && src?.isHero && src.stats.sv > 0) this.heal(src, amount * src.stats.sv * (t.isHero ? 1 : 0.33), null, true);
-    if (opts.auto && src?.isHero) {
-      // efeitos de item no ataque básico: dano mágico extra de quem bate, espinhos de quem apanha
-      if (src.stats.onhit > 0 && t.alive && t.hp > 0) this.damage(t, src, src.stats.onhit, 'magic', { extra: true });
-      if (t.isHero && t.stats.thorns > 0 && src.alive) this.damage(src, t, t.stats.thorns + t.stats.armor * 0.1, 'magic', { extra: true });
-    }
     if (src?.isHero && t.isHero) this.callForHelp(src, t);
     if (t.hp <= 0) this.kill(t, src);
     return amount;
@@ -1126,7 +1108,6 @@ export class Sim {
 
   heal(t, amt, src, silent = false) {
     if (!t.alive || amt <= 0) return;
-    if (src?.isHero && src.stats.hsp > 0) amt *= 1 + src.stats.hsp;
     const before = t.hp;
     t.hp = Math.min(t.maxHp, t.hp + amt);
     const d = t.hp - before;
@@ -1242,7 +1223,6 @@ export class Sim {
     t.slows = [];
     t.stunT = t.rootT = t.airT = t.fearT = 0;
     this.endStasis(t);
-    t.hot = null;
     this.clearHeroState(t);
     t.disp = null;
     t.windup = 0;
@@ -1442,11 +1422,6 @@ export class Sim {
     if (u.stasisT > 0) {
       u.stasisT -= dt;
       if (u.stasisT <= 0) this.endStasis(u);
-    }
-    if (u.hot) {
-      this.heal(u, u.hot.rate * Math.min(dt, u.hot.t), null, true);
-      u.hot.t -= dt;
-      if (u.hot.t <= 0) u.hot = null;
     }
     if (u.itemCd) for (const id in u.itemCd) if (u.itemCd[id] > 0) u.itemCd[id] = Math.max(0, u.itemCd[id] - dt);
     if (u.disp) {
@@ -2077,11 +2052,8 @@ export class Sim {
       h.items.splice(i, 1);
       fresh.splice(i, 1);
     }
-    // o que some ao usar fica sempre no fim: assim beber uma garrafada não muda a tecla dos outros itens
-    let at = h.items.length;
-    if (!it.active?.consume) while (at > 0 && ITEMS[h.items[at - 1]].active?.consume) at--;
-    h.items.splice(at, 0, id);
-    fresh.splice(at, 0, p.cost + carried);
+    h.items.push(id);
+    fresh.push(p.cost + carried);
     h.freshAt = [h.x, h.z];
     this.calcStats(h);
     if (!h.isBot) this.emit({ e: 'bought', i: id }, { to: h.id });
@@ -2115,12 +2087,6 @@ export class Sim {
     const id = h.items[idx];
     const act = ITEMS[id]?.active;
     if (!act || h.itemCd[id] > 0) return false;
-    if (act.heal) {
-      // uma garrafada de cada vez, e não adianta beber de vida cheia
-      if (h.hot || h.hp >= h.maxHp) return false;
-      h.hot = { rate: act.heal / act.over, t: act.over };
-    }
-    if (act.shield) h.shields.push({ amt: (act.shield.b + (act.shield.l || 0) * h.level) * (1 + (h.stats.hsp || 0)), t: act.shield.t });
     if (act.stasis) {
       h.stasisT = act.stasis;
       h.statue = true;
@@ -2129,12 +2095,6 @@ export class Sim {
       h.order = { type: 'idle' };
     }
     if (act.cd) h.itemCd[id] = act.cd;
-    if (act.consume) {
-      const fresh = this.freshOf(h);
-      h.items.splice(idx, 1);
-      fresh.splice(idx, 1);
-      this.calcStats(h);
-    }
     this.emit({ e: 'use', id: h.id, i: id });
     return true;
   }
@@ -2279,7 +2239,7 @@ export class Sim {
       xp: Math.floor(h.xp),
       xn: xpToNext(h.level),
       lv: h.level,
-      s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.ls * 100)],
+      s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100)],
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
       fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,

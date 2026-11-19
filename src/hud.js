@@ -69,9 +69,9 @@ const $ = (id) => document.getElementById(id);
 // filtros da aba "todos": cada categoria junta os atributos que ela cobre
 const SHOP_CATS = [
   { id: 'all', name: 'Tudo', icon: S('<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>') },
-  { id: 'atk', name: 'Ataque', stats: ['atk', 'as', 'ls', 'crit', 'pen', 'onhit'], icon: ICONS.sword },
-  { id: 'pow', name: 'Poder', stats: ['pow', 'haste', 'mpen', 'sv', 'hsp'], icon: ICONS.gem },
-  { id: 'def', name: 'Defesa', stats: ['hp', 'armor', 'mres', 'regen', 'thorns', 'ten'], icon: ICONS.vest },
+  { id: 'atk', name: 'Ataque', stats: ['atk', 'as', 'crit'], icon: ICONS.sword },
+  { id: 'pow', name: 'Poder', stats: ['pow', 'haste'], icon: ICONS.gem },
+  { id: 'def', name: 'Defesa', stats: ['hp', 'armor', 'mres'], icon: ICONS.vest },
   { id: 'mov', name: 'Passo', stats: ['ms'], icon: ICONS.boots },
   { id: 'use', name: 'De usar', active: true, icon: ICONS.drop },
 ];
@@ -406,7 +406,7 @@ export class Hud {
       ['vel. ataque', s[4].toFixed(2), 'as'],
       ['passo', s[5].toFixed(1), 'ms'],
       ['aceleração', s[7], 'ah'],
-      ['roubo', s[8] + '%', 'ls'],
+      ['crítico', s[8] + '%', 'crit'],
     ]
       .map(([l, v, k]) => `<div class="st st-${k}" title="${l}"><i></i>${v}</div>`)
       .join('');
@@ -547,9 +547,6 @@ export class Hud {
     const alt = BUILDS_ALT[h.role];
     this.shopBuild = build;
     const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id)))];
-    // o que some ao usar (garrafada...) tem seção própria no fim das duas abas, igual pra todas as classes
-    const consumables = ITEM_ORDER.filter((id) => ITEMS[id].active?.consume);
-    const consumRow = `<h3>Consumíveis</h3><div class="tiles">${consumables.map((id) => this.shopTile(id)).join('')}</div>`;
     const aff = affinityOf(heroId);
     const row = (ids) => `<div class="tiles">${ids.map((id, i) => this.shopTile(id).replace('<span class="tile-icon">', `<span class="tile-n">${i + 1}</span><span class="tile-icon">`)).join('')}</div>`;
     $('shop-rec').innerHTML =
@@ -557,10 +554,9 @@ export class Hud {
       `<p class="rec-aff"><b>★ Afinidade:</b> itens rendem +${Math.round(AFFINITY_BONUS * 100)}% de ${aff.map((k) => esc(STAT_LABEL[k].split(' (')[0])).join(', ')} em você.</p>` +
       `<h3>Comece por</h3><div class="tiles">${start.map((id) => this.shopTile(id)).join('')}</div>` +
       `<h3>Build principal, na ordem</h3>${row(build)}` +
-      (alt ? `<h3>Outro caminho · ${esc(alt.name)}</h3>${row(alt.items)}` : '') +
-      consumRow;
+      (alt ? `<h3>Outro caminho · ${esc(alt.name)}</h3>${row(alt.items)}` : '');
     const tiers = ['Básicos', 'Intermediários', 'Grandes'];
-    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t && !consumables.includes(id)).map((id) => this.shopTile(id)).join('')}</div>`).join('') + consumRow;
+    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('');
     this.shopKey = '';
   }
 
@@ -748,26 +744,25 @@ export class Hud {
 }
 
 const ITEM_COLORS = {
-  garrafada: '#f87171',
-  broquel: '#cbd5e1',
   carranca: '#e8c170',
-  botas: '#a3a3a3',
-  lamina: '#fb923c',
-  arco: '#facc15',
-  cristal: '#818cf8',
-  colete: '#a8a29e',
-  capa: '#c084fc',
-  pedra: '#f87171',
-  facao: '#ef4444',
-  vento: '#fde047',
-  lanca: '#f97316',
-  tiara: '#a78bfa',
-  gema: '#8b5cf6',
+  alpercata: '#a3a3a3',
+  facao: '#fb923c',
+  zarabatana: '#facc15',
+  raio: '#818cf8',
+  tatu: '#a8a29e',
+  vitoria: '#4ade80',
+  mandioca: '#f87171',
+  lobisomem: '#ef4444',
+  caipora: '#fde047',
+  icamiabas: '#f97316',
+  cocar: '#a78bfa',
+  maedouro: '#f59e0b',
+  tupa: '#8b5cf6',
   jabuti: '#84cc16',
-  lua: '#60a5fa',
-  fonte: '#22d3ee',
+  jaci: '#60a5fa',
+  boibumba: '#f43f5e',
 };
-const STAT_COLOR = { atk: '#fb923c', as: '#facc15', crit: '#fde047', ls: '#ef4444', pen: '#f97316', onhit: '#fbbf24', pow: '#818cf8', mpen: '#a78bfa', sv: '#c084fc', haste: '#38bdf8', hsp: '#22d3ee', regen: '#34d399', hp: '#f87171', armor: '#84cc16', mres: '#60a5fa', thorns: '#65a30d', ten: '#2dd4bf', ms: '#a3a3a3' };
+const STAT_COLOR = { atk: '#fb923c', as: '#facc15', crit: '#fde047', pow: '#818cf8', haste: '#38bdf8', hp: '#f87171', armor: '#84cc16', mres: '#60a5fa', ms: '#a3a3a3' };
 // a cor vem do primeiro atributo; nas botas melhoradas o passo é comum a todas, então vale o atributo que cada uma acrescenta
 export const itemColor = (id) => {
   if (ITEM_COLORS[id]) return ITEM_COLORS[id];
