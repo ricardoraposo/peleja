@@ -792,36 +792,61 @@ export class Sim {
 
   // Projéteis teleguiados de habilidade: um por inimigo próximo, heróis primeiro.
   // Se sobrar projétil, ele repete num alvo já escolhido com dano reduzido (bolts.repeat).
-  fireBolts(h, ab, slot, color) {
-    const b = ab.bolts;
-    const near = [];
+queueBolts(h, ab, slot, color) {
+    (h.bolts ||= []).push({ ab, slot, color, left: ab.bolts.n, wait: ab.bolts.wait || 0, gapT: 0, hit: new Set() });
+    this.tickBolts(h, 0);
+  }
+
+  // solta um projétil por vez; sem ninguém ao alcance, espera um pouco (wait) antes de perder os que restam
+  tickBolts(h, dt) {
+    for (const q of h.bolts) {
+      if (q.gapT > 0) {
+        q.gapT -= dt;
+        continue;
+      }
+      if (this.fireBolt(h, q)) {
+        q.left--;
+        q.gapT = q.ab.bolts.gap ?? 0.18;
+      } else if ((q.wait -= dt) <= 0) q.left = 0;
+    }
+    h.bolts = h.bolts.filter((q) => q.left > 0);
+    if (!h.bolts.length) h.bolts = null;
+  }
+
+  // cada projétil procura primeiro quem ainda não levou (herói antes de tropa); repetir no mesmo alvo fere menos
+  fireBolt(h, q) {
+    const b = q.ab.bolts;
+    let best = null;
+    let bestS = Infinity;
     for (const u of this.units) {
-      if (!this.abilityTargetable(h, u, ab)) continue;
+      if (!this.abilityTargetable(h, u, q.ab)) continue;
       const d = edgeDist(h, u);
-      if (d <= b.range) near.push({ u, score: d - (u.isHero ? 100 : 0) });
+      if (d > b.range) continue;
+      const score = d - (u.isHero ? 100 : 0) + (q.hit.has(u.id) ? 1000 : 0);
+      if (score < bestS) {
+        bestS = score;
+        best = u;
+      }
     }
-    if (!near.length) return false;
-    near.sort((a, c) => a.score - c.score);
-    const dmg = this.val(h, b.dmg, ab);
-    for (let i = 0; i < b.n; i++) {
-      const again = i >= near.length;
-      this.spawnProj({
-        owner: h,
-        team: h.team,
-        x: h.x,
-        z: h.z,
-        homing: near[i % near.length].u,
-        skill: true,
-        speed: b.speed,
-        dmg: again ? dmg * (b.repeat ?? 1) : dmg,
-        type: b.dmg.type || 'magic',
-        color,
-        slot,
-        kind: 's',
-        size: 0.3,
-        width: 0.7,
-      });
-    }
+    if (!best) return false;
+    const again = q.hit.has(best.id);
+    q.hit.add(best.id);
+    this.spawnProj({
+      owner: h,
+      team: h.team,
+      x: h.x,
+      z: h.z,
+      homing: best,
+      skill: true,
+      speed: b.speed,
+      dmg: this.val(h, b.dmg, q.ab) * (again ? (b.repeat ?? 1) : 1),
+      type: b.dmg.type || 'magic',
+      color: q.color,
+      slot: q.slot,
+      kind: 's',
+      size: 0.3,
+      width: 0.7,
+    });
     return true;
   }
 
@@ -909,6 +934,7 @@ export class Sim {
     let pz = h.z + dz * 0.6;
     let grown = 0;
     let second = false;
+    let leg = 0;
     if (ab.kind === 'proj' && ab.hover) {
       // segundo lançamento: o projétil que estava parado no ar sai de onde está pra onde o mouse aponta
       const o = h.recasting ? h.orb : null;
@@ -921,11 +947,17 @@ export class Sim {
         grown = o.traveled;
         px = o.x;
         pz = o.z;
-        const ld = Math.hypot(x - px, z - pz);
+        // o destino é onde o mouse aponta, limitado ao alcance medido de onde o herói está agora
+        const hd = Math.hypot(x - h.x, z - h.z);
+        const k = hd > ab.hover.reach ? ab.hover.reach / hd : 1;
+        const tx = h.x + (x - h.x) * k;
+        const tz = h.z + (z - h.z) * k;
+        const ld = Math.hypot(tx - px, tz - pz);
         if (ld > 0.05) {
-          dx = (x - px) / ld;
-          dz = (z - pz) / ld;
+          dx = (tx - px) / ld;
+          dz = (tz - pz) / ld;
         }
+        leg = Math.max(1, ld);
       }
     }
     switch (ab.kind) {
@@ -938,7 +970,7 @@ export class Sim {
           dx,
           dz,
           speed: second ? ab.hover.speed || ab.speed : ab.speed,
-          range: second ? ab.hover.range : ab.range,
+          range: second ? leg : ab.range,
           hover: second ? 0 : ab.hover?.t || 0,
           grow: ab.grow || null,
           grown,
@@ -1003,7 +1035,7 @@ export class Sim {
         h.z = tz;
         this.resolveStatic(h);
         this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color, fl: ab.flash ? 1 : 0 });
-        if (ab.bolts) this.fireBolts(h, ab, slot, color);
+        if (ab.bolts) this.queueBolts(h, ab, slot, color);
         // pulo de ida e volta: depois de um instante o herói reaparece de onde saiu
         if (ab.ret) h.goBack = { x: fx0, z: fz0, t: ab.ret, c: color };
         if (ab.origin) this.addDelayed(h, fx0, fz0, ab.origin.radius, ab.origin.delay, this.val(h, ab.origin.dmg, ab), ab.origin.dmg.type, ab.origin.fx, color);
@@ -1027,7 +1059,7 @@ export class Sim {
         if (ab.furyGain) this.addFury(h, ab.furyGain);
         if (ab.steal) this.castStolen(h, ab, slot, x, z);
         // os projéteis esperam um pouco por alguém ao alcance antes de se perderem
-        if (ab.bolts && !this.fireBolts(h, ab, slot, color)) h.bolts = { ab, slot, color, t: ab.bolts.wait || 0 };
+        if (ab.bolts) this.queueBolts(h, ab, slot, color);
         this.emit({ e: 'buff', id: h.id, s: slot, c: color });
         if (ab.burst) this.hitArea(h, h.x, h.z, ab.burst.radius, this.val(h, ab.burst.dmg, ab), ab.burst.dmg.type, ab.burst.fx, color);
         break;
@@ -1158,7 +1190,7 @@ export class Sim {
       if (ds.tgt) this.targetHit(h, ab, ds.tgt);
       if (ab.end) this.hitArea(h, h.x, h.z, ab.end.radius, this.val(h, ab.end.dmg, ab), ab.end.dmg.type, ab.end.fx, ds.color);
       if (ab.buff) this.applySelf(h, h, { buff: ab.buff });
-      if (ab.bolts) this.fireBolts(h, ab, this.slotOf(h, ab), ds.color);
+      if (ab.bolts) this.queueBolts(h, ab, this.slotOf(h, ab), ds.color);
       if (ds.tgt && this.attackable(h, ds.tgt) && h.order.type === 'idle') this.orderAttack(h, ds.tgt);
     }
   }
@@ -1617,10 +1649,7 @@ export class Sim {
         this.emit({ e: 'blink', id: u.id, a: from, b: [r1(u.x), r1(u.z)], c: g.c, fl: 0 });
       }
     }
-    if (u.bolts) {
-      if (this.fireBolts(u, u.bolts.ab, u.bolts.slot, u.bolts.color)) u.bolts = null;
-      else if ((u.bolts.t -= dt) <= 0) u.bolts = null;
-    }
+    if (u.bolts) this.tickBolts(u, dt);
     if (u.charge && (u.charge.t -= dt) <= 0) this.endCharges(u);
     if (u.stasisT > 0) {
       u.stasisT -= dt;

@@ -164,7 +164,7 @@ export function abilityTip(ab, slot, ctx = null) {
   }
   if (ab.bolts?.repeat < 1) notes.push(`repetir o alvo causa ${Math.round(ab.bolts.repeat * 100)}% do dano`);
   if (ab.grow) notes.push(`+${Math.round(ab.grow.per * 100)}% de dano a cada passo voado, até +${Math.round(ab.grow.max * 100)}%`);
-  if (ab.hover) notes.push(`se não acertar, para no ar por ${ab.hover.t} s e dá pra lançar de novo`);
+  if (ab.hover) notes.push(`se não acertar, para no ar por ${ab.hover.t} s e dá pra rebater até ${ab.hover.reach} de alcance de onde você estiver`);
   if (ab.trap) notes.push(`se errar, vira armadilha no chão por ${ab.trap.dur} s`);
   if (ab.steal) notes.push(`copia o feitiço que um herói inimigo usou nos últimos ${ab.steal.window} s; o ícone mostra qual`);
   if (ab.ret) notes.push(`volta pro ponto de partida depois de ${ab.ret} s`);
