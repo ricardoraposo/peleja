@@ -34,6 +34,9 @@ export const MAP = {
 export const MATCH = {
   teamSize: 5,
   draftTime: 30,
+  // herói sorteado: ninguém escolhe, só dá pra sortear de novo `rerolls` vezes por partida
+  randomPick: true,
+  rerolls: 2,
   startLevel: 3,
   maxLevel: 18,
   startGold: 1400,

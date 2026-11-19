@@ -1470,6 +1470,10 @@ input[type='range'] {
   cursor: default;
 }
 
+.pick.fixed:not(.on) {
+  opacity: 0.55;
+}
+
 .pick.taken {
   opacity: 0.4;
   filter: grayscale(0.6);

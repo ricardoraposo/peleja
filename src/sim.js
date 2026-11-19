@@ -396,6 +396,7 @@ export class Sim {
       mine.forEach((h, i) => {
         h.heroId = picks[i % picks.length];
         h.ready = false;
+        h.rerolls = MATCH.rerolls;
         this.resetHero(h);
       });
     }
@@ -524,7 +525,13 @@ export class Sim {
     this.emit({ e: 'roster', l: this.roster() });
   }
 
+  rerollsLeft(h) {
+    return MATCH.randomPick ? (h.rerolls ?? MATCH.rerolls) : 99;
+  }
+
   pickRandom(h) {
+    if (this.phase !== 'draft' || h.ready || this.rerollsLeft(h) <= 0) return;
+    if (MATCH.randomPick) h.rerolls = this.rerollsLeft(h) - 1;
     const free = HERO_ORDER.filter((id) => id !== h.heroId && !this.heroes.some((x) => x !== h && x.team === h.team && !x.isBot && x.heroId === id));
     if (free.length) this.pick(h, free[Math.floor(Math.random() * free.length)]);
   }
@@ -2517,7 +2524,7 @@ queueBolts(h, ab, slot, color) {
         this.useItem(h, Number(msg.n) | 0);
         break;
       case 'pick':
-        this.pick(h, String(msg.h));
+        if (!MATCH.randomPick) this.pick(h, String(msg.h));
         break;
       case 'rr':
         this.pickRandom(h);
@@ -2605,6 +2612,7 @@ queueBolts(h, ab, slot, color) {
       s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100)],
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
+      rr: this.phase === 'draft' ? this.rerollsLeft(h) : undefined,
       ch: h.charge ? h.charge.left : 0,
       st: h.def?.abilities?.w?.steal ? this.stolenFor(h, h.def.abilities.w)?.id || '' : undefined,
       fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,

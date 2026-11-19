@@ -44,7 +44,9 @@ Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E
 | **Uirapuru** | Cantador (suporte) | À distância |
 | **Zé Pilintra** | Malandro (suporte) | À distância |
 
-Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
+O herói é **sorteado** no começo de cada partida: ninguém escolhe, mas dá pra sortear de novo duas vezes.
+
+Antes da partida você escolhe dois **feitiços** pras teclas D e F:
 
 | Feitiço | O que faz |
 | --- | --- |

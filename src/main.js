@@ -1,5 +1,5 @@
 import { initAudio, playSound, setVolume } from './audio.js';
-import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS, MAP } from './config.js';
+import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS, MAP, MATCH } from './config.js';
 import { Game } from './game.js';
 import { esc, heroCard, setKeyLabel, spellPicker } from './hud.js';
 import { ACTIONS, DEFAULT_KEYS, canBind, cleanKeys, keyName } from './keys.js';
@@ -226,7 +226,7 @@ function renderDraft() {
   const myHero = HERO_ORDER[game.roster.get(game.myId)?.heroIdx] || me.heroId;
   const locked = !!st?.rd;
   const spells = game.mySpells || DEFAULT_SPELLS;
-  const key = myHero + '|' + allies.map(([, r]) => r.heroIdx + r.name + (r.isBot ? 1 : 0)).join(',') + '|' + (locked ? 1 : 0) + '|' + spells.d + spells.f + draftSlot;
+  const key = myHero + '|' + allies.map(([, r]) => r.heroIdx + r.name + (r.isBot ? 1 : 0)).join(',') + '|' + (locked ? 1 : 0) + '|' + spells.d + spells.f + draftSlot + '|' + (st?.rr ?? '');
   if (key === draftKey) return;
   draftKey = key;
   $('draft-grid').innerHTML = HERO_ORDER.map((id, idx) => {
@@ -235,8 +235,8 @@ function renderDraft() {
     const mine = id === myHero;
     const taken = !!holder && !holder.isBot;
     const note = mine ? 'você' : holder ? (holder.isBot ? 'com bot' : esc(holder.name)) : h.title;
-    const tip = taken ? 'Já escolhido por um aliado' : holder ? 'Está com um bot: se você pegar, ele fica com o seu' : h.title;
-    return `<button class="pick${mine ? ' on' : ''}${taken ? ' taken' : ''}" data-hero="${id}" style="--c:${h.color}" title="${tip}"${taken || locked ? ' disabled' : ''}><span class="pick-badge">${h.name[0]}</span><b>${h.name}</b><small>${note}</small></button>`;
+    const tip = MATCH.randomPick ? h.title : taken ? 'Já escolhido por um aliado' : holder ? 'Está com um bot: se você pegar, ele fica com o seu' : h.title;
+    return `<button class="pick${mine ? ' on' : ''}${taken ? ' taken' : ''}${MATCH.randomPick ? ' fixed' : ''}" data-hero="${id}" style="--c:${h.color}" title="${tip}"${taken || locked || MATCH.randomPick ? ' disabled' : ''}><span class="pick-badge">${h.name[0]}</span><b>${h.name}</b><small>${note}</small></button>`;
   }).join('');
   $('draft-me').innerHTML = heroCard(myHero, true);
   $('draft-spells').innerHTML = spellPicker(spells, draftSlot);
@@ -246,7 +246,13 @@ function renderDraft() {
       return `<div class="ally" style="--c:${h.color}"><span class="b-hero">${h.name[0]}</span><div><b>${h.name}</b><small>${esc(r.name)}${r.isBot ? ' · bot' : ''}</small></div></div>`;
     })
     .join('');
-  $('reroll').disabled = locked;
+  const rolls = st?.rr ?? MATCH.rerolls;
+  $('reroll').disabled = locked || (MATCH.randomPick && rolls <= 0);
+  if (MATCH.randomPick) {
+    $('reroll').textContent = rolls > 0 ? `Sortear de novo (${rolls})` : 'Sem sorteios';
+    document.querySelector('#draft .draft-sub').textContent = `Seu herói é sorteado. Dá pra sortear de novo ${MATCH.rerolls} vezes por partida.`;
+    document.querySelector('#draft h2, #draft .draft-title').textContent = 'SEU HERÓI';
+  }
   $('ready').disabled = locked;
   $('ready').textContent = locked ? 'ESPERANDO...' : 'PRONTO!';
   $('draft').style.setProperty('--team', TEAMS[game.myTeam].color);
