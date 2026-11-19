@@ -37,13 +37,13 @@ Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E
 | **Iara** | Suporte | À distância |
 | **Boitatá** | Mago | À distância |
 | **Saci** | Duelista | Corpo a corpo |
-| **Cuca** | Bruxa-jacaré (lutadora com Fúria) | Corpo a corpo |
-| **Curupira** | Mago de fogo | À distância |
-| **Boto** | Encantador | À distância |
-| **Caipora** | Traquina | À distância |
-| **Fulozinha** | Pegadora (suporte) | À distância |
-| **Uirapuru** | Cantador (suporte) | À distância |
-| **Zé Pilintra** | Malandro (suporte) | À distância |
+| **Cuca** | Lutadora | Corpo a corpo |
+| **Curupira** | Mago | À distância |
+| **Boto** | Mago | À distância |
+| **Caipora** | Maga | À distância |
+| **Fulozinha** | Suporte | À distância |
+| **Uirapuru** | Suporte | À distância |
+| **Zé Pilintra** | Suporte | À distância |
 
 O herói é **sorteado** no começo de cada partida: ninguém escolhe, mas dá pra sortear de novo duas vezes.
 
