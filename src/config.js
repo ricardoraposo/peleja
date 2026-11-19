@@ -324,20 +324,20 @@ export const HEROES = {
       r: { name: 'Canto do Uirapuru', icon: 'bird', kind: 'proj', cd: 85, cast: 0.35, range: 14, speed: 18, width: 4, pierce: true, dmg: { b: 120, l: 24, ap: 0.5, type: 'magic' }, fx: { stun: 1.3 }, color: '#ef4444', desc: 'O canto que faz a mata inteira parar pra ouvir: uma onda larga que atordoa todos os inimigos que atravessa.' },
     },
   },
-  pastoreio: {
-    name: 'Negrinho do Pastoreio',
-    title: 'Protetor',
+  pilintra: {
+    name: 'Zé Pilintra',
+    title: 'Malandro',
     role: 'suporte',
-    color: '#fde68a',
-    look: { weapon: 'candle', hat: 'straw', scale: 0.86, body: '#f8fafc', skin: '#4a2f20' },
+    color: '#f1f5f9',
+    look: { weapon: 'cane', hat: 'panama', extra: 'tie', suit: '#f8fafc', skin: '#6b4423' },
     ranged: true,
     skillOrder: ['w', 'e', 'q'],
     stats: { hp: 550, hpL: 90, atk: 51, atkL: 2.7, armor: 25, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.02, ms: 6.15, range: 7.8, regen: 1.8, regenL: 0.17 },
     abilities: {
-      q: { name: 'Toco de Vela', icon: 'candle', kind: 'zone', cd: 9, cast: 0.2, range: 10, radius: 3, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.12, type: 'magic' }, fx: { slow: [0.35, 0.8] }, color: '#fbbf24', desc: 'Acende um toco de vela no chão: a luz fere aos poucos e deixa lentos os inimigos dentro dela.' },
-      w: { name: 'Bênção da Madrinha', icon: 'bless', kind: 'ally', cd: 11, cast: 0.1, range: 10, radius: 2.6, shield: { b: 60, l: 18, ap: 0.45, t: 3 }, buff: { t: 3, ms: 0.2 }, color: '#fef3c7', desc: 'Pede proteção pra um aliado: ele ganha um escudo forte e anda mais rápido.' },
-      e: { name: 'Estouro', icon: 'hoof', kind: 'nova', cd: 12, cast: 0.15, radius: 4.2, dmg: { b: 45, l: 12, ap: 0.35, type: 'magic' }, fx: { knockback: 4.5, slow: [0.3, 1.5] }, color: '#fde68a', desc: 'Bate o pé e o chão treme: empurra pra longe e deixa lentos os inimigos em volta.' },
-      r: { name: 'Tropilha', icon: 'herd', kind: 'proj', cd: 80, cast: 0.3, range: 18, speed: 20, width: 4, pierce: true, dmg: { b: 130, l: 26, ap: 0.55, type: 'magic' }, fx: { knockup: 1 }, color: '#fbbf24', desc: 'Chama a tropilha de cavalos, que passa em disparada jogando pro alto todos os inimigos no caminho.' },
+      q: { name: 'Vela Acesa', icon: 'candle', kind: 'zone', cd: 9, cast: 0.2, range: 10, radius: 3, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.12, type: 'magic' }, fx: { slow: [0.35, 0.8] }, color: '#fbbf24', desc: 'Acende uma vela no chão: a luz fere aos poucos e deixa lentos os inimigos dentro dela.' },
+      w: { name: 'Corpo Fechado', icon: 'bless', kind: 'ally', cd: 11, cast: 0.1, range: 10, radius: 2.6, shield: { b: 60, l: 18, ap: 0.45, t: 3 }, buff: { t: 3, ms: 0.2 }, color: '#fecaca', desc: 'Fecha o corpo de um aliado: ele ganha um escudo forte e anda mais rápido.' },
+      e: { name: 'Rasteira', icon: 'kick', kind: 'nova', cd: 12, cast: 0.15, radius: 4.2, dmg: { b: 45, l: 12, ap: 0.35, type: 'magic' }, fx: { knockback: 4.5, slow: [0.3, 1.5] }, color: '#f1f5f9', desc: 'Gira numa rasteira: empurra pra longe e deixa lentos os inimigos em volta.' },
+      r: { name: 'Cartas na Mesa', icon: 'cards', kind: 'proj', cd: 80, cast: 0.3, range: 18, speed: 20, width: 4, pierce: true, dmg: { b: 130, l: 26, ap: 0.55, type: 'magic' }, fx: { knockup: 1 }, color: '#dc2626', desc: 'Abre o baralho num leque largo de cartas que voa em frente e joga pro alto todos os inimigos no caminho.' },
     },
   },
   boto: {
@@ -357,7 +357,7 @@ export const HEROES = {
   },
 };
 
-export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'pastoreio'];
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'pilintra'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).

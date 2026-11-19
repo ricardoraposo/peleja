@@ -201,21 +201,28 @@ export class Effects {
         }
         break;
       }
-      case 'herd': {
-        // tropilha: cavalos lado a lado em disparada
+      case 'card': {
+        // uma carta de baralho girando
+        const k = Math.max(0.7, sc);
+        const spin = new THREE.Group();
+        add(BOX, shared('#ffffff'), 0.34 * k, 0.03 * k, 0.24 * k, 0, 0, 0, spin);
+        add(BOX, shared('#dc2626'), 0.12 * k, 0.04 * k, 0.1 * k, 0, 0, 0, spin);
+        g.add(spin);
+        g.userData.spin = spin;
+        g.userData.spinAxis = 'y';
+        break;
+      }
+      case 'cards': {
+        // leque de cartas aberto, da largura da habilidade, vermelhas e pretas alternadas
         const half = Math.max(0.8, width * 0.5);
-        const coats = ['#7c4a21', '#f8fafc', '#3f2a14', '#b45309'];
-        for (let i = 0; i < 4; i++) {
-          const z = (i / 3 - 0.5) * 2 * half * 0.85;
-          const x = (i % 2) * -0.7;
-          const coat = shared(coats[i]);
-          add(BOX, coat, 1.1, 0.5, 0.42, x, -0.35, z);
-          add(BOX, coat, 0.3, 0.6, 0.3, x + 0.6, 0.05, z).rotation.z = -0.5;
-          add(BOX, coat, 0.42, 0.24, 0.26, x + 0.86, 0.3, z);
-          add(BOX, shared('#1c1917'), 0.5, 0.12, 0.1, x - 0.7, -0.2, z);
-          for (const lx of [-0.4, 0.4]) add(BOX, coat, 0.12, 0.5, 0.12, x + lx, -0.8, z);
+        for (let i = 0; i < 9; i++) {
+          const t = i / 8 - 0.5;
+          const card = add(BOX, shared('#ffffff'), 0.5, 0.75, 0.05, -Math.abs(t) * 1.4, 0, t * 2 * half * 0.9);
+          card.rotation.y = Math.PI / 2 + t * 0.9;
+          const pip = add(BOX, shared(i % 2 ? '#111827' : '#dc2626'), 0.2, 0.26, 0.07, -Math.abs(t) * 1.4, 0, t * 2 * half * 0.9);
+          pip.rotation.y = card.rotation.y;
         }
-        g.userData.pulse = add(SPHERE, shared(color, 0.14, true), 1.2, 0.5, half);
+        g.userData.pulse = add(SPHERE, shared(color, 0.12, true), 1.1, 0.5, half);
         break;
       }
       case 'braid': {

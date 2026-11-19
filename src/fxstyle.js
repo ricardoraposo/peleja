@@ -16,7 +16,7 @@ export const ELEMENTS = {
   ember: { cols: ['#ff3d00', '#ffb020', '#ffe08a', '#ff7a1a', '#7c2d12'], g: -4.5, up: 2.4 },
   firefly: { cols: ['#e879f9', '#d9f99d', '#ffffff', '#a3e635'], g: -1.5, up: 1.6 },
   song: { cols: ['#ef4444', '#fde68a', '#ffffff', '#fb923c'], g: -2, up: 2 },
-  candle: { cols: ['#fbbf24', '#fef3c7', '#ffffff', '#f59e0b'], g: -3, up: 2 },
+  malandro: { cols: ['#ffffff', '#dc2626', '#fbbf24', '#f1f5f9'], g: 6, up: 3.5 },
   rose: { cols: ['#ff8fab', '#ffe4ec', '#ffffff', '#7dd3fc'], g: 9, up: 4.5 },
 };
 
@@ -82,10 +82,10 @@ export const HERO_FX = {
     proj: { q: 'note', r: 'song' },
     snd: { shoot: 'bubble', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
   },
-  pastoreio: {
-    el: 'candle',
-    auto: 'ember',
-    proj: { r: 'herd' },
+  pilintra: {
+    el: 'malandro',
+    auto: 'card',
+    proj: { r: 'cards' },
     snd: { shoot: 'bow', hit: 'thunk', cast: 'rustle', boom: 'bash' },
   },
   boto: {

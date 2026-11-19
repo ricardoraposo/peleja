@@ -95,15 +95,13 @@ function weapon(kind, M, color) {
       arrow.position.set(0, ny, 0);
     };
     g.userData.setPull(0);
-  } else if (kind === 'candle') {
-    // toco de vela aceso
-    g.add(part(mat('#fef3c7'), 0.09, 0.09, 0.34, 0, 0, 0.12));
-    const outer = part(glowMat(color, 0.9), 0.13, 0.13, 0.24, 0, 0, 0.42, OCTA);
-    const inner = part(glowMat('#ffffff', 0.95), 0.06, 0.06, 0.12, 0, 0, 0.4, OCTA);
-    outer.castShadow = inner.castShadow = false;
-    g.add(outer, inner);
-    g.userData.orb = outer;
-    g.userData.flame = inner;
+  } else if (kind === 'cane') {
+    // bengala escura com castão dourado
+    g.add(part(mat('#1c1917'), 0.06, 0.06, 0.95, 0, 0, 0.3));
+    const knob = part(glowMat('#fbbf24', 0.95), 0.1, 0.1, 0.1, 0, 0, -0.2, SPHERE);
+    knob.castShadow = false;
+    g.add(knob);
+    g.userData.orb = knob;
   } else if (kind === 'stingers') {
     g.add(part(M.dark, 0.1, 0.1, 0.16, 0, 0, 0.02));
     g.add(part(steel, 0.1, 0.04, 0.56, 0, 0, 0.36));
@@ -236,12 +234,12 @@ function hat(kind, M, color) {
     for (let i = 0; i < 4; i++) g.add(part(mat(i % 2 ? '#fbbf24' : color), 0.1, 0.4 - i * 0.06, 0.16, 0, 0.5 - i * 0.03, 0.14 - i * 0.14));
     g.add(part(mat('#f59e0b'), 0.16, 0.12, 0.3, 0, 0.02, 0.36));
     g.add(part(mat('#1c1917'), 0.5, 0.3, 0.1, 0, 0.1, -0.26));
-  } else if (kind === 'straw') {
-    // chapéu de palha de aba larga com uma fita na cor do herói
-    const straw = mat('#d6b36a');
-    const brim = part(straw, 0.62, 0.05, 0.62, 0, 0.3, 0, CYL);
-    const top = part(straw, 0.32, 0.2, 0.32, 0, 0.42, 0, CYL);
-    const band = part(mat('#b91c1c'), 0.34, 0.07, 0.34, 0, 0.36, 0, CYL);
+  } else if (kind === 'panama') {
+    // chapéu panamá branco de aba larga, com a fita vermelha
+    const white = mat('#f8fafc');
+    const brim = part(white, 0.6, 0.05, 0.6, 0, 0.3, 0, CYL);
+    const top = part(white, 0.33, 0.22, 0.33, 0, 0.43, 0, CYL);
+    const band = part(mat('#dc2626'), 0.35, 0.08, 0.35, 0, 0.36, 0, CYL);
     g.add(brim, top, band);
   } else if (kind === 'braids') {
     // cabeleira preta comprida até a cintura, duas tranças grossas e uma flor na cor do herói
@@ -868,7 +866,7 @@ STYLES.pearl = {
 // coquinho na mão: os mesmos gestos (arremesso por baixo, rodopio e o sopro com a mão na boca)
 STYLES.coco = STYLES.pearl;
 STYLES.braid = STYLES.pearl;
-STYLES.candle = STYLES.torch;
+STYLES.cane = STYLES.torch;
 
 // poses genéricas (feitiços de todo mundo e o que um estilo não definir)
 const GENERIC = {
@@ -1127,6 +1125,12 @@ export class HeroModel {
       this.torso.add(band);
       for (const arm of [this.armR, this.armL]) arm.add(part(leaf, 0.18, 0.08, 0.18, 0, -0.3, 0));
       this.torso.add(part(mat('#b91c1c'), 0.06, 0.2, 0.06, 0.12, 0.6, 0.18));
+    } else if (extra === 'tie') {
+      // gravata e lenço vermelhos no terno branco, sapato preto
+      const red = mat('#dc2626');
+      this.torso.add(part(red, 0.1, 0.42, 0.05, 0, 0.3, 0.19));
+      this.torso.add(part(red, 0.14, 0.1, 0.06, 0, 0.52, 0.19));
+      this.torso.add(part(red, 0.1, 0.06, 0.05, -0.15, 0.42, 0.19));
     } else if (extra === 'boar') {
       // saiote de palha, colar e o porquinho-do-mato que anda do lado dela
       const straw = mat('#d6b36a');
