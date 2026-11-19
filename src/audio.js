@@ -310,6 +310,38 @@ export function playSound(name, pos = null, gain = 1) {
     case 'gust': // rajada de vento
       noiseBurst(d, t, 0.45, 600, 1.2, 'bandpass', 0.6, 0.12).frequency.exponentialRampToValueAtTime(2000, t + 0.4);
       break;
+    case 'chomp':
+      noiseBurst(d, t, 0.06, 1400, 1.2, 'bandpass', 0.6, 0.001);
+      tone(d, t, 0.1, 210 + Math.random() * 40, 70, 'square', 0.22);
+      noiseBurst(d, t + 0.04, 0.12, 380, 0.8, 'lowpass', 0.8, 0.002);
+      break;
+    case 'growl':
+      tone(d, t, 0.35, 70, 55, 'sawtooth', 0.22);
+      tone(d, t, 0.35, 74, 60, 'sawtooth', 0.18);
+      noiseBurst(d, t, 0.3, 300, 1.2, 'bandpass', 0.35, 0.05);
+      break;
+    case 'roar':
+      tone(d, t, 1.1, 120, 45, 'sawtooth', 0.35);
+      tone(d, t, 1.1, 127, 48, 'sawtooth', 0.3);
+      noiseBurst(d, t, 1.0, 500, 0.7, 'bandpass', 0.8, 0.08).frequency.exponentialRampToValueAtTime(180, t + 1);
+      tone(d, t + 0.1, 0.9, 660, 330, 'triangle', 0.08);
+      break;
+    case 'fury':
+      tone(d, t, 0.2, 90, 160, 'sawtooth', 0.2);
+      noiseBurst(d, t, 0.18, 900, 1, 'bandpass', 0.35, 0.02);
+      break;
+    case 'whistle':
+      tone(d, t, 0.18, 1500, 2300, 'sine', 0.14);
+      tone(d, t + 0.16, 0.28, 2300, 1300, 'sine', 0.12);
+      break;
+    case 'crackle':
+      for (let i = 0; i < 5; i++) noiseBurst(d, t + Math.random() * 0.3, 0.03, 2500 + Math.random() * 2500, 2, 'bandpass', 0.35, 0.001);
+      noiseBurst(d, t, 0.4, 500, 0.6, 'lowpass', 0.4, 0.05);
+      break;
+    case 'scream':
+      tone(d, t, 0.5, 900, 1500, 'sawtooth', 0.06);
+      tone(d, t, 0.5, 950, 1400, 'triangle', 0.08);
+      break;
     case 'click':
       tone(d, t, 0.03, 1200, 1100, 'square', 0.06);
       break;

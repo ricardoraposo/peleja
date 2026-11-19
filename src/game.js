@@ -292,11 +292,31 @@ export class Game {
         const st = this.styleOf(m.o);
         this.effects.addZone(m, st.el);
         playSound(st.snd.boom || 'boom', { x: m.x, z: m.z });
+        if (st.el === 'ember') playSound('crackle', { x: m.x, z: m.z });
       }
         break;
       case 'zonex':
         this.effects.endZone(m.id);
         break;
+      case 'emp': {
+        const u = this.units.get(m.id);
+        if (!u) break;
+        this.effects.furyBurst(u.x, u.z);
+        playSound('fury', u);
+        if (m.id === this.myId || this.near(u.x, u.z)) this.overlay.float(u.x, 3.2, u.z, 'FÚRIA!', '#ef4444', 20, 0.9, 40);
+        break;
+      }
+      case 'bite': {
+        const a = this.units.get(m.id);
+        const v = this.units.get(m.v);
+        if (!a || !v) break;
+        const dir = Math.atan2(v.z - a.z, v.x - a.x);
+        this.effects.bite(v.x, v.z, dir, m.n, !!m.emp);
+        a.model?.strike?.(1.4);
+        for (let i = 0; i < m.n; i++) setTimeout(() => playSound('chomp', v, 0.9), i * 120);
+        if (m.id === this.myId) this.shake = Math.max(this.shake, m.emp ? 0.45 : 0.3);
+        break;
+      }
       case 'blink': {
         // teleporte é instantâneo: esquece as posições antigas, senão o herói desliza até o destino como num avanço
         const u = this.units.get(m.id);
@@ -330,7 +350,11 @@ export class Game {
         if (u) {
           const st = this.styleOf(m.id);
           this.effects.buffFx(u.x, u.z, m.c, st.el);
-          playSound('shield', u);
+          if (u.heroId === 'cuca' && m.s === 'r') {
+            this.effects.transform(u.x, u.z);
+            playSound('roar', u);
+            if (m.id === this.myId || this.near(u.x, u.z)) this.shake = Math.max(this.shake, 0.5);
+          } else playSound('shield', u);
           if (st.el === 'wind') playSound('gust', u, 0.7);
           else if (st.el === 'thorn') playSound('bash', u, 0.6);
         }
@@ -812,7 +836,7 @@ export class Game {
     }
     this.amove = false;
     this.refreshMouse();
-    this.hoverId = this.pickUnit();
+    this.hoverId = this.pickUnit(this.shiftHeld);
     const t = this.hoverId ? this.units.get(this.hoverId) : null;
     if (t && t.team !== this.myTeam && t.alive && !(t.flags & F.invuln)) {
       this.send({ t: 'at', id: t.id });
@@ -840,7 +864,7 @@ export class Game {
     if (this.amove) {
       this.amove = false;
       this.refreshMouse();
-      this.send({ t: 'am', x: this.mouse.wx, z: this.mouse.wz });
+      this.send(this.shiftHeld ? { t: 'am', x: this.mouse.wx, z: this.mouse.wz, h: 1 } : { t: 'am', x: this.mouse.wx, z: this.mouse.wz });
       this.effects.clickMarker(this.mouse.wx, this.mouse.wz, true);
     }
   }
@@ -867,6 +891,7 @@ export class Game {
     this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
     this.canvas.addEventListener('mousedown', (e) => {
       initAudio();
+      this.shiftHeld = e.shiftKey;
       if (e.button === 2) {
         this.rightHeld = true;
         this.rightClick();
@@ -933,6 +958,7 @@ export class Game {
     });
 
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Shift') this.shiftHeld = true;
       if (e.target instanceof HTMLInputElement || this.inputBlocked) return;
       if (this.phase === 'idle' || this.spectator) return;
       if (e.code === 'Tab' || e.code === 'Space') e.preventDefault();
@@ -983,6 +1009,7 @@ export class Game {
       }
     });
     window.addEventListener('keyup', (e) => {
+      if (e.key === 'Shift') this.shiftHeld = false;
       const act = this.codeAction[e.code];
       if (act === 'board') this.hud.el.board.classList.add('hidden');
       else if (act === 'center') this.spaceHeld = false;
@@ -991,6 +1018,7 @@ export class Game {
     window.addEventListener('blur', () => {
       this.rightHeld = false;
       this.spaceHeld = false;
+      this.shiftHeld = false;
       this.aiming = null;
       this.hud.el.board.classList.add('hidden');
     });
@@ -1018,7 +1046,7 @@ export class Game {
 
   // Clique generoso: mede a distância do mouse até o corpo inteiro (dos pés à cabeça)
   // na tela, com folga extra pra inimigos. Aliado nunca rouba o clique de um inimigo.
-  pickUnit() {
+  pickUnit(heroesOnly = false) {
     let best = 0;
     let bestScore = Infinity;
     const W = window.innerWidth;
@@ -1028,6 +1056,7 @@ export class Game {
     for (const u of this.units.values()) {
       if (!u.alive || u.id === this.myId) continue;
       const hero = u.kind === 'hero';
+      if (heroesOnly && (!hero || u.team === this.myTeam)) continue;
       const struct = STRUCT.has(u.kind);
       const top = hero ? 2.4 : struct ? (u.kind === 'core' ? 4.2 : 5.2) : u.kind === 'super' ? 2.3 : 1.3;
       const rad = hero ? 0.8 : struct ? (u.kind === 'core' ? 3.3 : 1.9) : u.kind === 'super' ? 0.95 : 0.6;
@@ -1160,7 +1189,7 @@ export class Game {
         this.mouse.wz = p.z;
       }
     }
-    this.hoverId = this.phase === 'playing' && !this.spectator ? this.pickUnit() : 0;
+    this.hoverId = this.phase === 'playing' && !this.spectator ? this.pickUnit(this.shiftHeld) : 0;
     const hover = this.units.get(this.hoverId);
     document.body.classList.toggle('cur-attack', !!hover && hover.team !== this.myTeam);
     document.body.classList.toggle('cur-amove', this.amove);

@@ -9,7 +9,7 @@
 
 const EVENTS = {
   snap: { t: 'd2', ph: 's', pt: 'd1', gt: 'd1', k: 'u*', wv: 'd1', u: ['u', 'u', 'u', 'd1', 'd1', 'd2', 'u', 'u', 'u', 'u', 'i', 'u', 'd1'], pk: 'u*' },
-  me: { id: 'u', g: 'i', it: 's*', rk: 'u*', pt: 'i', sp: 'n*', ic: 'd1*', cd: 'd1*', cm: 'd1*', xp: 'u', xn: 'n', lv: 'u', s: 'n*', sh: 'u', rd: 'u' },
+  me: { id: 'u', g: 'i', it: 's*', rk: 'u*', pt: 'i', sp: 'n*', ic: 'd1*', cd: 'd1*', cm: 'd1*', xp: 'u', xn: 'n', lv: 'u', s: 'n*', sh: 'u', rd: 'u', fu: 'u?' },
   hit: { v: 'u', a: 'u', d: 'i', k: 'u', au: 'u', cr: 'u' },
   swing: { id: 'u', v: 'u', r: 'u', w: 'u' },
   pj: { id: 'u', o: 'u', x: 'd1', z: 'd1', dx: 'd2', dz: 'd2', h: 'u', s: 'n', r: 'n', w: 'd2', c: 's', k: 's', sl: 's', wd: 'n' },
@@ -19,7 +19,7 @@ const EVENTS = {
   boom: { x: 'd1', z: 'd1', r: 'n', c: 's', al: 'u?', o: 'u' },
   aoe: { x: 'd1', z: 'd1', r: 'n', t: 'n', c: 's', tm: 'u', o: 'u' },
   cone: { id: 'u', x: 'd1', z: 'd1', a: 'd2', r: 'n', w: 'n', c: 's' },
-  zone: { id: 'u', x: 'd1', z: 'd1', r: 'n', t: 'n', c: 's', tm: 'u', o: 'u' },
+  zone: { id: 'u', x: 'd1', z: 'd1', r: 'n', t: 'n', c: 's', tm: 'u', o: 'u', l: 'd1*?' },
   zonex: { id: 'u' },
   blink: { id: 'u', a: 'd1*', b: 'd1*', c: 's', fl: 'u' },
   dash: { id: 'u', d: 'd2', a: 'u', c: 's' },
@@ -47,12 +47,14 @@ const EVENTS = {
   noroom: {},
   busy: {},
   // retrato só com o que mudou desde o anterior (ver SnapDelta lá embaixo)
+  emp: { id: 'u', s: 's' },
+  bite: { id: 'u', v: 'u', n: 'u', emp: 'u' },
   sd: { t: 'd2', pt: 'd1', gt: 'd1', wv: 'd1', ph: 's?', k: 'u*?', pk: 'u*?', x: 'u*', c: 'i*', n: ['u', 'u', 'u', 'd1', 'd1', 'd2', 'u', 'u', 'u', 'u', 'i', 'u', 'd1'] },
 };
 
 const COMMANDS = {
   mv: { x: 'n', z: 'n' },
-  am: { x: 'n', z: 'n' },
+  am: { x: 'n', z: 'n', h: 'u?' },
   at: { id: 'u' },
   st: {},
   c: { s: 's', x: 'n', z: 'n', id: 'u?' },
