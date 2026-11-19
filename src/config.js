@@ -304,6 +304,38 @@ export const HEROES = {
       r: { name: 'Redemoinho de Folhas', icon: 'whirl', kind: 'nova', cd: 80, cast: 0.3, radius: 6, dmg: { b: 110, l: 24, ap: 0.5, type: 'magic' }, fx: { pull: 5, stun: 1 }, color: '#14b8a6', desc: 'Um redemoinho arrasta todos os inimigos em volta pra junto de você e atordoa.' },
     },
   },
+  uirapuru: {
+    name: 'Uirapuru',
+    title: 'Cantador',
+    role: 'suporte',
+    color: '#ef4444',
+    look: { weapon: 'none', hat: 'crest', extra: 'wings', scale: 0.92, body: '#dc2626', skin: '#fbbf24' },
+    ranged: true,
+    skillOrder: ['w', 'q', 'e'],
+    stats: { hp: 540, hpL: 88, atk: 50, atkL: 2.7, armor: 24, armorL: 2.6, mres: 30, mresL: 1.3, as: 0.64, asL: 0.022, ms: 6.1, range: 8.0, regen: 1.8, regenL: 0.17 },
+    abilities: {
+      q: { name: 'Canto Afiado', icon: 'note', kind: 'ally', cd: 8, cast: 0.1, range: 0, radius: 6.5, buff: { t: 3, atk: 14, pow: 24 }, bolts: { n: 2, range: 8, speed: 22, repeat: 0.4, wait: 1.5, dmg: { b: 34, l: 9, ap: 0.3, type: 'magic' } }, color: '#f87171', desc: 'Um canto agudo: duas notas voam nos inimigos próximos e você e os aliados em volta batem mais forte.' },
+      w: { name: 'Canto Sereno', icon: 'song', kind: 'ally', cd: 11, cast: 0.1, range: 0, radius: 6.5, heal: { b: 45, l: 13, ap: 0.3 }, color: '#fde68a', desc: 'Um canto calmo que cura você e os aliados em volta.' },
+      e: { name: 'Canto Ligeiro', icon: 'wingfoot', kind: 'ally', cd: 13, cast: 0.1, range: 0, radius: 6.5, buff: { t: 3, ms: 0.25, as: 0.25 }, color: '#fdba74', desc: 'Um canto rápido: você e os aliados em volta andam e atacam mais depressa.' },
+      r: { name: 'Canto do Uirapuru', icon: 'bird', kind: 'proj', cd: 85, cast: 0.35, range: 14, speed: 18, width: 4, pierce: true, dmg: { b: 120, l: 24, ap: 0.5, type: 'magic' }, fx: { stun: 1.3 }, color: '#ef4444', desc: 'O canto que faz a mata inteira parar pra ouvir: uma onda larga que atordoa todos os inimigos que atravessa.' },
+    },
+  },
+  negrinho: {
+    name: 'Negrinho',
+    title: 'Protetor',
+    role: 'suporte',
+    color: '#fde68a',
+    look: { weapon: 'candle', hat: 'straw', scale: 0.86, body: '#f8fafc', skin: '#4a2f20' },
+    ranged: true,
+    skillOrder: ['w', 'e', 'q'],
+    stats: { hp: 550, hpL: 90, atk: 51, atkL: 2.7, armor: 25, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.02, ms: 6.15, range: 7.8, regen: 1.8, regenL: 0.17 },
+    abilities: {
+      q: { name: 'Toco de Vela', icon: 'candle', kind: 'zone', cd: 9, cast: 0.2, range: 10, radius: 3, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.12, type: 'magic' }, fx: { slow: [0.35, 0.8] }, color: '#fbbf24', desc: 'Acende um toco de vela no chão: a luz fere aos poucos e deixa lentos os inimigos dentro dela.' },
+      w: { name: 'Bênção da Madrinha', icon: 'bless', kind: 'ally', cd: 11, cast: 0.1, range: 10, radius: 2.6, shield: { b: 60, l: 18, ap: 0.45, t: 3 }, buff: { t: 3, ms: 0.2 }, color: '#fef3c7', desc: 'Pede proteção pra um aliado: ele ganha um escudo forte e anda mais rápido.' },
+      e: { name: 'Estouro', icon: 'hoof', kind: 'nova', cd: 12, cast: 0.15, radius: 4.2, dmg: { b: 45, l: 12, ap: 0.35, type: 'magic' }, fx: { knockback: 4.5, slow: [0.3, 1.5] }, color: '#fde68a', desc: 'Bate o pé e o chão treme: empurra pra longe e deixa lentos os inimigos em volta.' },
+      r: { name: 'Tropilha', icon: 'herd', kind: 'proj', cd: 80, cast: 0.3, range: 18, speed: 20, width: 4, pierce: true, dmg: { b: 130, l: 26, ap: 0.55, type: 'magic' }, fx: { knockup: 1 }, color: '#fbbf24', desc: 'Chama a tropilha de cavalos, que passa em disparada jogando pro alto todos os inimigos no caminho.' },
+    },
+  },
   boto: {
     name: 'Boto',
     title: 'Encantador',
@@ -321,7 +353,7 @@ export const HEROES = {
   },
 };
 
-export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha'];
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'negrinho'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).

@@ -448,11 +448,13 @@ export class BotBrain {
       if (ab.heal) {
         let pick = null;
         for (const a of [h, ...ctx.alliesNear]) {
-          if (hpf(a) > 0.65 || dist(a, h) > ab.range + ab.radius * 0.5) continue;
+          if (hpf(a) > 0.65 || dist(a, h) > (ab.range ? ab.range + ab.radius * 0.5 : ab.radius)) continue;
           if (!pick || hpf(a) < hpf(pick)) pick = a;
         }
         return pick ? [pick.x, pick.z, 0] : null;
       }
+      // canto que fortalece o time: vale na briga, com inimigo ao alcance das notas se tiver
+      if (ab.buff && !ab.shield) return ctx.fight && ctx.target && dist(ctx.target, h) < (ab.bolts ? ab.bolts.range : 10) ? [h.x, h.z, 0] : null;
       if (ab.shield) {
         const busy = [h, ...ctx.alliesNear].filter((a) => dist(a, h) <= ab.radius && near.some((e) => dist(e, a) < 7));
         return busy.length > 0 && (ctx.fight || life < 0.6) ? [h.x, h.z, 0] : null;

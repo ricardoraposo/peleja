@@ -184,6 +184,40 @@ export class Effects {
         g.userData.spinAxis = 'x';
         break;
       }
+      case 'note': {
+        // nota musical: a bolinha, a haste e a bandeirinha
+        const k = Math.max(0.7, sc);
+        add(SPHERE, shared(color, 0.95, true), 0.2 * k, 0.16 * k, 0.2 * k, 0, -0.1 * k, 0);
+        add(BOX, shared('#fff7ed'), 0.05 * k, 0.5 * k, 0.05 * k, 0.14 * k, 0.14 * k, 0);
+        add(BOX, shared('#fff7ed'), 0.2 * k, 0.1 * k, 0.05 * k, 0.05 * k, 0.36 * k, 0);
+        break;
+      }
+      case 'song': {
+        // ondas de som: arcos em pé, cada vez maiores, da largura da habilidade
+        const half = Math.max(0.8, width * 0.5);
+        for (let i = 0; i < 3; i++) {
+          const ring = add(RING, shared(i === 1 ? '#fde68a' : color, 0.85 - i * 0.2, true), half * (1 - i * 0.22), half * (1 - i * 0.22), 1, -i * 0.9, 0.3, 0);
+          ring.rotation.y = Math.PI / 2;
+        }
+        break;
+      }
+      case 'herd': {
+        // tropilha: cavalos lado a lado em disparada
+        const half = Math.max(0.8, width * 0.5);
+        const coats = ['#7c4a21', '#f8fafc', '#3f2a14', '#b45309'];
+        for (let i = 0; i < 4; i++) {
+          const z = (i / 3 - 0.5) * 2 * half * 0.85;
+          const x = (i % 2) * -0.7;
+          const coat = shared(coats[i]);
+          add(BOX, coat, 1.1, 0.5, 0.42, x, -0.35, z);
+          add(BOX, coat, 0.3, 0.6, 0.3, x + 0.6, 0.05, z).rotation.z = -0.5;
+          add(BOX, coat, 0.42, 0.24, 0.26, x + 0.86, 0.3, z);
+          add(BOX, shared('#1c1917'), 0.5, 0.12, 0.1, x - 0.7, -0.2, z);
+          for (const lx of [-0.4, 0.4]) add(BOX, coat, 0.12, 0.5, 0.12, x + lx, -0.8, z);
+        }
+        g.userData.pulse = add(SPHERE, shared(color, 0.14, true), 1.2, 0.5, half);
+        break;
+      }
       case 'braid': {
         // ponta da trança: gomos escuros em fila com um laço na cor do herói
         const k = Math.max(1, width);

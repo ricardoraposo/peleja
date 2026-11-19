@@ -24,7 +24,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 
 ## Heróis
 
-Treze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
+Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
 
 | Herói | Papel | Alcance |
 | --- | --- | --- |
@@ -41,6 +41,8 @@ Treze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E 
 | **Boto** | Encantador | À distância |
 | **Caipora** | Traquina | À distância |
 | **Fulozinha** | Pegadora (suporte) | À distância |
+| **Uirapuru** | Cantador (suporte) | À distância |
+| **Negrinho** | Protetor (suporte) | À distância |
 
 Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
 

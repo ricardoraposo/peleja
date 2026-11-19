@@ -15,6 +15,8 @@ export const ELEMENTS = {
   swamp: { cols: ['#4ade80', '#86efac', '#a855f7', '#365314', '#d9f99d'], g: 7, up: 3.4 },
   ember: { cols: ['#ff3d00', '#ffb020', '#ffe08a', '#ff7a1a', '#7c2d12'], g: -4.5, up: 2.4 },
   firefly: { cols: ['#e879f9', '#d9f99d', '#ffffff', '#a3e635'], g: -1.5, up: 1.6 },
+  song: { cols: ['#ef4444', '#fde68a', '#ffffff', '#fb923c'], g: -2, up: 2 },
+  candle: { cols: ['#fbbf24', '#fef3c7', '#ffffff', '#f59e0b'], g: -3, up: 2 },
   rose: { cols: ['#ff8fab', '#ffe4ec', '#ffffff', '#7dd3fc'], g: 9, up: 4.5 },
 };
 
@@ -73,6 +75,18 @@ export const HERO_FX = {
     auto: 'braid',
     proj: { q: 'braid' },
     snd: { shoot: 'bow', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
+  },
+  uirapuru: {
+    el: 'song',
+    auto: 'note',
+    proj: { q: 'note', r: 'song' },
+    snd: { shoot: 'bubble', hit: 'thunk', cast: 'rustle', boom: 'thunk' },
+  },
+  negrinho: {
+    el: 'candle',
+    auto: 'ember',
+    proj: { r: 'herd' },
+    snd: { shoot: 'bow', hit: 'thunk', cast: 'rustle', boom: 'bash' },
   },
   boto: {
     el: 'rose',
