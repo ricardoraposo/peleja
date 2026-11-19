@@ -126,7 +126,7 @@ function playOnline() {
       game.onPhase(game.phase);
     } else if (transport.closed || performance.now() - started > 8000) {
       clearInterval(joinWait);
-      netMsg('Não achei o servidor online. Quem abriu a partida precisa rodar "npm run online".');
+      netMsg(NO_SERVER);
       attract();
     }
   }, 100);
@@ -194,9 +194,12 @@ game.onPause = (p, online) => {
   $('pause-title').textContent = online ? 'Menu' : 'Pausa';
   show('pause', p);
 };
-game.onNetError = () => {
+const NO_SERVER = 'Não achei o servidor online. Deixe "npm run server" rodando em outro terminal (ou use "npm run online", que já serve o jogo pronto).';
+game.onNetError = (kind) => {
+  // sem ter entrado na sala, não foi queda: o servidor nem está de pé (ou a sala lotou)
+  const joined = !!game.myId;
   showMenu();
-  netMsg('A conexão com o servidor caiu.');
+  netMsg(kind === 'full' ? 'A sala está cheia: os dez lugares já têm gente.' : joined ? 'A conexão com o servidor caiu.' : NO_SERVER);
 };
 
 game.onEnd = (winner, next) => {
