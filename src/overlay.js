@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { F } from './sim.js';
+import { MAP } from './config.js';
 
 const _v = new THREE.Vector3();
 const COLORS = { me: '#5ee67a', ally: '#4aa3ff', enemy: '#f43f5e' };
@@ -106,8 +107,20 @@ export class Overlay {
         } else if (u.flags & F.recall) {
           c.font = '700 11px Rubik, sans-serif';
           c.fillStyle = '#7dd3fc';
-          c.strokeText('VOLTANDO', p[0] + 10, y + 22);
-          c.fillText('VOLTANDO', p[0] + 10, y + 22);
+          const k = Math.min(1, (u.model?.recallAge || 0) / MAP.recall);
+          const left = Math.max(0, MAP.recall * (1 - k));
+          c.strokeText(`VOLTANDO ${left.toFixed(1)} s`, p[0] + 10, y + 22);
+          c.fillText(`VOLTANDO ${left.toFixed(1)} s`, p[0] + 10, y + 22);
+          // barra de progresso da volta pra base
+          const bw = 96;
+          const bx = p[0] + 10 - bw / 2;
+          const by = y + 28;
+          c.fillStyle = 'rgba(8, 15, 28, 0.85)';
+          c.fillRect(bx - 2, by - 2, bw + 4, 11);
+          c.fillStyle = '#7dd3fc';
+          c.fillRect(bx, by, bw * k, 7);
+          c.fillStyle = '#e0f2fe';
+          c.fillRect(bx + bw * k - 2, by, 2, 7);
         } else if (u.flags & F.sleep) {
           c.font = '700 11px Rubik, sans-serif';
           c.fillStyle = '#c4b5fd';
