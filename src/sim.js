@@ -108,7 +108,7 @@ class Unit {
 }
 
 export class Sim {
-  constructor({ difficulty = 'normal', teamSize = MATCH.teamSize, persistent = false, emit = () => {}, draftTime = MATCH.draftTime, sandbox = false } = {}) {
+  constructor({ difficulty = 'normal', teamSize = MATCH.teamSize, persistent = false, emit = () => {}, draftTime = MATCH.draftTime, sandbox = false, readyDelay = persistent ? 3 : 0 } = {}) {
     // treino: sem sorteio, sem tropas automáticas e com comandos de teste (só no modo local)
     this.sandbox = sandbox;
     this.dbg = { waves: false, towers: true, noCd: false };
@@ -116,6 +116,8 @@ export class Sim {
     this.diff = DIFFICULTY[difficulty] || DIFFICULTY.normal;
     this.teamSize = Math.max(1, Math.min(5, teamSize));
     this.persistent = persistent;
+    // todo mundo pronto: quanto falta pra começar (online dá uns segundos; contra bots é na hora)
+    this.readyDelay = readyDelay;
     this.emit = emit;
     this.draftTime = draftTime;
     this.units = [];
@@ -160,11 +162,12 @@ export class Sim {
     return this.heroes.map((h) => [h.id, h.team, h.name, h.isBot ? 1 : 0, HERO_ORDER.indexOf(h.heroId), [h.spells.d, h.spells.f]]);
   }
 
-  addHuman(name) {
+  // `team` (0 ou 1) pede um lado; sem ele entra no time com menos gente
+  addHuman(name, team = -1) {
     const clean = String(name || 'Jogador').replace(/\s+/g, ' ').trim().slice(0, 14) || 'Jogador';
     if (this.humans().length === 0 && this.phase !== 'draft') this.newMatch();
     const count = [0, 1].map((t) => this.heroes.filter((h) => h.team === t && !h.isBot).length);
-    let order = count[0] === count[1] ? shuffle([0, 1]) : count[0] < count[1] ? [0, 1] : [1, 0];
+    let order = team === 0 || team === 1 ? [team, 1 - team] : count[0] === count[1] ? shuffle([0, 1]) : count[0] < count[1] ? [0, 1] : [1, 0];
     let slot = null;
     for (const t of order) {
       slot = this.heroes.find((h) => h.team === t && h.isBot);
@@ -505,7 +508,7 @@ export class Sim {
   ready(h) {
     if (this.phase !== 'draft') return;
     h.ready = true;
-    if (this.humans().every((x) => x.ready)) this.phaseT = Math.min(this.phaseT, this.persistent ? 3 : 0);
+    if (this.humans().every((x) => x.ready)) this.phaseT = Math.min(this.phaseT, this.readyDelay);
   }
 
   ann(text, sub = '', kind = 'info', team = -1) {

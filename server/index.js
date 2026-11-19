@@ -23,17 +23,195 @@ const TYPES = {
   '.json': 'application/json',
 };
 
-const clients = new Map();
+// ---------- salas ----------
+// Cada sala tem um código de 4 letras. Ela começa no saguão (as pessoas entram, escolhem o time e o dono
+// ajusta a partida); quando o dono manda começar, a sala cria a simulação e todo mundo vai pra escolha de herói.
+// Acabou a partida, a sala volta pro saguão com as mesmas pessoas.
 
-function route(msg, opts) {
-  for (const c of clients.values()) {
-    if (!c.hero) continue;
-    if (opts?.to && c.hero.id !== opts.to) continue;
-    c.queue.push(msg);
+const rooms = new Map();
+const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const MAX_ROOMS = 60;
+const BACK_TO_LOBBY = 12;
+const DIFFS = ['facil', 'normal', 'dificil'];
+let nextClientId = 1;
+
+const cleanName = (name) => String(name || 'Jogador').replace(/\s+/g, ' ').trim().slice(0, 14) || 'Jogador';
+const clampSize = (v) => Math.max(1, Math.min(5, Math.round(Number(v)) || TEAM));
+
+class Room {
+  constructor(code, size, diff) {
+    this.code = code;
+    this.size = clampSize(size);
+    this.diff = DIFFS.includes(diff) ? diff : DIFFICULTY;
+    this.members = new Set();
+    this.host = null;
+    this.state = 'lobby';
+    this.sim = null;
+    this.acc = 0;
+    this.snapAcc = 0;
+    this.boardAcc = 0;
+    this.backT = 0;
+  }
+
+  count(team) {
+    let n = 0;
+    for (const m of this.members) if (m.team === team) n++;
+    return n;
+  }
+
+  // manda o estado da sala pra todo mundo (cada um recebe também quem ele é)
+  announce() {
+    const members = [...this.members].map((m) => [m.id, m.name, m.team]);
+    for (const m of this.members) m.queue.push({ e: 'room', code: this.code, you: m.id, host: this.host?.id || 0, state: this.state, size: this.size, diff: this.diff, members });
+  }
+
+  add(c, name) {
+    c.name = cleanName(name);
+    if (this.state === 'lobby') {
+      const n = [this.count(0), this.count(1)];
+      if (n[0] >= this.size && n[1] >= this.size) return false;
+      c.team = n[0] <= n[1] ? 0 : 1;
+    } else {
+      // partida rolando: entra no lugar de um bot
+      const hero = this.sim.addHuman(c.name);
+      if (!hero) return false;
+      c.hero = hero;
+      c.team = hero.team;
+    }
+    c.room = this;
+    this.members.add(c);
+    if (!this.host) this.host = c;
+    this.announce();
+    if (c.hero) this.welcome(c);
+    console.log(`[${this.code}] entrou: ${c.name} (${this.members.size} na sala)`);
+    return true;
+  }
+
+  remove(c) {
+    if (!this.members.delete(c)) return;
+    if (c.hero && this.sim) this.sim.removeHuman(c.hero.id);
+    c.hero = null;
+    c.room = null;
+    console.log(`[${this.code}] saiu: ${c.name}`);
+    if (this.members.size === 0) {
+      rooms.delete(this.code);
+      return;
+    }
+    if (this.host === c) this.host = this.members.values().next().value;
+    this.announce();
+  }
+
+  welcome(c) {
+    c.queue.push({ e: 'welcome', id: c.hero.id });
+    c.queue.push({ e: 'roster', l: this.sim.roster() });
+    c.queue.push({ e: 'phase', ph: this.sim.phase, m: this.sim.matchNo });
+    c.queue.push(this.sim.board());
+    c.queue.push(this.sim.snapshot());
+  }
+
+  route(msg, opts) {
+    if (msg.e === 'end') {
+      msg = { ...msg, next: BACK_TO_LOBBY };
+      this.backT = BACK_TO_LOBBY;
+    }
+    for (const m of this.members) {
+      if (!m.hero) continue;
+      if (opts?.to && m.hero.id !== opts.to) continue;
+      m.queue.push(msg);
+    }
+  }
+
+  start() {
+    if (this.state !== 'lobby') return;
+    this.sim = new Sim({ difficulty: this.diff, teamSize: this.size, readyDelay: 3, emit: (msg, opts) => this.route(msg, opts) });
+    this.state = 'match';
+    this.acc = this.snapAcc = this.boardAcc = this.backT = 0;
+    for (const m of this.members) {
+      m.hero = this.sim.addHuman(m.name, m.team);
+      if (m.hero) m.team = m.hero.team;
+    }
+    this.announce();
+    for (const m of this.members) if (m.hero) this.welcome(m);
+    console.log(`[${this.code}] partida começou com ${this.members.size} jogador(es)`);
+  }
+
+  toLobby() {
+    this.sim = null;
+    this.state = 'lobby';
+    for (const m of this.members) m.hero = null;
+    this.announce();
+  }
+
+  handle(c, msg) {
+    if (this.state === 'match') {
+      if (c.hero) this.sim.handle(c.hero, msg);
+      return;
+    }
+    switch (msg.t) {
+      case 'team': {
+        const to = 1 - c.team;
+        if (this.count(to) < this.size) {
+          c.team = to;
+          this.announce();
+        }
+        break;
+      }
+      case 'cfg': {
+        if (c !== this.host) break;
+        const size = clampSize(msg.size ?? this.size);
+        if (size >= this.count(0) && size >= this.count(1)) this.size = size;
+        if (DIFFS.includes(msg.diff)) this.diff = msg.diff;
+        this.announce();
+        break;
+      }
+      case 'start':
+        if (c === this.host) this.start();
+        break;
+      default:
+        break;
+    }
+  }
+
+  tick(dt) {
+    if (!this.sim) return;
+    this.acc += dt;
+    while (this.acc >= TICK) {
+      this.sim.step(TICK);
+      this.acc -= TICK;
+    }
+    this.snapAcc += dt;
+    this.boardAcc += dt;
+    if (this.snapAcc >= SNAP) {
+      // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
+      this.snapAcc = Math.min(this.snapAcc - SNAP, SNAP);
+      const snap = this.sim.snapshot();
+      for (const m of this.members) {
+        if (!m.hero) continue;
+        m.queue.push(snap);
+        m.queue.push(this.sim.meState(m.hero));
+      }
+    }
+    if (this.boardAcc >= 1) {
+      this.boardAcc = 0;
+      this.route(this.sim.board());
+    }
+    if (this.backT > 0) {
+      this.backT -= dt;
+      if (this.backT <= 0) this.toLobby();
+    }
   }
 }
 
-const sim = new Sim({ difficulty: DIFFICULTY, teamSize: TEAM, persistent: true, emit: route });
+function newCode() {
+  for (let n = 0; n < 200; n++) {
+    let code = '';
+    for (let i = 0; i < 4; i++) code += LETTERS[Math.floor(Math.random() * LETTERS.length)];
+    if (!rooms.has(code)) return code;
+  }
+  return null;
+}
+
+const clients = new Map();
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -59,8 +237,12 @@ const server = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 16 * 1024 });
 
 wss.on('connection', (ws) => {
-  const c = { ws, hero: null, queue: [], budget: MAX_MSGS_PER_SEC, budgetT: Date.now() };
+  const c = { ws, id: nextClientId++, name: 'Jogador', room: null, team: 0, hero: null, queue: [], budget: MAX_MSGS_PER_SEC, budgetT: Date.now() };
   clients.set(ws, c);
+  const refuse = (e) => {
+    ws.send(JSON.stringify([{ e }]));
+    ws.close();
+  };
   ws.on('message', (data) => {
     const now = Date.now();
     if (now - c.budgetT > 1000) {
@@ -75,30 +257,28 @@ wss.on('connection', (ws) => {
       return;
     }
     if (!msg || typeof msg !== 'object') return;
-    if (msg.t === 'join') {
-      if (c.hero) return;
-      c.hero = sim.addHuman(msg.name);
-      if (!c.hero) {
-        ws.send(JSON.stringify([{ e: 'full' }]));
-        ws.close();
-        return;
-      }
-      c.queue.push({ e: 'welcome', id: c.hero.id });
-      c.queue.push({ e: 'roster', l: sim.roster() });
-      c.queue.push({ e: 'phase', ph: sim.phase, m: sim.matchNo });
-      c.queue.push(sim.board());
-      c.queue.push(sim.snapshot());
-      console.log(`entrou: ${c.hero.name} (${sim.humans().length} online)`);
+    if (c.room) {
+      c.room.handle(c, msg);
       return;
     }
-    if (c.hero) sim.handle(c.hero, msg);
+    if (msg.t === 'create') {
+      const code = rooms.size < MAX_ROOMS ? newCode() : null;
+      if (!code) {
+        refuse('busy');
+        return;
+      }
+      const room = new Room(code, msg.size, msg.diff);
+      rooms.set(code, room);
+      room.add(c, msg.name);
+    } else if (msg.t === 'join') {
+      const room = rooms.get(String(msg.room || '').toUpperCase().trim());
+      if (!room) refuse('noroom');
+      else if (!room.add(c, msg.name)) refuse('full');
+    }
   });
   ws.on('close', () => {
     clients.delete(ws);
-    if (c.hero) {
-      console.log(`saiu: ${c.hero.name}`);
-      sim.removeHuman(c.hero.id);
-    }
+    c.room?.remove(c);
   });
   ws.on('error', () => ws.close());
 });
@@ -112,39 +292,15 @@ function flush() {
 }
 
 let last = performance.now();
-let snapAcc = 0;
-let boardAcc = 0;
-let acc = 0;
 setInterval(() => {
   const now = performance.now();
   const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
-  if (sim.humans().length === 0) return;
-  acc += dt;
-  while (acc >= TICK) {
-    sim.step(TICK);
-    acc -= TICK;
-  }
-  snapAcc += dt;
-  boardAcc += dt;
-  if (snapAcc >= SNAP) {
-    // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
-    snapAcc = Math.min(snapAcc - SNAP, SNAP);
-    const snap = sim.snapshot();
-    for (const c of clients.values()) {
-      if (!c.hero) continue;
-      c.queue.push(snap);
-      c.queue.push(sim.meState(c.hero));
-    }
-  }
-  if (boardAcc >= 1) {
-    boardAcc = 0;
-    route(sim.board());
-  }
+  for (const room of rooms.values()) room.tick(dt);
   flush();
 }, 1000 * TICK);
 
 server.listen(PORT, () => {
   console.log(`Peleja online em http://localhost:${PORT}`);
-  console.log(`${TEAM} x ${TEAM}, bots completam as vagas (dificuldade ${DIFFICULTY}).`);
+  console.log(`Salas com código de 4 letras; bots completam as vagas (padrão ${TEAM} x ${TEAM}, dificuldade ${DIFFICULTY}).`);
 });

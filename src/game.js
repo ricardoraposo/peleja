@@ -99,6 +99,8 @@ export class Game {
     this.onPhase = null;
     this.onEnd = null;
     this.onNetError = null;
+    this.onRoom = null;
+    this.room = null;
     this.onPause = null;
 
     this.bindInput();
@@ -140,19 +142,26 @@ export class Game {
 
   // ---------- conexão ----------
 
-  connect(transport, { name = 'Jogador', spectator = false } = {}) {
+  // `hello` troca a mensagem de entrada (online: criar sala ou entrar numa pelo código)
+  connect(transport, { name = 'Jogador', spectator = false, hello = null } = {}) {
     this.disconnect();
     this.transport = transport;
     this.spectator = spectator;
     setMuted(spectator);
     transport.onMessage((m) => this.onNet(m));
-    if (!spectator) transport.send({ t: 'join', name });
+    if (!spectator) transport.send(hello ? { ...hello, name } : { t: 'join', name });
     else if (transport.sim) transport.sim.startGame();
   }
 
   disconnect() {
     if (this.transport) this.transport.close();
     this.transport = null;
+    this.room = null;
+    this.resetMatch();
+  }
+
+  // esquece a partida mas mantém a conexão (online: a sala voltou pro saguão)
+  resetMatch() {
     for (const u of this.units.values()) this.dropModel(u);
     this.units.clear();
     this.roster.clear();
@@ -377,9 +386,18 @@ export class Game {
       case 'end':
         this.onMatchEnd(m);
         break;
+      case 'room': {
+        const was = this.room?.state;
+        this.room = m;
+        if (m.state === 'lobby' && was === 'match') this.resetMatch();
+        this.onRoom?.(m);
+        break;
+      }
       case 'disconnect':
       case 'error':
       case 'full':
+      case 'noroom':
+      case 'busy':
         if (!this.transport?.local) this.onNetError?.(m.e);
         break;
       default:

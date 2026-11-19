@@ -69,7 +69,7 @@ function attract() {
 function showMenu() {
   clearInterval(endTimer);
   clearInterval(joinWait);
-  for (const id of ['end', 'draft', 'pause', 'shop', 'board']) show(id, false);
+  for (const id of ['end', 'draft', 'pause', 'shop', 'board', 'lobby']) show(id, false);
   show('menu', true);
   $('online-tag').classList.add('hidden');
   attract();
@@ -105,32 +105,94 @@ function playSandbox() {
   debugPanel.show(true);
 }
 
-function playOnline() {
+// ---------- online: salas ----------
+// ONLINE abre a caixinha de criar sala ou entrar com código. Dentro da sala (saguão) cada um escolhe o time,
+// o dono ajusta tamanho e bots e manda começar; daí todo mundo vai pra escolha de herói.
+
+const DIFF_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
+const inviteLink = (code) => `${location.origin}${location.pathname}?sala=${code}`;
+
+function connectOnline(hello) {
   debugPanel?.show(false);
   initAudio();
   readName();
   mode = 'online';
   netMsg('Conectando...', true);
   const transport = new SocketTransport(serverUrl());
-  game.connect(transport, { name: settings.name });
+  game.connect(transport, { name: settings.name, hello });
   const started = performance.now();
   clearInterval(joinWait);
   joinWait = setInterval(() => {
-    if (game.myId) {
+    if (game.room) clearInterval(joinWait);
+    else if (transport.closed || performance.now() - started > 8000) {
       clearInterval(joinWait);
-      netMsg('');
-      enterMatch();
-      const tag = $('online-tag');
-      tag.textContent = 'ONLINE';
-      tag.classList.remove('hidden');
-      game.onPhase(game.phase);
-    } else if (transport.closed || performance.now() - started > 8000) {
-      clearInterval(joinWait);
-      netMsg(NO_SERVER);
-      attract();
+      if (game.transport === transport) {
+        netMsg(NO_SERVER);
+        attract();
+      }
     }
   }, 100);
 }
+
+function createRoom() {
+  connectOnline({ t: 'create', size: settings.size, diff: settings.difficulty });
+}
+
+function joinRoom() {
+  const code = $('room-code').value.trim().toUpperCase();
+  if (code.length !== 4) {
+    netMsg('O código da sala tem 4 letras.');
+    $('room-code').focus();
+    return;
+  }
+  connectOnline({ t: 'join', room: code });
+}
+
+function renderLobby(r) {
+  const mine = r.members.find((m) => m[0] === r.you);
+  const host = r.members.find((m) => m[0] === r.host);
+  const amHost = r.you === r.host;
+  $('lobby-code').textContent = r.code;
+  $('lobby-sub').textContent = amHost ? 'Você é o dono da sala. Chame a galera e comece quando quiser: os bots completam as vagas.' : `Esperando ${host ? host[1] : 'o dono da sala'} começar a partida.`;
+  $('lobby-link').value = inviteLink(r.code);
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  const warn = $('lobby-warn');
+  warn.textContent = local ? 'Você abriu o jogo por localhost, então este link só funciona neste computador. Pra convidar, abra o jogo pelo endereço da sua rede ou do túnel (npm run tunnel) e crie a sala por lá.' : '';
+  warn.classList.toggle('hidden', !local);
+  for (const t of [0, 1]) {
+    const list = r.members.filter((m) => m[2] === t);
+    const rows = list.map((m) => `<div class="lb-slot${m[0] === r.you ? ' me' : ''}"><b>${esc(m[1])}</b>${m[0] === r.host ? '<small>dono</small>' : ''}${m[0] === r.you ? '<small>você</small>' : ''}</div>`);
+    for (let i = list.length; i < r.size; i++) rows.push(`<div class="lb-slot bot"><b>Bot</b><small>${DIFF_NAMES[r.diff]}</small></div>`);
+    $(t === 0 ? 'lobby-blue' : 'lobby-red').innerHTML = rows.join('');
+  }
+  const otherFull = r.members.filter((m) => m[2] === 1 - mine[2]).length >= r.size;
+  const most = Math.max(r.members.filter((m) => m[2] === 0).length, r.members.filter((m) => m[2] === 1).length);
+  const seg = (key, opts, cur) => `<div class="seg">${opts.map(([v, label, off]) => `<button data-cfg="${key}" data-v="${v}" class="${String(v) === String(cur) ? 'on' : ''}"${amHost && !off ? '' : ' disabled'}>${label}</button>`).join('')}</div>`;
+  $('lobby-cfg').innerHTML =
+    `<button data-act="team" class="ghost"${otherFull ? ' disabled' : ''}>Ir pro time ${TEAMS[1 - mine[2]].name}</button>` +
+    `<div class="field"><span>Tamanho</span>${seg('size', [[3, '3 x 3', most > 3], [5, '5 x 5', false]], r.size)}</div>` +
+    `<div class="field"><span>Bots</span>${seg('diff', Object.entries(DIFF_NAMES).map(([v, l]) => [v, l, false]), r.diff)}</div>`;
+  $('lobby-start').classList.toggle('hidden', !amHost);
+  $('lobby').style.setProperty('--team', TEAMS[mine[2]].color);
+}
+
+game.onRoom = (r) => {
+  clearInterval(joinWait);
+  netMsg('');
+  const tag = $('online-tag');
+  tag.textContent = `SALA ${r.code}`;
+  if (r.state === 'lobby') {
+    clearInterval(endTimer);
+    for (const id of ['menu', 'end', 'draft', 'pause', 'shop', 'board']) show(id, false);
+    tag.classList.add('hidden');
+    show('lobby', true);
+    renderLobby(r);
+  } else {
+    show('lobby', false);
+    show('menu', false);
+    tag.classList.remove('hidden');
+  }
+};
 
 // ---------- escolha de herói ----------
 
@@ -195,11 +257,17 @@ game.onPause = (p, online) => {
   show('pause', p);
 };
 const NO_SERVER = 'Não achei o servidor online. Deixe "npm run server" rodando em outro terminal (ou use "npm run online", que já serve o jogo pronto).';
+const NET_ERRORS = {
+  full: 'Essa sala está cheia.',
+  noroom: 'Não existe sala com esse código. Confere com quem te chamou: a sala some quando todo mundo sai.',
+  busy: 'O servidor está com salas demais abertas. Tente de novo daqui a pouco.',
+};
 game.onNetError = (kind) => {
-  // sem ter entrado na sala, não foi queda: o servidor nem está de pé (ou a sala lotou)
-  const joined = !!game.myId;
+  // sem ter entrado numa sala, não foi queda: o servidor nem está de pé
+  const joined = !!game.room;
   showMenu();
-  netMsg(kind === 'full' ? 'A sala está cheia: os dez lugares já têm gente.' : joined ? 'A conexão com o servidor caiu.' : NO_SERVER);
+  show('online-box', true);
+  netMsg(NET_ERRORS[kind] || (joined ? 'A conexão com o servidor caiu.' : NO_SERVER));
 };
 
 game.onEnd = (winner, next) => {
@@ -219,12 +287,13 @@ game.onEnd = (winner, next) => {
   clearInterval(endTimer);
   if (next > 0) {
     let left = Math.ceil(next);
-    nextEl.innerHTML = `Próxima partida em <b>${left}</b> s`;
+    const label = mode === 'online' ? 'Voltando pra sala em' : 'Próxima partida em';
+    nextEl.innerHTML = `${label} <b>${left}</b> s`;
     nextEl.classList.remove('hidden');
     $('again').classList.add('hidden');
     endTimer = setInterval(() => {
       left = Math.max(0, left - 1);
-      nextEl.innerHTML = `Próxima partida em <b>${left}</b> s`;
+      nextEl.innerHTML = `${label} <b>${left}</b> s`;
     }, 1000);
   } else {
     nextEl.classList.add('hidden');
@@ -269,7 +338,41 @@ $('name').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') playBots();
 });
 $('play').addEventListener('click', playBots);
-$('play-online').addEventListener('click', playOnline);
+$('play-online').addEventListener('click', () => {
+  $('online-box').classList.toggle('hidden');
+  playSound('click');
+  if (!$('online-box').classList.contains('hidden')) $('room-code').focus();
+});
+$('room-create').addEventListener('click', createRoom);
+$('room-join').addEventListener('click', joinRoom);
+$('room-code').addEventListener('input', (e) => (e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '')));
+$('room-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') joinRoom();
+});
+$('lobby-leave').addEventListener('click', showMenu);
+$('lobby-start').addEventListener('click', () => {
+  game.send({ t: 'start' });
+  playSound('click');
+});
+$('lobby-copy').addEventListener('click', async () => {
+  const el = $('lobby-link');
+  try {
+    await navigator.clipboard.writeText(el.value);
+  } catch {
+    el.select();
+    document.execCommand('copy');
+  }
+  $('lobby-copy').textContent = 'Copiado!';
+  setTimeout(() => ($('lobby-copy').textContent = 'Copiar link'), 1500);
+});
+$('lobby-cfg').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  if (b.dataset.act === 'team') game.send({ t: 'team' });
+  else if (b.dataset.cfg === 'size') game.send({ t: 'cfg', size: Number(b.dataset.v) });
+  else if (b.dataset.cfg === 'diff') game.send({ t: 'cfg', diff: b.dataset.v });
+  playSound('click');
+});
 if (DEV) {
   import('./debug.js').then(({ DebugPanel }) => {
     debugPanel = new DebugPanel(game, () => playSandbox());
@@ -313,7 +416,7 @@ $('reroll').addEventListener('click', () => {
   game.pickRandom();
 });
 $('ready').addEventListener('click', () => game.ready());
-$('again').addEventListener('click', () => (mode === 'online' ? playOnline() : playBots()));
+$('again').addEventListener('click', () => (mode === 'online' ? showMenu() : playBots()));
 $('to-menu').addEventListener('click', showMenu);
 $('resume').addEventListener('click', () => game.setPaused(false));
 $('quit').addEventListener('click', showMenu);
@@ -326,4 +429,11 @@ if (params.has('demo')) {
   if (params.has('go')) setTimeout(() => game.ready(), 300);
 } else {
   attract();
+  // link de convite: ?sala=ABCD já deixa o código preenchido
+  const invited = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (invited.length === 4) {
+    $('room-code').value = invited;
+    show('online-box', true);
+    netMsg(`Você foi chamado pra sala ${invited}. Coloque seu nome e clique em "Entrar na sala".`, true);
+  }
 }

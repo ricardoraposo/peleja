@@ -1,6 +1,7 @@
 // Estressa o servidor online: sobe um servidor próprio, lota a sala com jogadores falsos
 // que escolhem herói, andam, lançam habilidades e compram, e mede o que o servidor entrega.
-//   node scripts/stress.js [segundos de partida] [jogadores] [ações por segundo de cada um]
+//   node scripts/stress.js [segundos de partida] [jogadores] [ações por segundo de cada um] [fim]
+// Com "fim" no final, os jogadores seguem até a partida acabar e o teste confere a volta pra sala.
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import { HERO_ORDER, ITEM_ORDER, SPELL_ORDER } from '../src/config.js';
 const SECS = Number(process.argv[2]) || 40;
 const N = Number(process.argv[3]) || 10;
 const APS = Number(process.argv[4]) || 6;
+const TO_END = process.argv.includes('fim');
 const PORT = 7800 + Math.floor(Math.random() * 150);
 const URL = `ws://localhost:${PORT}/ws`;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,13 +51,15 @@ class Fake {
     this.full = false;
     this.rtt = [];
     this.probe = null;
+    this.room = null;
+    this.refused = '';
   }
 
-  connect() {
+  connect(hello) {
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(URL);
       this.ws.on('open', () => {
-        this.send({ t: 'join', name: this.name });
+        this.send({ ...hello, name: this.name });
         resolve();
       });
       this.ws.on('error', reject);
@@ -78,7 +82,11 @@ class Fake {
   on(m) {
     this.events[m.e] = (this.events[m.e] || 0) + 1;
     if (m.e === 'welcome') this.id = m.id;
-    else if (m.e === 'full') this.full = true;
+    else if (m.e === 'room') this.room = m;
+    else if (m.e === 'full' || m.e === 'noroom' || m.e === 'busy') {
+      this.refused = m.e;
+      this.full = m.e === 'full';
+    }
     else if (m.e === 'phase') this.phase = m.ph;
     else if (m.e === 'me') {
       // tempo de resposta: mandei comprar um item e espero o ouro cair
@@ -133,9 +141,42 @@ const problems = [];
 try {
   // ---------- sala cheia jogando ----------
   const fakes = Array.from({ length: N }, (_, i) => new Fake(i));
-  for (const f of fakes) await f.connect();
-  await sleep(500);
-  say('entraram', `${fakes.filter((f) => f.id).length} de ${N}`);
+  await fakes[0].connect({ t: 'create', size: Math.ceil(N / 2), diff: 'normal' });
+  await sleep(300);
+  const code = fakes[0].room?.code;
+  say('sala criada', code ? `código ${code}` : 'NÃO CRIOU');
+  if (!code) throw new Error('o servidor não criou a sala');
+  for (const f of fakes.slice(1)) await f.connect({ t: 'join', room: code.toLowerCase() });
+  await sleep(400);
+  const lobby = fakes[N - 1].room;
+  const teams = [0, 1].map((t) => lobby.members.filter((m) => m[2] === t).length);
+  say('saguão', `${lobby.members.length} de ${N} na sala, times ${teams[0]} x ${teams[1]}, dono é quem criou: ${lobby.host === fakes[0].room.you}`);
+  if (lobby.members.length !== N) problems.push('nem todo mundo entrou no saguão');
+  // troca de time, quem não é dono tentando mandar, e sala inexistente
+  const mover = fakes[N - 1];
+  const teamBefore = lobby.members.find((m) => m[0] === lobby.you)[2];
+  const otherFull = teams[1 - teamBefore] >= lobby.size;
+  mover.send({ t: 'team' });
+  mover.send({ t: 'start' });
+  mover.send({ t: 'cfg', size: 1 });
+  await sleep(300);
+  const after = mover.room;
+  const teamAfter = after.members.find((m) => m[0] === after.you)[2];
+  say('trocar de time', teamAfter !== teamBefore ? 'trocou' : otherFull ? 'recusado: o outro time está cheio' : 'NÃO TROCOU');
+  if (teamAfter === teamBefore && !otherFull) problems.push('não deu pra trocar de time com vaga do outro lado');
+  say('quem não é dono', after.state === 'lobby' && after.size === lobby.size ? 'não consegue começar nem mudar a sala' : 'CONSEGUIU MEXER NA SALA');
+  if (after.state !== 'lobby' || after.size !== lobby.size) problems.push('quem não é dono conseguiu mexer na sala');
+  const lost = new Fake(98);
+  await lost.connect({ t: 'join', room: 'ZZZZ' });
+  await sleep(300);
+  say('código que não existe', lost.refused === 'noroom' ? 'recusado com aviso' : `resposta: "${lost.refused}"`);
+  if (lost.refused !== 'noroom') problems.push('código inexistente não foi recusado');
+  fakes[0].send({ t: 'start' });
+  await sleep(400);
+  say('entraram na partida', `${fakes.filter((f) => f.id).length} de ${N}`);
+  const kept = fakes.every((f) => f.units.find((u) => u[0] === f.id)?.[2] === f.room.members.find((m) => m[0] === f.room.you)[2]);
+  say('times do saguão valem na partida', kept ? 'sim' : 'NÃO');
+  if (!kept) problems.push('o time escolhido no saguão não foi respeitado');
   for (const f of fakes) f.draft();
   const t0 = performance.now();
   while (fakes[0].phase !== 'playing' && performance.now() - t0 < 40000) await sleep(100);
@@ -179,7 +220,7 @@ try {
   // ---------- casos de borda ----------
   if (N >= 10) {
     const extra = new Fake(99);
-    await extra.connect();
+    await extra.connect({ t: 'join', room: code });
     await sleep(400);
     say('11º jogador', extra.full ? 'recusado com aviso de sala cheia' : extra.id ? 'ENTROU (não devia)' : 'sem resposta');
     if (!extra.full) problems.push('11º jogador não recebeu aviso de sala cheia');
@@ -216,15 +257,39 @@ try {
   const rosterOk = stay.phase === 'playing' && !stay.closed;
   say('metade saiu no meio', rosterOk ? 'partida segue, bots assumem' : 'quem ficou perdeu a partida');
   if (!rosterOk) problems.push('saída de jogadores derrubou quem ficou');
+  const late = new Fake(60);
+  await late.connect({ t: 'join', room: code });
+  await sleep(600);
+  say('entrar com a partida rolando', late.id ? 'entra no lugar de um bot' : `recusado: "${late.refused}"`);
+  if (!late.id) problems.push('não deu pra entrar numa partida em andamento com vaga');
+  late.ws.close();
+
+  if (TO_END) {
+    const alive = fakes.filter((f) => !f.closed);
+    const t1 = performance.now();
+    const again = alive.map((f) => setInterval(() => f.act(), 1000 / APS));
+    while (!alive[0].events.end && performance.now() - t1 < 30 * 60000 && !serverDead) await sleep(1000);
+    again.forEach(clearInterval);
+    say('partida até o fim', alive[0].events.end ? `acabou em ${((performance.now() - start) / 60000).toFixed(1)} min` : 'NÃO ACABOU em 30 min');
+    const t2 = performance.now();
+    while (alive[0].room.state !== 'lobby' && performance.now() - t2 < 20000) await sleep(200);
+    say('volta pra sala', alive[0].room.state === 'lobby' ? `${((performance.now() - t2) / 1000).toFixed(0)} s depois do fim, ${alive[0].room.members.length} pessoas` : 'NÃO VOLTOU');
+    if (alive[0].room.state !== 'lobby') problems.push('a sala não voltou pro saguão depois da partida');
+    for (const f of alive) f.id = 0;
+    alive.find((f) => f.room.host === f.room.you)?.send({ t: 'start' });
+    await sleep(600);
+    const ok2 = alive.every((f) => f.id && f.phase === 'draft');
+    say('segunda partida na mesma sala', ok2 ? 'começou na escolha de herói' : 'NÃO COMEÇOU');
+    if (!ok2) problems.push('a segunda partida na mesma sala não começou');
+  }
+
   for (const f of fakes) f.ws.close();
   await sleep(800);
-  const back = new Fake(50);
-  await back.connect();
-  await sleep(1500);
-  say('todos saem e um volta', back.id ? `entra numa partida nova, fase "${back.phase}"` : 'não conseguiu entrar');
-  if (!back.id || back.phase !== 'draft') problems.push(`voltar pra sala vazia caiu na fase "${back.phase}"`);
-  back.ws.close();
-  await sleep(300);
+  const gone = new Fake(50);
+  await gone.connect({ t: 'join', room: code });
+  await sleep(500);
+  say('sala vazia', gone.refused === 'noroom' ? 'é apagada' : 'CONTINUA EXISTINDO');
+  if (gone.refused !== 'noroom') problems.push('sala vazia não foi apagada');
 } catch (e) {
   problems.push(`o teste quebrou: ${e.message}`);
 }

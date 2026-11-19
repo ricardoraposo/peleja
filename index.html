@@ -148,6 +148,23 @@
       </div>
     </div>
 
+    <div id="lobby" class="hidden">
+      <div class="lobby-inner">
+        <div class="draft-head">
+          <div class="draft-title">Sala <span id="lobby-code"></span></div>
+          <div class="draft-sub" id="lobby-sub"></div>
+        </div>
+        <div class="invite"><input id="lobby-link" readonly /><button id="lobby-copy" class="ghost">Copiar link</button></div>
+        <div id="lobby-warn" class="net-msg hidden"></div>
+        <div class="lobby-teams">
+          <div class="lobby-team blue"><h3>Azul</h3><div id="lobby-blue"></div></div>
+          <div class="lobby-team red"><h3>Vermelho</h3><div id="lobby-red"></div></div>
+        </div>
+        <div id="lobby-cfg"></div>
+        <div class="draft-actions"><button id="lobby-leave" class="ghost big">Sair da sala</button><button id="lobby-start" class="play">COMEÇAR</button></div>
+      </div>
+    </div>
+
     <div id="menu">
       <div class="menu-inner">
         <div class="brand">
@@ -181,6 +198,11 @@
             <div class="play-row">
               <button id="play" class="play">CONTRA BOTS</button>
               <button id="play-online" class="play online">ONLINE</button>
+            </div>
+            <div id="online-box" class="online-box hidden">
+              <button id="room-create" class="play online">CRIAR SALA</button>
+              <div class="join-row"><input id="room-code" maxlength="4" placeholder="CÓDIGO" autocomplete="off" spellcheck="false" /><button id="room-join" class="ghost">Entrar na sala</button></div>
+              <small>Crie uma sala e mande o link pros amigos, ou entre com o código de uma sala que já existe.</small>
             </div>
             <button id="play-sandbox" class="ghost sandbox hidden">Treino livre: teste heróis, itens e mecânicas sem partida</button>
             <div id="net-msg" class="net-msg hidden"></div>
