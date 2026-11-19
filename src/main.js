@@ -1,5 +1,5 @@
 import { initAudio, playSound, setVolume } from './audio.js';
-import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS } from './config.js';
+import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS, MAP } from './config.js';
 import { Game } from './game.js';
 import { esc, heroCard, setKeyLabel, spellPicker } from './hud.js';
 import { ACTIONS, DEFAULT_KEYS, canBind, cleanKeys, keyName } from './keys.js';
@@ -372,7 +372,7 @@ function renderHelp() {
     `<kbd>Shift</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
     `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,
     `${k('amove')} + clique: atacar o que aparecer`,
-    `${k('stop')} parar · ${k('shop')} loja`,
+    `${k('stop')} parar · ${k('shop')} loja · ${k('recall')} voltar pra base (${MAP.recall} s parado)`,
     `Mouse na borda move a câmera · ${k('center')} centraliza · ${k('cam')} prende no herói`,
     `${k('board')} placar · <kbd>Esc</kbd> pausa e solta o mouse`,
   ].map((li) => `<li>${li}</li>`).join('');

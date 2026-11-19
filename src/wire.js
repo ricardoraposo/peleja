@@ -58,6 +58,7 @@ const COMMANDS = {
   am: { x: 'n', z: 'n', h: 'u?' },
   at: { id: 'u' },
   st: {},
+  rc: {},
   c: { s: 's', x: 'n', z: 'n', id: 'u?' },
   up: { s: 's' },
   buy: { i: 's' },

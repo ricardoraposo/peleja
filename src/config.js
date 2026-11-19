@@ -12,6 +12,10 @@ export const MAP = {
   baseR: 17,
   fountainX: 96,
   fountainLaser: 13,
+  // voltar pra base: segundos parado canalizando (dano, andar ou agir cancela) e a cura da fonte
+  recall: 8,
+  fountainHealR: 6,
+  fountainHeal: 0.12, // fração da vida máxima por segundo, pra quem está fora de combate há 3 s
   // obstáculos do lado azul (x < 0); o lado vermelho é espelhado
   obstacles: [
     [-15, 5.8, 1.6],

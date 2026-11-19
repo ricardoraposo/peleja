@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TEAMS } from './config.js';
+import { MAP, TEAMS } from './config.js';
 import { F } from './sim.js';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
@@ -1190,6 +1190,17 @@ export class HeroModel {
     }
     this.hearts.position.y = 2.6;
     this.fx.add(this.hearts);
+    // voltando pra base: coluna de luz e um anel no chão que fecha até a hora de sumir
+    this.recallFx = new THREE.Group();
+    const beam = part(glowMat('#7dd3fc', 0.28), 0.75, 4.5, 0.75, 0, 2.25, 0, CYL);
+    const rring = part(glowMat('#e0f2fe', 0.9), 1, 0.05, 1, 0, 0.06, 0, CYL);
+    beam.castShadow = rring.castShadow = false;
+    this.recallFx.add(beam, rring);
+    this.recallFx.visible = false;
+    this.recallRing = rring;
+    this.recallBeam = beam;
+    this.recallAge = 0;
+    this.fx.add(this.recallFx);
     // projéteis esperando um alvo (Cardume): ficam rodando em volta do herói
     this.orbit = new THREE.Group();
     for (let i = 0; i < 3; i++) {
@@ -1465,6 +1476,16 @@ export class HeroModel {
     this.stars.visible = !!(f & F.stun) || !!(f & F.air) || !!(f & F.sleep);
     if (this.boar) this.boar.position.y = moving ? Math.abs(Math.sin(this.walk * 1.3)) * 0.08 : 0;
     this.stars.rotation.y = time * 5;
+    const recalling = !!(f & F.recall);
+    this.recallAge = recalling ? this.recallAge + dt : 0;
+    this.recallFx.visible = recalling;
+    if (recalling) {
+      const k = Math.min(1, this.recallAge / MAP.recall);
+      const rs = 1.5 - k * 1.1;
+      this.recallRing.scale.set(rs, 0.05, rs);
+      this.recallBeam.scale.set(0.5 + k * 0.4 + Math.sin(time * 9) * 0.05, 4.5, 0.5 + k * 0.4 + Math.sin(time * 9) * 0.05);
+      this.recallBeam.material.opacity = 0.18 + k * 0.4;
+    }
     this.hearts.visible = !!(f & F.charm);
     this.hearts.rotation.y = -time * 3;
     this.hearts.position.y = 2.6 + Math.sin(time * 5) * 0.08;

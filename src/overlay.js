@@ -103,6 +103,11 @@ export class Overlay {
           c.fillStyle = '#e8c170';
           c.strokeText('ESTÁTUA', p[0] + 10, y + 22);
           c.fillText('ESTÁTUA', p[0] + 10, y + 22);
+        } else if (u.flags & F.recall) {
+          c.font = '700 11px Rubik, sans-serif';
+          c.fillStyle = '#7dd3fc';
+          c.strokeText('VOLTANDO', p[0] + 10, y + 22);
+          c.fillText('VOLTANDO', p[0] + 10, y + 22);
         } else if (u.flags & F.sleep) {
           c.font = '700 11px Rubik, sans-serif';
           c.fillStyle = '#c4b5fd';

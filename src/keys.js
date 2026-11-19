@@ -17,6 +17,7 @@ export const ACTIONS = [
   ['amove', 'Atacar o que aparecer (+ clique)', 'KeyA'],
   ['stop', 'Parar', 'KeyS'],
   ['shop', 'Abrir a loja', 'KeyB'],
+  ['recall', 'Voltar pra base', 'KeyT'],
   ['cam', 'Prender ou soltar a câmera', 'KeyY'],
   ['center', 'Centralizar no herói (segurar)', 'Space'],
   ['board', 'Placar (segurar)', 'Tab'],

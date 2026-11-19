@@ -14,8 +14,8 @@
 Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **duas torres**, um **selo**, mais **duas torres** e o **núcleo**: derrube tudo em ordem e quebre o núcleo inimigo.
 
 - **Tropas** marcham dos dois lados a cada 26 segundos.
-- **Não dá pra voltar pra base curar**: a cura está nas frutas espalhadas pela ponte.
-- **A loja só abre na base ou quando você cai**, então cada compra é uma decisão.
+- **Cura**: frutas espalhadas pela ponte, ou voltando pra base com `T` (8 segundos parado; dano ou qualquer ação cancela). Na fonte a vida volta depressa.
+- **A loja só abre na base ou quando você cai**, então voltar pra comprar custa tempo de rota.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
 
 <p align="center">
@@ -90,6 +90,7 @@ Todos os atalhos podem ser trocados em **Configurações**.
 | `1` a `6` | Usa os itens do inventário |
 | `A` + clique | Avança atacando o que aparecer (com `Shift`, só heróis) |
 | `S` | Parar |
+| `T` | Voltar pra base |
 | `B` | Loja |
 | `Espaço` | Centraliza a câmera no herói |
 | `Y` | Prende ou solta a câmera |

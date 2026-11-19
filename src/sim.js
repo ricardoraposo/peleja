@@ -29,7 +29,7 @@ import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -449,6 +449,7 @@ export class Sim {
     h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = h.sleepT = 0;
     h.drowsy = null;
     h.goBack = null;
+    h.recallT = 0;
     h.orb = null;
     h.bolts = null;
     h.charge = null;
@@ -693,8 +694,16 @@ export class Sim {
     h.windup = 0;
   }
 
+  // voltar pra base: fica parado canalizando e, se nada interromper, reaparece na fonte
+  recall(h) {
+    if (!this.canAct(h) || h.cc || h.dash || h.castT > 0 || h.goBack || h.recallT > 0) return;
+    this.orderStop(h);
+    h.recallT = MAP.recall;
+  }
+
   orderStop(h) {
     if (!this.canAct(h)) return;
+    h.recallT = 0;
     h.order = { type: 'idle' };
     h.target = null;
     h.windup = 0;
@@ -755,6 +764,7 @@ export class Sim {
   }
 
   beginCast(h, slot, ab, x, z, t) {
+    h.recallT = 0;
     if (h.recast && h.recast.slot === slot) {
       h.cds[slot] = Math.max(0, h.recast.cd);
       h.recast = null;
@@ -1299,6 +1309,7 @@ queueBolts(h, ab, slot, color) {
 
   damage(t, src, amount, type = 'phys', opts = {}) {
     if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god || t.stasisT > 0) return 0;
+    t.recallT = 0;
     if (t.sleepT > 0) {
       // acordou com o golpe: leva o mesmo tanto de novo (até o teto) como dano verdadeiro
       t.sleepT = 0;
@@ -1656,6 +1667,19 @@ queueBolts(h, ab, slot, color) {
       }
     }
     if (u.charmT > 0) u.charmT -= dt;
+    if (u.recallT > 0) {
+      if (u.cc || u.dash || u.disp) u.recallT = 0;
+      else if ((u.recallT -= dt) <= 0) {
+        u.recallT = 0;
+        const from = [r1(u.x), r1(u.z)];
+        [u.x, u.z] = this.spawnPoint(u);
+        u.order = { type: 'idle' };
+        u.target = null;
+        this.emit({ e: 'blink', id: u.id, a: from, b: [r1(u.x), r1(u.z)], c: u.def?.color || '#ffffff', fl: 1 });
+      }
+    }
+    // na fonte, fora de combate, a vida volta depressa
+    if (u.isHero && u.hp < u.maxHp && this.time - u.combatT > 3 && Math.hypot(u.x - fountainX(u.team), u.z) < MAP.fountainHealR) u.hp = Math.min(u.maxHp, u.hp + u.maxHp * MAP.fountainHeal * dt);
     if (u.sleepT > 0) u.sleepT -= dt;
     if (u.drowsy && (u.drowsy.t -= dt) <= 0) {
       u.sleepT = u.drowsy.sleep;
@@ -1901,6 +1925,14 @@ queueBolts(h, ab, slot, color) {
       h.windup = 0;
       if (h.charmT > 0 && h.stunT <= 0 && h.airT <= 0 && !h.disp && h.stasisT <= 0 && h.fearT <= 0) this.charmWalk(h);
       return;
+    }
+    if (h.recallT > 0) {
+      // canalizando a volta: qualquer ordem nova cancela; parado, nem revida
+      if (h.order.type !== 'idle') h.recallT = 0;
+      else {
+        h.windup = 0;
+        return;
+      }
     }
     if (h.castT > 0) {
       h.castT -= dt;
@@ -2466,6 +2498,9 @@ queueBolts(h, ab, slot, color) {
       case 'st':
         this.orderStop(h);
         break;
+      case 'rc':
+        this.recall(h);
+        break;
       case 'c':
         this.cast(h, String(msg.s), x, z, Number(msg.id));
         break;
@@ -2510,6 +2545,7 @@ queueBolts(h, ab, slot, color) {
     if (u.stasisT > 0) f |= F.stasis;
     if (u.charmT > 0) f |= F.charm;
     if (u.sleepT > 0) f |= F.sleep;
+    if (u.recallT > 0) f |= F.recall;
     if (u.bolts) f |= F.orbs;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;

@@ -1,5 +1,7 @@
 import { BUILDS, ITEMS, TOWER, abilityOf, BUILDS_ALT, nextBuy } from './config.js';
 import { fountainX, pushDir } from './geo.js';
+// bots voltando pra base curar alongavam demais as partidas (várias batendo no limite de 40 min); fica desligado
+const BOT_RECALL = false;
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const hpf = (u) => u.hp / u.maxHp;
@@ -150,6 +152,13 @@ export class BotBrain {
     const tankers = threat ? allies.filter((a) => dist(a, threat) <= TOWER.range + 1).length : 0;
     const holdTower = targetedByTower && pushing && life > 0.45 && (hpf(threat) < 0.35 || tankers >= 2);
 
+    // 0) machucado e sem ninguém por perto: volta pra base pra curar na fonte
+    if (h.recallT > 0) {
+      if (!near.some((e) => dist(e, h) < 11)) return;
+    } else if (BOT_RECALL && life < 0.3 && near.length === 0 && Math.abs(h.x - fountainX(h.team)) > 14 && !sim.sandbox) {
+      sim.recall(h);
+      if (h.recallT > 0) return;
+    }
     // 1) perigo: recua
     const danger = near.filter((e) => dist(e, h) < 9).length;
     if ((life < 0.28 && danger > 0) || (targetedByTower && !holdTower && !(life > 0.6 && near.some((e) => hpf(e) < 0.2 && dist(e, h) < h.stats.range + 1)))) {

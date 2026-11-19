@@ -999,6 +999,10 @@ export class Game {
           if (this.playing) this.send({ t: 'st' });
           this.targetId = 0;
           break;
+        case 'recall':
+          if (this.playing) this.send({ t: 'rc' });
+          this.targetId = 0;
+          break;
         case 'shop':
           this.toggleShop();
           break;
