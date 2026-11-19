@@ -1237,6 +1237,18 @@ queueBolts(h, ab, slot, color) {
     this.emit({ e: 'aoe', x: r1(x), z: r1(z), r, t: delay, c: color, tm: h.team, o: h.id });
   }
 
+  // habilidade em área também desgasta estrutura inimiga, com uma fração do dano e sem efeitos;
+  // sem isso, time só de magos não derrubava torre e a partida travava aos 40 min.
+  // `seg` = [x1, z1, x2, z2] pra zona em linha (parede de fogo)
+  structHit(h, x, z, r, dmg, type, seg = null) {
+    if (!h?.isHero) return;
+    for (const s of this.structs[1 - h.team]) {
+      if (!s.alive) continue;
+      const far = seg ? segDist2(s.x, s.z, seg[0], seg[1], seg[2], seg[3])[0] > (r + s.r) ** 2 : Math.hypot(s.x - x, s.z - z) > r + s.r;
+      if (!far) this.damage(s, h, dmg * MATCH.abilityStructDmg, type || 'magic');
+    }
+  }
+
   hitArea(h, x, z, r, dmg, type, fx, color) {
     for (const u of this.units) {
       if (!u.alive || u.team === h.team || u.isStructure) continue;
@@ -1244,6 +1256,7 @@ queueBolts(h, ab, slot, color) {
       this.damage(u, h, dmg, type || 'magic');
       this.applyFx(u, fx, h, x, z);
     }
+    this.structHit(h, x, z, r, dmg, type);
     this.emit({ e: 'boom', x: r1(x), z: r1(z), r, c: color, o: h.id });
   }
 
@@ -1750,6 +1763,7 @@ queueBolts(h, ab, slot, color) {
               if (dist(o, u) > b.aura.radius + o.r) continue;
               this.damage(o, src, dmg, b.aura.dmg.type);
             }
+            this.structHit(src, u.x, u.z, b.aura.radius, dmg, b.aura.dmg.type);
           }
         }
       }
@@ -2094,6 +2108,7 @@ queueBolts(h, ab, slot, color) {
       if (ab.fury && !emp) gained += hero ? ab.fury[1] : ab.fury[0];
       this.applyFx(u, ab.fx, h);
     }
+    this.structHit(h, h.x, h.z, ab.radius, dmg, ab.dmg.type);
     if (healed > 0) this.heal(h, healed, h);
     if (gained > 0) this.addFury(h, Math.min(gained, ab.fury[2]));
     this.emit({ e: 'boom', x: r1(h.x), z: r1(h.z), r: ab.radius, c: emp ? '#ef4444' : color, o: h.id });
@@ -2332,6 +2347,7 @@ queueBolts(h, ab, slot, color) {
         this.damage(o, owner, dmg, p.type);
         this.applyFx(o, p.fx, owner);
       }
+      this.structHit(owner, u.x, u.z, p.explode, dmg, p.type);
       this.emit({ e: 'boom', x: r1(u.x), z: r1(u.z), r: p.explode, c: p.color, o: owner.id });
       return;
     }
@@ -2368,6 +2384,7 @@ queueBolts(h, ab, slot, color) {
       zn.tickT -= dt;
       if (zn.tickT > 0) continue;
       zn.tickT += zn.tick;
+      if (!zn.once) this.structHit(zn.owner, zn.x, zn.z, zn.r, zn.dmg, zn.type, zn.line);
       for (const u of this.units) {
         if (!u.alive || u.team === zn.team || u.isStructure) continue;
         if (zn.line) {

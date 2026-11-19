@@ -449,7 +449,7 @@ export class BotBrain {
         let pick = null;
         for (const a of ctx.alliesNear) {
           const da = dist(a, h);
-          if (hpf(a) > 0.5 || da < 3.5 || da > ab.range || !near.some((e) => dist(e, a) < 6)) continue;
+          if (hpf(a) > 0.7 || da < 3.5 || da > ab.range || !near.some((e) => dist(e, a) < 6)) continue;
           if (!pick || hpf(a) < hpf(pick)) pick = a;
         }
         return pick ? [pick.x, pick.z, 0] : null;
@@ -464,6 +464,15 @@ export class BotBrain {
       }
       // canto que fortalece o time: vale na briga, com inimigo ao alcance das notas se tiver
       if (ab.buff && !ab.shield) return ctx.fight && ctx.target && dist(ctx.target, h) < (ab.bolts ? ab.bolts.range : 10) ? [h.x, h.z, 0] : null;
+      if (ab.shield && ab.range > 0) {
+        // escudo lançado num aliado: vai pra quem está mais machucado com inimigo em cima (pode ser você)
+        let pick = null;
+        for (const a of [h, ...ctx.alliesNear]) {
+          if (dist(a, h) > ab.range || !near.some((e) => dist(e, a) < 7)) continue;
+          if (!pick || hpf(a) < hpf(pick)) pick = a;
+        }
+        return pick && (ctx.fight || hpf(pick) < 0.6) ? [pick.x, pick.z, 0] : null;
+      }
       if (ab.shield) {
         const busy = [h, ...ctx.alliesNear].filter((a) => dist(a, h) <= ab.radius && near.some((e) => dist(e, a) < 7));
         return busy.length > 0 && (ctx.fight || life < 0.6) ? [h.x, h.z, 0] : null;
