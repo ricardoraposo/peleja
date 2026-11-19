@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DEFAULT_KEYS, keyName } from './keys.js';
 import { MouseGrab } from './grab.js';
 import { initAudio, playSound, setListener, setMuted } from './audio.js';
 import { HERO_ORDER, HEROES, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
@@ -18,7 +19,6 @@ const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _ndc = new THREE.Vector2();
 const STRUCT = new Set(['tower', 'selo', 'core']);
-const KEY_SLOT = { KeyQ: 'q', KeyW: 'w', KeyE: 'e', KeyR: 'r', KeyD: 'd', KeyF: 'f' };
 
 function lerpAngle(a, b, t) {
   let d = b - a;
@@ -84,6 +84,12 @@ export class Game {
     this.snapLt = 0;
     this.time = 0;
     this.cam = { x: 0, z: 0, h: 26, zoom: 26, locked: false };
+    // preferências do menu de configurações (o main.js preenche com o que está salvo)
+    this.castMode = 'release';
+    this.camSpeed = 1;
+    this.inputBlocked = false;
+    this.keys = { ...DEFAULT_KEYS };
+    this.codeAction = {};
     this.camSnap = false;
     this.lastEsc = 0;
     this.shake = 0;
@@ -712,6 +718,22 @@ export class Game {
     }
   }
 
+  // troca os atalhos: `keys` é ação -> tecla (ver src/keys.js)
+  setKeys(keys) {
+    this.keys = { ...keys };
+    this.codeAction = {};
+    for (const [action, code] of Object.entries(this.keys)) if (code) this.codeAction[code] = action;
+    this.hud.heroId = null;
+    const hint = document.querySelector('#cam-hint kbd');
+    if (hint) hint.textContent = this.keyLabel('cam');
+    const close = document.getElementById('shop-close');
+    if (close) close.title = `Fechar (${this.keyLabel('shop')})`;
+  }
+
+  keyLabel(action) {
+    return keyName(this.keys[action]);
+  }
+
   castSlot(slot) {
     const me = this.me;
     if (!me) return;
@@ -742,7 +764,10 @@ export class Game {
       return;
     }
     const ab = abilityOf(me.heroId, slot, this.mySpells);
-    if (ab.kind === 'self') {
+    // 'instant': lança na hora onde o mouse está · 'release': mira segurando e lança ao soltar ·
+    // 'click': a tecla só mostra a mira, o clique esquerdo lança e o direito cancela
+    if (ab.kind === 'self' || this.castMode === 'instant') {
+      this.aiming = null;
       this.castSlot(slot);
       return;
     }
@@ -751,7 +776,7 @@ export class Game {
   }
 
   releaseSlot(slot) {
-    if (this.aiming !== slot) return;
+    if (this.aiming !== slot || this.castMode === 'click') return;
     this.aiming = null;
     this.castSlot(slot);
   }
@@ -881,58 +906,56 @@ export class Game {
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.target instanceof HTMLInputElement) return;
+      if (e.target instanceof HTMLInputElement || this.inputBlocked) return;
       if (this.phase === 'idle' || this.spectator) return;
-      if (e.code === 'Tab') {
-        e.preventDefault();
+      if (e.code === 'Tab' || e.code === 'Space') e.preventDefault();
+      if (e.code === 'Escape') {
+        if (!e.repeat) this.escape();
+        return;
+      }
+      const act = this.codeAction[e.code];
+      if (!act) return;
+      e.preventDefault();
+      if (act === 'board') {
         this.hud.el.board.classList.remove('hidden');
         this.hud.renderBoard();
         return;
       }
-      if (e.code === 'Space') e.preventDefault();
       if (e.repeat) return;
-      const slot = KEY_SLOT[e.code];
-      if (slot && e.shiftKey) {
-        this.rankUp(slot);
+      if (SLOTS.includes(act)) {
+        if (e.shiftKey) this.rankUp(act);
+        else this.pressSlot(act);
         return;
       }
-      if (slot) {
-        this.pressSlot(slot);
-        return;
-      }
-      switch (e.code) {
-        case 'KeyA':
+      switch (act) {
+        case 'amove':
           if (this.playing) {
             this.amove = true;
             this.aiming = null;
           }
           break;
-        case 'KeyS':
+        case 'stop':
           if (this.playing) this.send({ t: 'st' });
           this.targetId = 0;
           break;
-        case 'KeyB':
-        case 'KeyP':
+        case 'shop':
           this.toggleShop();
           break;
-        case 'KeyY':
+        case 'cam':
           this.cam.locked = !this.cam.locked;
           break;
-        case 'Space':
+        case 'center':
           this.spaceHeld = true;
-          break;
-        case 'Escape':
-          this.escape();
           break;
         default:
           break;
       }
     });
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'Tab') this.hud.el.board.classList.add('hidden');
-      if (e.code === 'Space') this.spaceHeld = false;
-      const slot = KEY_SLOT[e.code];
-      if (slot) this.releaseSlot(slot);
+      const act = this.codeAction[e.code];
+      if (act === 'board') this.hud.el.board.classList.add('hidden');
+      else if (act === 'center') this.spaceHeld = false;
+      else if (SLOTS.includes(act)) this.releaseSlot(act);
     });
     window.addEventListener('blur', () => {
       this.rightHeld = false;
@@ -1035,7 +1058,7 @@ export class Game {
       c.z += (me.z - c.z) * k;
     } else if ((this.mouse.inside || this.mouse.out) && document.hasFocus() && this.phase === 'playing') {
       const edge = this.grab.locked ? 3 : 18;
-      const sp = (30 + c.h * 0.9) * dt;
+      const sp = (30 + c.h * 0.9) * dt * this.camSpeed;
       const out = this.mouse.inside ? null : this.mouse.out;
       const ex = out ? out.ex : this.mouse.x < edge ? -1 : this.mouse.x > window.innerWidth - edge ? 1 : 0;
       const ey = out ? out.ey : this.mouse.y < edge ? -1 : this.mouse.y > window.innerHeight - edge ? 1 : 0;
@@ -1055,7 +1078,7 @@ export class Game {
     this.sun.position.set(c.x + 30, 70, c.z + 25);
     this.sun.target.position.set(c.x, 0, c.z);
     setListener(c.x, c.z, flip);
-    document.getElementById('cam-mode').textContent = c.locked ? 'câmera presa no herói' : 'câmera solta · Espaço centraliza';
+    document.getElementById('cam-mode').textContent = c.locked ? 'câmera presa no herói' : `câmera solta · ${this.keyLabel('center')} centraliza`;
   }
 
   // ---------- quadro ----------

@@ -1,7 +1,8 @@
 import { initAudio, playSound, setVolume } from './audio.js';
 import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS } from './config.js';
 import { Game } from './game.js';
-import { esc, heroCard, spellPicker } from './hud.js';
+import { esc, heroCard, setKeyLabel, spellPicker } from './hud.js';
+import { ACTIONS, DEFAULT_KEYS, canBind, cleanKeys, keyName } from './keys.js';
 import { LocalTransport, SocketTransport, serverUrl } from './net.js';
 
 const $ = (id) => document.getElementById(id);
@@ -30,6 +31,11 @@ const settings = {
   volume: stored.volume ?? 0.7,
   // padrão: cursor do próprio sistema (sem atraso). 'mouse' substitui a antiga opção 'grab'.
   mouse: [0, 1, 2].includes(stored.mouse) ? stored.mouse : 0,
+  // como as habilidades saem: 'release' mira segurando e lança ao soltar, 'instant' na hora, 'click' confirma no clique
+  cast: ['release', 'instant', 'click'].includes(stored.cast) ? stored.cast : 'release',
+  camLock: stored.camLock ? 1 : 0,
+  camSpeed: Math.max(0.5, Math.min(2, Number(stored.camSpeed) || 1)),
+  keys: cleanKeys(stored.keys),
   // último herói escolhido: já vem marcado na próxima partida
   hero: HEROES[stored.hero] ? stored.hero : '',
   // feitiços do D e do F: também voltam marcados
@@ -40,6 +46,11 @@ setVolume(settings.volume);
 const game = new Game($('game'), $('overlay'));
 window.__peleja = game;
 game.grab.mode = settings.mouse;
+game.castMode = settings.cast;
+game.camSpeed = settings.camSpeed;
+game.cam.locked = !!settings.camLock;
+setKeyLabel((action) => game.keyLabel(action));
+game.setKeys(settings.keys);
 const params = new URLSearchParams(location.search);
 let mode = 'bots';
 let endTimer = null;
@@ -331,7 +342,112 @@ function seg(id, key, parse = (v) => v) {
 seg('diff', 'difficulty');
 seg('size', 'size', Number);
 seg('grab', 'mouse', Number);
-$('grab').addEventListener('click', () => (game.grab.mode = settings.mouse));
+seg('cast', 'cast');
+seg('camlock', 'camLock', Number);
+
+// ---------- configurações ----------
+
+const CAST_DESC = {
+  release: 'Segurar a tecla mostra a mira; soltar lança onde o mouse está.',
+  instant: 'Apertou, lançou onde o mouse está, sem mostrar a mira.',
+  click: 'A tecla mostra a mira; o botão esquerdo lança e o direito cancela.',
+};
+const GRAB_DESC = [
+  'Cursor do próprio sistema, sem atraso. A câmera anda quando o mouse encosta ou sai pela borda da janela.',
+  'O jogo segura o mouse dentro da janela e desenha o cursor. Tem um pequeno atraso.',
+  'Igual ao Normal, em tela cheia: o mouse não tem pra onde sair.',
+];
+let binding = '';
+
+function renderHelp() {
+  const k = (...ids) => ids.map((id) => `<kbd>${esc(keyName(settings.keys[id]))}</kbd>`).join('');
+  const how = { release: 'solte pra lançar', instant: 'lançam na hora', click: 'clique pra lançar' }[settings.cast];
+  $('help-keys').innerHTML = [
+    '<kbd>Botão direito</kbd> andar · atacar',
+    `${k('q', 'w', 'e', 'r')} habilidades (${how})`,
+    `<kbd>Shift</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
+    `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,
+    `${k('amove')} + clique: atacar o que aparecer`,
+    `${k('stop')} parar · ${k('shop')} loja`,
+    `Mouse na borda move a câmera · ${k('center')} centraliza · ${k('cam')} prende no herói`,
+    `${k('board')} placar · <kbd>Esc</kbd> pausa e solta o mouse`,
+  ].map((li) => `<li>${li}</li>`).join('');
+}
+
+function renderSettings() {
+  $('cast-desc').textContent = CAST_DESC[settings.cast];
+  $('grab-desc').textContent = GRAB_DESC[settings.mouse];
+  $('camspeed').value = settings.camSpeed;
+  $('camspeed-val').textContent = Math.round(settings.camSpeed * 100);
+  $('binds').innerHTML = ACTIONS.map(([id, label]) => `<div class="bind"><span>${label}</span><button data-bind="${id}" class="${binding === id ? 'on' : ''}">${binding === id ? 'Aperte uma tecla…' : esc(keyName(settings.keys[id]))}</button></div>`).join('');
+}
+
+function applySettings() {
+  game.grab.mode = settings.mouse;
+  game.castMode = settings.cast;
+  game.camSpeed = settings.camSpeed;
+  game.setKeys(settings.keys);
+  save(settings);
+  renderSettings();
+  renderHelp();
+}
+
+function openSettings(v) {
+  binding = '';
+  game.inputBlocked = v;
+  show('settings', v);
+  if (v) renderSettings();
+}
+
+$('open-settings').addEventListener('click', () => openSettings(true));
+$('pause-settings').addEventListener('click', () => openSettings(true));
+$('set-close').addEventListener('click', () => openSettings(false));
+$('settings').addEventListener('mousedown', (e) => {
+  if (e.target === $('settings')) openSettings(false);
+});
+for (const id of ['grab', 'cast']) $(id).addEventListener('click', applySettings);
+$('camlock').addEventListener('click', () => (game.cam.locked = !!settings.camLock));
+$('camspeed').addEventListener('input', (e) => {
+  settings.camSpeed = Number(e.target.value);
+  applySettings();
+});
+$('binds').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-bind]');
+  if (!b) return;
+  binding = binding === b.dataset.bind ? '' : b.dataset.bind;
+  playSound('click');
+  renderSettings();
+});
+$('binds-reset').addEventListener('click', () => {
+  binding = '';
+  settings.keys = { ...DEFAULT_KEYS };
+  playSound('click');
+  applySettings();
+});
+// com as configurações abertas o teclado é só delas: Esc fecha (ou cancela a troca) e a próxima tecla vira o atalho
+window.addEventListener('keydown', (e) => {
+  if ($('settings').classList.contains('hidden')) return;
+  e.stopPropagation();
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (binding) {
+      binding = '';
+      renderSettings();
+    } else openSettings(false);
+    return;
+  }
+  if (!binding) return;
+  e.preventDefault();
+  if (!canBind(e.code)) return;
+  // tecla já usada: a outra ação fica com a tecla antiga desta
+  const other = ACTIONS.map(([id]) => id).find((id) => id !== binding && settings.keys[id] === e.code);
+  if (other) settings.keys[other] = settings.keys[binding];
+  settings.keys[binding] = e.code;
+  binding = '';
+  playSound('click');
+  applySettings();
+}, true);
+renderHelp();
 $('vol').addEventListener('input', (e) => {
   settings.volume = Number(e.target.value);
   $('vol-val').textContent = Math.round(settings.volume * 100);

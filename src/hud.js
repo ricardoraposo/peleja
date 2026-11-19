@@ -105,7 +105,7 @@ function fxText(fx) {
 }
 
 export function abilityTip(ab, slot, ctx = null) {
-  const key = slot.toUpperCase();
+  const key = keyLabel(slot);
   const c = ctx || { lv: 1, rank: 1, atk: 0, pow: 0, hp: 0 };
   const max = RANK_MAX[slot];
   const lines = [];
@@ -158,6 +158,10 @@ export function itemStats(it, heroId = null, sep = ' · ') {
 }
 
 // desenho do item (cada um tem o seu) e a classe da moldura, que fica mais rica a cada nível do item
+// rótulo da tecla de cada ação (o jogo troca quando o jogador muda os atalhos)
+let keyLabel = (action) => action.toUpperCase();
+export const setKeyLabel = (fn) => (keyLabel = fn);
+
 export const itemIcon = (id) => ITEM_ICONS[id] || ICONS[ITEMS[id]?.icon] || '';
 const tierClass = (id) => `tier${itemTier(id)}`;
 
@@ -183,13 +187,13 @@ export function spellPicker(spells, active) {
   const slots = ['d', 'f']
     .map((s) => {
       const ab = SPELL_POOL[spells[s]];
-      return `<button class="sp-slot${s === active ? ' on' : ''}" data-slot="${s}" style="--c:${ab.color}"><kbd>${s.toUpperCase()}</kbd><span class="sp-ic">${ICONS[ab.icon] || ''}</span><b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
+      return `<button class="sp-slot${s === active ? ' on' : ''}" data-slot="${s}" style="--c:${ab.color}"><kbd>${keyLabel(s)}</kbd><span class="sp-ic">${ICONS[ab.icon] || ''}</span><b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
     })
     .join('');
   const opts = SPELL_ORDER.map((id) => {
     const ab = SPELL_POOL[id];
     const mark = spells[active] === id ? active : spells[other] === id ? other : '';
-    return `<button class="sp-opt${mark === active ? ' on' : ''}" data-spell="${id}" style="--c:${ab.color}"><span class="sp-ic">${ICONS[ab.icon] || ''}</span>${mark ? `<kbd>${mark.toUpperCase()}</kbd>` : ''}<b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
+    return `<button class="sp-opt${mark === active ? ' on' : ''}" data-spell="${id}" style="--c:${ab.color}"><span class="sp-ic">${ICONS[ab.icon] || ''}</span>${mark ? `<kbd>${keyLabel(mark)}</kbd>` : ''}<b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
   }).join('');
   const cur = SPELL_POOL[spells[active]];
   return `<div class="sp-slots">${slots}</div><div class="sp-opts">${opts}</div><p class="sp-desc"><b style="color:${cur.color}">${esc(cur.name)}</b> · ${esc(cur.desc)} <i>Recarga de ${cur.cd} s.</i></p>`;
@@ -200,7 +204,7 @@ export function heroCard(heroId, big = false) {
   const abil = ['q', 'w', 'e', 'r']
     .map((s) => {
       const ab = h.abilities[s];
-      return `<div class="hc-ab" title="${esc(ab.desc)}"><span class="hc-key">${s.toUpperCase()}</span><span class="hc-icon">${ICONS[ab.icon] || ''}</span><span class="hc-name">${esc(ab.name)}${big ? `<small>${esc(ab.desc)}</small>` : ''}</span></div>`;
+      return `<div class="hc-ab" title="${esc(ab.desc)}"><span class="hc-key">${keyLabel(s)}</span><span class="hc-icon">${ICONS[ab.icon] || ''}</span><span class="hc-name">${esc(ab.name)}${big ? `<small>${esc(ab.desc)}</small>` : ''}</span></div>`;
     })
     .join('');
   return `<div class="hero-card${big ? ' big' : ''}" style="--c:${h.color}">
@@ -273,8 +277,8 @@ export class Hud {
       d.className = 'skill' + (slot === 'd' || slot === 'f' ? ' spell' : '') + (slot === 'r' ? ' ult' : '');
       d.style.setProperty('--c', ab.color || h.color);
       const max = RANK_MAX[slot] || 0;
-      const pips = max ? `<div class="sk-rank">${'<i></i>'.repeat(max)}</div><button class="sk-up" data-up="${slot}" title="Evoluir (Shift+${slot.toUpperCase()})">+</button>` : '';
-      d.innerHTML = `<div class="sk-icon">${ICONS[ab.icon] || ''}</div><div class="sk-cd"></div><div class="sk-num"></div><div class="sk-key">${slot.toUpperCase()}</div>${pips}<div class="tip">${abilityTip(ab, slot)}</div>`;
+      const pips = max ? `<div class="sk-rank">${'<i></i>'.repeat(max)}</div><button class="sk-up" data-up="${slot}" title="Evoluir (Shift+${keyLabel(slot)})">+</button>` : '';
+      d.innerHTML = `<div class="sk-icon">${ICONS[ab.icon] || ''}</div><div class="sk-cd"></div><div class="sk-num"></div><div class="sk-key">${keyLabel(slot)}</div>${pips}<div class="tip">${abilityTip(ab, slot)}</div>`;
       this.el.skills.appendChild(d);
       this.skillEls[slot] = { root: d, ab, tip: d.querySelector('.tip'), tipKey: '', cd: d.querySelector('.sk-cd'), num: d.querySelector('.sk-num'), pips: [...d.querySelectorAll('.sk-rank i')], rank: -1 };
     }

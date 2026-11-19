@@ -126,6 +126,7 @@
       <div class="pause-inner">
         <h2 id="pause-title">Pausa</h2>
         <button id="resume" class="play">CONTINUAR</button>
+        <button id="pause-settings" class="ghost">Configurações</button>
         <button id="quit" class="ghost">Sair pro menu</button>
       </div>
     </div>
@@ -188,13 +189,6 @@
                 </div>
               </div>
             </div>
-            <div class="field">
-              <span>Mouse na partida</span>
-              <div class="seg" id="grab">
-                <button data-v="0" class="on" title="Cursor do próprio sistema, sem atraso. A câmera anda quando o mouse encosta ou sai pela borda da janela.">Normal</button><button data-v="2" title="Igual ao Normal, em tela cheia: o mouse não tem pra onde sair.">Tela cheia</button><button data-v="1" title="O jogo segura o mouse dentro da janela e desenha o cursor. Tem um pequeno atraso.">Preso</button>
-              </div>
-            </div>
-            <label class="field"><span>Volume <b id="vol-val">70</b></span><input type="range" id="vol" min="0" max="1" step="0.05" value="0.7" /></label>
             <div class="play-row">
               <button id="play" class="play">CONTRA BOTS</button>
               <button id="play-online" class="play online">ONLINE</button>
@@ -204,6 +198,7 @@
               <div class="join-row"><input id="room-code" maxlength="4" placeholder="CÓDIGO" autocomplete="off" spellcheck="false" /><button id="room-join" class="ghost">Entrar na sala</button></div>
               <small>Crie uma sala e mande o link pros amigos, ou entre com o código de uma sala que já existe.</small>
             </div>
+            <button id="open-settings" class="ghost wide">Configurações: som, controles e atalhos</button>
             <button id="play-sandbox" class="ghost sandbox hidden">Treino livre: teste heróis, itens e mecânicas sem partida</button>
             <div id="net-msg" class="net-msg hidden"></div>
             <div class="roster-title">Heróis</div>
@@ -213,16 +208,7 @@
             <h3>Como jogar</h3>
             <p>Cada time tem <b>duas torres</b>, um <b>selo</b>, mais <b>duas torres</b> e o <b>núcleo</b>. Derrube tudo em ordem e quebre o núcleo inimigo. Tropas marcham a cada 26 s.</p>
             <p>Não dá pra voltar pra base curar: pegue as <b>frutas</b> na ponte. A loja só abre na base ou quando você cai.</p>
-            <ul class="keys">
-              <li><kbd>Botão direito</kbd> andar · atacar</li>
-              <li><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> habilidades (solte pra lançar)</li>
-              <li><kbd>Shift</kbd> + <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> evolui a habilidade ao subir de nível</li>
-              <li><kbd>D</kbd> Fôlego · <kbd>F</kbd> Salto</li>
-              <li><kbd>A</kbd> + clique: atacar o que aparecer</li>
-              <li><kbd>S</kbd> parar · <kbd>B</kbd> loja</li>
-              <li>Mouse na borda move a câmera · <kbd>Espaço</kbd> centraliza · <kbd>Y</kbd> prende no herói</li>
-              <li><kbd>Tab</kbd> placar · <kbd>Esc</kbd> pausa e solta o mouse</li>
-            </ul>
+            <ul class="keys" id="help-keys"></ul>
             <p class="tip">Torres batem forte em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.</p>
           </div>
         </div>
@@ -239,6 +225,45 @@
         </div>
         <div id="end-next" class="end-next hidden"></div>
         <div class="end-actions"><button id="again" class="play">JOGAR DE NOVO</button><button id="to-menu" class="ghost">Menu</button></div>
+      </div>
+    </div>
+
+    <div id="settings" class="hidden">
+      <div class="settings-inner panel">
+        <div class="set-head"><h2>Configurações</h2><button id="set-close" class="ghost">Fechar</button></div>
+
+        <h3>Som</h3>
+        <label class="field"><span>Volume do jogo <b id="vol-val">70</b></span><input type="range" id="vol" min="0" max="1" step="0.05" value="0.7" /></label>
+
+        <h3>Controles</h3>
+        <div class="field">
+          <span>Lançar habilidades</span>
+          <div class="seg" id="cast">
+            <button data-v="release" class="on">Ao soltar a tecla</button><button data-v="instant">Na hora</button><button data-v="click">Com clique</button>
+          </div>
+          <small id="cast-desc"></small>
+        </div>
+        <div class="field">
+          <span>Mouse na partida</span>
+          <div class="seg" id="grab">
+            <button data-v="0" class="on">Normal</button><button data-v="2">Tela cheia</button><button data-v="1">Preso</button>
+          </div>
+          <small id="grab-desc"></small>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <span>Câmera ao começar</span>
+            <div class="seg" id="camlock">
+              <button data-v="0" class="on">Solta</button><button data-v="1">Presa no herói</button>
+            </div>
+          </div>
+          <label class="field"><span>Velocidade da câmera <b id="camspeed-val">100</b>%</span><input type="range" id="camspeed" min="0.5" max="2" step="0.1" value="1" /></label>
+        </div>
+
+        <h3>Atalhos</h3>
+        <div id="binds"></div>
+        <small class="set-note">Clique num atalho e aperte a tecla nova (Esc cancela). Se a tecla já estiver em uso, as duas ações trocam de lugar. Ficam fixos: <kbd>Esc</kbd> abre o menu e <kbd>Shift</kbd> + habilidade evolui.</small>
+        <button id="binds-reset" class="ghost">Restaurar atalhos padrão</button>
       </div>
     </div>
 
