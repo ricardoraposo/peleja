@@ -511,8 +511,10 @@ export class Hud {
     const build = BUILDS[h.role] || BUILDS.lutador;
     const alt = BUILDS_ALT[h.role];
     this.shopBuild = build;
-    // as peças dos dois primeiros itens e, pra qualquer classe, a garrafada pra aguentar o começo
-    const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id))), 'garrafada'];
+    const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id)))];
+    // o que some ao usar (garrafada...) tem seção própria no fim das duas abas, igual pra todas as classes
+    const consumables = ITEM_ORDER.filter((id) => ITEMS[id].active?.consume);
+    const consumRow = `<h3>Consumíveis</h3><div class="tiles">${consumables.map((id) => this.shopTile(id)).join('')}</div>`;
     const aff = affinityOf(heroId);
     const row = (ids) => `<div class="tiles">${ids.map((id, i) => this.shopTile(id).replace('<span class="tile-icon">', `<span class="tile-n">${i + 1}</span><span class="tile-icon">`)).join('')}</div>`;
     $('shop-rec').innerHTML =
@@ -520,9 +522,10 @@ export class Hud {
       `<p class="rec-aff"><b>★ Afinidade:</b> itens rendem +${Math.round(AFFINITY_BONUS * 100)}% de ${aff.map((k) => esc(STAT_LABEL[k].split(' (')[0])).join(', ')} em você.</p>` +
       `<h3>Comece por</h3><div class="tiles">${start.map((id) => this.shopTile(id)).join('')}</div>` +
       `<h3>Build principal, na ordem</h3>${row(build)}` +
-      (alt ? `<h3>Outro caminho · ${esc(alt.name)}</h3>${row(alt.items)}` : '');
+      (alt ? `<h3>Outro caminho · ${esc(alt.name)}</h3>${row(alt.items)}` : '') +
+      consumRow;
     const tiers = ['Básicos', 'Intermediários', 'Grandes'];
-    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('');
+    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t && !consumables.includes(id)).map((id) => this.shopTile(id)).join('')}</div>`).join('') + consumRow;
     this.shopKey = '';
   }
 
