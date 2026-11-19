@@ -1249,6 +1249,11 @@ export class HeroModel {
     this.lunge = amt;
   }
 
+  // pulo de ida e volta por um buraco no chão: sai dele, fica `stay` segundos, afunda e sai de novo na volta
+  startHole(stay) {
+    this.hole = { t: 0, stay };
+  }
+
   startDash(dur, arc) {
     this.dashT = dur;
     this.dashMax = dur;
@@ -1363,6 +1368,17 @@ export class HeroModel {
     this.hips.rotation.y = P.spin;
     this.torso.rotation.x = this.lean + P.pitch;
     this.body.position.y = bob + lift + P.hop;
+    if (this.hole) {
+      const H = this.hole;
+      const D = 0.26;
+      H.t += dt;
+      // sobe do buraco com um pulinho; perto da hora de voltar, afunda; depois da volta, sobe de novo
+      const rise = (p) => -1.9 * (1 - p) * (1 - p) + Math.sin(p * Math.PI) * 0.45;
+      if (H.t < D) this.body.position.y += rise(H.t / D);
+      else if (H.t >= H.stay) this.body.position.y += rise(Math.min(1, (H.t - H.stay) / D));
+      else if (H.t > H.stay - D) this.body.position.y -= 1.9 * ((H.t - (H.stay - D)) / D) ** 2;
+      if (H.t >= H.stay + D) this.hole = null;
+    }
     if (this.weapon) this.weapon.rotation.x += (this.weaponBase + P.wR - this.weapon.rotation.x) * ak;
     if (this.shieldG) this.shieldG.rotation.x = -this.armL.rotation.x * 0.85;
     if (this.bow) {

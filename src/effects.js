@@ -804,10 +804,19 @@ export class Effects {
     const clock = flat(new THREE.Mesh(RING, basic('#ffffff', 0.9, true)), 0.09);
     g.add(hole, edge, clock);
     g.position.set(m.x, 0, m.z);
+    // o outro buraco, por onde ele sai e torna a entrar
+    const out = flat(new THREE.Mesh(DISC, hole.material), 0.06);
+    out.scale.setScalar(0.8);
+    out.position.set(m.b[0] - m.x, 0.06, m.b[1] - m.z);
+    const outEdge = flat(new THREE.Mesh(RING, edge.material), 0.08);
+    outEdge.scale.setScalar(0.9);
+    outEdge.position.set(m.b[0] - m.x, 0.08, m.b[1] - m.z);
+    g.add(out, outEdge);
+    for (const p of [[m.x, m.z], m.b]) this.burst(p[0], 0.3, p[1], '#8b5a2b', 10, 3.5, 0.13, 0.5);
     let puffT = 0;
-    this.temp(g, m.t, (k) => {
+    this.temp(g, m.t + 0.3, (k) => {
       if (k <= 0) for (const o of [hole, edge, clock]) o.material.dispose();
-      clock.scale.setScalar(0.25 + k * 1.5);
+      clock.scale.setScalar(0.25 + Math.max(0, k * (m.t + 0.3) - 0.3) / m.t * 1.5);
       edge.material.opacity = 0.65 + Math.sin(k * 40) * 0.3;
       if ((puffT += 1) % 4 === 0) {
         const an = Math.random() * Math.PI * 2;

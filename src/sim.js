@@ -716,7 +716,7 @@ export class Sim {
     if (!ab || h.cds[slot] > 0) return false;
     if (RANK_MAX[slot] && !(h.ranks?.[slot] > 0)) return false;
     if (h.cc || h.castT > 0 || h.dash) return false;
-    if ((ab.kind === 'dash' || ab.kind === 'blink') && h.rootT > 0) return false;
+    if ((ab.kind === 'dash' || ab.kind === 'blink') && (h.rootT > 0 || h.goBack)) return false;
     if (!Number.isFinite(x) || !Number.isFinite(z)) {
       x = h.x + Math.cos(h.facing);
       z = h.z + Math.sin(h.facing);
@@ -1039,7 +1039,7 @@ queueBolts(h, ab, slot, color) {
         // pulo de ida e volta: depois de um instante o herói reaparece de onde saiu
         if (ab.ret) {
           h.goBack = { x: fx0, z: fz0, t: ab.ret, c: color };
-          this.emit({ e: 'mark', id: h.id, x: r1(fx0), z: r1(fz0), t: ab.ret, c: color });
+          this.emit({ e: 'mark', id: h.id, x: r1(fx0), z: r1(fz0), b: [r1(h.x), r1(h.z)], t: ab.ret, c: color });
         }
         if (ab.origin) this.addDelayed(h, fx0, fz0, ab.origin.radius, ab.origin.delay, this.val(h, ab.origin.dmg, ab), ab.origin.dmg.type, ab.origin.fx, color);
         break;
@@ -1763,7 +1763,8 @@ queueBolts(h, ab, slot, color) {
 
   // move de leve, desviando dos obstáculos redondos
   moveToward(u, tx, tz, dt, stop = 0, ignore = null) {
-    if (u.rootT > 0 || u.cc) return false;
+    // no meio de um pulo de ida e volta o herói fica plantado onde saiu até voltar
+    if (u.rootT > 0 || u.cc || u.goBack) return false;
     let dx = tx - u.x;
     let dz = tz - u.z;
     const d = Math.hypot(dx, dz);

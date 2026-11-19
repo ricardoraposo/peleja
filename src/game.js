@@ -297,6 +297,7 @@ export class Game {
         break;
       case 'mark':
         this.effects.mark(m);
+        this.units.get(m.id)?.model?.startHole?.(m.t);
         break;
       case 'zonex':
         this.effects.endZone(m.id);
