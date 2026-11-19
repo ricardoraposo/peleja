@@ -54,6 +54,14 @@ export const ICONS = {
   moon: S('<path d="M20 15A8 8 0 1 1 10 4a7 7 0 0 0 10 11z"/>'),
   book: S('<path d="M3 5h7a2 2 0 0 1 2 2 2 2 0 0 1 2-2h7v14h-7a2 2 0 0 0-2 2 2 2 0 0 0-2-2H3zM12 7v14"/>'),
   axe: S('<path d="M4 21 15 8M11 5c4-2 8-1 10 3-2 2-5 3-8 2z"/>'),
+  jaws: S('<path d="M3 9c3-4 15-4 18 0l-2 2H5zM3 15c3 4 15 4 18 0l-2-2H5z"/><path d="M7 11v2M11 11v2M15 11v2"/>'),
+  bite: S('<path d="M4 7c4-3 12-3 16 0l-3 4H7zM4 17c4 3 12 3 16 0l-3-4H7z"/><path d="M9 11l1 2 1-2M13 11l1 2 1-2"/>'),
+  lunge: S('<path d="M3 17h7M5 13h6M3 9h5M12 6l8 6-8 6z"/>'),
+  witch: S('<path d="M4 20h16M7 20l3-12 6-5-1 7 2 10"/><circle cx="12" cy="15" r="1.2"/>'),
+  torch: S('<path d="M9 21l4-10M11 13l4 1"/><path d="M15 3c1 3 4 4 4 7a4 4 0 0 1-8 0c0-2 1-3 2-4 0 1 1 2 2 2 0-2-1-3 0-5z"/>'),
+  firewall: S('<path d="M2 20h20M5 20c-1-3 1-5 1-8 1 2 2 3 2 5 1-3 2-5 4-7 0 3 2 5 2 7 1-2 1-3 2-4 1 2 2 4 1 7"/>'),
+  feet: S('<ellipse cx="8" cy="14" rx="3" ry="5"/><ellipse cx="16" cy="10" rx="3" ry="5"/><path d="M6 20h4M14 16h4"/>'),
+  forestfire: S('<path d="M6 21v-4M6 17l-3 0 3-5-2 0 2-4 2 4-2 0 3 5zM16 21v-3"/><path d="M13 13c0-3 3-4 3-8 2 2 5 4 5 8a4 4 0 0 1-8 0z"/>'),
   drum: S('<ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M8 10v9M16 10v9"/>'),
 };
 
@@ -102,6 +110,8 @@ function fxText(fx) {
   if (fx.root) out.push(`prende no lugar por ${fx.root} s`);
   if (fx.knockup) out.push(`joga pra cima por ${fx.knockup} s`);
   if (fx.knockback) out.push(`empurra ${fx.knockback} passos`);
+  if (fx.fear) out.push(`faz fugir de medo por ${fx.fear} s`);
+  if (fx.burn) out.push(`deixa queimando por ${fx.burn} s`);
   return out;
 }
 
@@ -115,9 +125,21 @@ export function abilityTip(ab, slot, ctx = null) {
   if (ab.end?.dmg) lines.push(dmg('Dano na chegada,', ab.end.dmg));
   if (ab.path?.dmg) lines.push(dmg('Dano no caminho,', ab.path.dmg));
   if (ab.buff?.aura) lines.push(dmg(`Dano a cada ${ab.buff.aura.tick} s,`, ab.buff.aura.dmg));
+  if (ab.nextHit) lines.push(dmg(`Dano de cada mordida (${ab.nextHit.hits}, com fúria ${ab.nextHit.emp?.hits || ab.nextHit.hits}),`, ab.nextHit.dmg));
+  if (ab.burst?.dmg) lines.push(dmg('Dano do rugido,', ab.burst.dmg));
+  if (ab.origin?.dmg) lines.push(dmg('Dano das pegadas,', ab.origin.dmg));
+  if (ab.linger?.dmg) lines.push(dmg(`Chão queimando a cada ${ab.linger.tick} s,`, ab.linger.dmg));
+  if (ab.buff?.hp) lines.push(valueLine('Vida extra', ab.buff.hp, slot, c, 'd-heal'));
   if (ab.heal) lines.push(valueLine('Cura', ab.heal, slot, c, 'd-heal'));
   if (ab.shield) lines.push(valueLine(`Escudo por ${ab.shield.t || 3} s`, ab.shield, slot, c, 'd-shield'));
-  const notes = [...fxText(ab.fx), ...fxText(ab.end?.fx), ...fxText(ab.path?.fx)];
+  const notes = [...fxText(ab.fx), ...fxText(ab.end?.fx), ...fxText(ab.path?.fx), ...fxText(ab.burst?.fx), ...fxText(ab.origin?.fx)];
+  if (ab.drain) notes.push(`cura ${Math.round(ab.drain.m * 100)}% do dano em tropas e ${Math.round(ab.drain.h * 100)}% em heróis`);
+  if (ab.nextHit) notes.push(`atordoa por ${ab.nextHit.stun} s (com fúria, ${ab.nextHit.emp?.stun || ab.nextHit.stun} s)`);
+  if (ab.recast) notes.push(`acertando alguém, dá pra lançar de novo por ${ab.recast.t} s`);
+  if (ab.recast?.emp?.shred) notes.push(`com fúria, o segundo tira ${Math.round(ab.recast.emp.shred[0] * 100)}% da armadura por ${ab.recast.emp.shred[1]} s`);
+  if (ab.emp?.dmg) notes.push(`com fúria, +${Math.round((ab.emp.dmg - 1) * 100)}% de dano`);
+  if (ab.buff?.fury) notes.push(`+${ab.buff.fury} de fúria por segundo`);
+  if (ab.line) notes.push(`parede de ${ab.line} passos atravessada na mira`);
   if (ab.exec) notes.push(`até +${Math.round(ab.exec * 100)}% de dano conforme o alvo perde vida`);
   if (ab.buff) {
     const b = ab.buff;
@@ -235,6 +257,9 @@ export class Hud {
       hpFill: $('hp-fill'),
       hpShield: $('hp-shield'),
       hpText: $('hp-text'),
+      fury: $('fury-bar'),
+      furyFill: $('fury-fill'),
+      furyText: $('fury-text'),
       skills: $('skills'),
       stats: $('stats'),
       items: $('items'),
@@ -329,6 +354,16 @@ export class Hud {
     this.el.hpShield.style.left = `${(me.hp / total) * 100}%`;
     this.el.hpShield.style.width = `${(me.shield / total) * 100}%`;
     this.el.hpText.textContent = `${Math.ceil(me.hp)} / ${Math.round(me.maxHp)}${me.shield > 0 ? ` (+${me.shield})` : ''}`;
+    const hasFury = st.fu !== undefined && st.fu !== null;
+    this.el.fury.classList.toggle('hidden', !hasFury);
+    if (hasFury) {
+      const cost = HEROES[me.heroId]?.fury?.cost || 50;
+      const full = st.fu >= cost;
+      this.el.furyFill.style.width = `${st.fu}%`;
+      this.el.fury.classList.toggle('full', full);
+      this.el.furyText.textContent = `Fúria ${st.fu}`;
+      for (const k of ['q', 'w', 'e']) this.skillEls[k]?.root.classList.toggle('emp', full);
+    }
     this.el.lvl.textContent = st.lv;
     this.el.xp.style.height = `${st.lv >= 18 ? 100 : (st.xp / st.xn) * 100}%`;
     this.el.gold.textContent = st.g;

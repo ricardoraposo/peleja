@@ -29,7 +29,7 @@ import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -68,6 +68,12 @@ class Unit {
     this.stunT = 0;
     this.stasisT = 0;
     this.rootT = 0;
+    this.fearT = 0;
+    this.fearX = 0;
+    this.fearZ = 0;
+    this.burn = null;
+    this.shredP = 0;
+    this.shredT = 0;
     this.airT = 0;
     this.slows = [];
     this.shields = [];
@@ -98,7 +104,7 @@ class Unit {
   }
 
   get cc() {
-    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0;
+    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0;
   }
 
   shieldTotal() {
@@ -417,6 +423,8 @@ export class Sim {
     h.respawnT = 0;
     h.combatT = -99;
     h.empower = null;
+    h.recast = null;
+    h.fury = 0;
     h.stats.maxHp = 0;
     this.respawn(h, true);
   }
@@ -434,9 +442,10 @@ export class Sim {
     h.z = z;
     h.alive = true;
     h.facing = h.team === 0 ? 0 : Math.PI;
-    h.stunT = h.rootT = h.airT = h.castT = 0;
+    h.stunT = h.rootT = h.airT = h.castT = h.fearT = 0;
     this.endStasis(h);
     h.hot = null;
+    this.clearHeroState(h);
     h.slows = [];
     h.shields = [];
     h.buffs = [];
@@ -528,6 +537,29 @@ export class Sim {
     this.byId.set(u.id, u);
   }
 
+  clearHeroState(h) {
+    h.fury = 0;
+    h.empower = null;
+    h.recast = null;
+    h.burn = null;
+    h.shredT = 0;
+    h.shredP = 0;
+  }
+
+  addFury(h, n) {
+    const fu = h.def?.fury;
+    if (!fu || !h.alive || n <= 0) return;
+    h.fury = Math.min(fu.max, (h.fury || 0) + n);
+  }
+
+  spendFury(h, slot) {
+    const fu = h.def?.fury;
+    if (!fu || (h.fury || 0) < fu.cost) return false;
+    h.fury -= fu.cost;
+    this.emit({ e: 'emp', id: h.id, s: slot });
+    return true;
+  }
+
   calcStats(h) {
     const d = h.def.stats;
     const L = h.level - 1;
@@ -572,7 +604,10 @@ export class Sim {
       if (b.mres) s.mres += b.mres;
       if (b.atk) s.atk += b.atk;
       if (b.pow) s.pow += b.pow;
+      if (typeof b.hp === 'number') s.maxHp += b.hp;
+      if (b.range) s.range += b.range;
     }
+    if (h.empower) s.range += h.empower.range || 0;
     s.as = Math.min(2.5, s.as * (1 + asBonus));
     let slow = 0;
     for (const sl of h.slows) slow = Math.max(slow, sl.p);
@@ -648,10 +683,10 @@ export class Sim {
     h.target = t;
   }
 
-  orderAmove(h, x, z) {
+  orderAmove(h, x, z, heroesOnly = false) {
     if (!this.canAct(h) || !Number.isFinite(x) || !Number.isFinite(z)) return;
     const [cx, cz] = clampWalk(x, z, h.r);
-    h.order = { type: 'amove', x: cx, z: cz };
+    h.order = { type: 'amove', x: cx, z: cz, heroes: !!heroesOnly };
     h.target = null;
     h.windup = 0;
   }
@@ -718,9 +753,15 @@ export class Sim {
   }
 
   beginCast(h, slot, ab, x, z, t) {
-    const cd = this.cooldownOf(h, slot, ab);
-    h.cds[slot] = cd;
-    h.cdMax[slot] = cd;
+    if (h.recast && h.recast.slot === slot) {
+      h.cds[slot] = Math.max(0, h.recast.cd);
+      h.recast = null;
+      h.recasting = true;
+    } else {
+      const cd = this.cooldownOf(h, slot, ab);
+      h.cds[slot] = cd;
+      h.cdMax[slot] = cd;
+    }
     h.windup = 0;
     if (Math.hypot(x - h.x, z - h.z) > 0.05) h.facing = Math.atan2(z - h.z, x - h.x);
     if (h.order.type === 'cast') h.order = h.order.prev && h.order.prev.type !== 'cast' ? h.order.prev : { type: 'idle' };
@@ -782,11 +823,13 @@ export class Sim {
         break;
       case 'aoe': {
         const k = Math.min(ab.range, d);
-        this.addDelayed(h, h.x + dx * k, h.z + dz * k, ab.radius, ab.delay, this.val(h, ab.dmg, ab), ab.dmg?.type, ab.fx, color);
+        const lg = ab.linger ? { ...ab.linger, dmg: this.val(h, ab.linger.dmg, ab), type: ab.linger.dmg.type } : null;
+        this.addDelayed(h, h.x + dx * k, h.z + dz * k, ab.radius, ab.delay, this.val(h, ab.dmg, ab), ab.dmg?.type, ab.fx, color, null, lg);
         break;
       }
       case 'nova':
-        if (ab.delay > 0) this.addDelayed(h, h.x, h.z, ab.radius, ab.delay, this.val(h, ab.dmg, ab), ab.dmg?.type, ab.fx, color, h);
+        if (ab.drain) this.drainNova(h, slot, ab, color);
+        else if (ab.delay > 0) this.addDelayed(h, h.x, h.z, ab.radius, ab.delay, this.val(h, ab.dmg, ab), ab.dmg?.type, ab.fx, color, h);
         else this.hitArea(h, h.x, h.z, ab.radius, this.val(h, ab.dmg, ab), ab.dmg?.type, ab.fx, color);
         break;
       case 'cone': {
@@ -808,7 +851,10 @@ export class Sim {
       case 'dash': {
         const k = Math.min(ab.range, Math.max(d, 1.5));
         const [tx, tz] = clampWalk(h.x + dx * k, h.z + dz * k, h.r);
-        this.startDash(h, ab, tx, tz, null, color);
+        const second = !!h.recasting;
+        h.recasting = false;
+        const emp = second && !!ab.recast?.emp && this.spendFury(h, slot);
+        this.startDash(h, ab, tx, tz, null, emp ? '#ef4444' : color, { slot, second, emp });
         break;
       }
       case 'blink': {
@@ -820,6 +866,7 @@ export class Sim {
         h.z = tz;
         this.resolveStatic(h);
         this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color, fl: ab.flash ? 1 : 0 });
+        if (ab.origin) this.addDelayed(h, fx0, fz0, ab.origin.radius, ab.origin.delay, this.val(h, ab.origin.dmg, ab), ab.origin.dmg.type, ab.origin.fx, color);
         break;
       }
       case 'target':
@@ -828,8 +875,18 @@ export class Sim {
         else this.targetHit(h, ab, t);
         break;
       case 'self':
+        if (ab.nextHit) {
+          const nh = ab.nextHit;
+          const emp = !!nh.emp && this.spendFury(h, slot);
+          h.empower = { ab, t: nh.t, range: nh.range || 0, emp, hits: emp ? nh.emp.hits : nh.hits, stun: emp ? nh.emp.stun : nh.stun };
+          h.atkCd = 0;
+          h.windup = 0;
+          this.calcStats(h);
+        }
         this.applySelf(h, h, ab);
+        if (ab.furyGain) this.addFury(h, ab.furyGain);
         this.emit({ e: 'buff', id: h.id, s: slot, c: color });
+        if (ab.burst) this.hitArea(h, h.x, h.z, ab.burst.radius, this.val(h, ab.burst.dmg, ab), ab.burst.dmg.type, ab.burst.fx, color);
         break;
       case 'ally': {
         let cx = h.x;
@@ -849,23 +906,16 @@ export class Sim {
       }
       case 'zone': {
         const k = Math.min(ab.range, d);
-        const zn = {
-          id: this.zoneSeq++,
-          owner: h,
-          team: h.team,
-          x: h.x + dx * k,
-          z: h.z + dz * k,
-          r: ab.radius,
-          t: ab.dur,
-          tick: ab.tick,
-          tickT: 0,
-          dmg: this.val(h, ab.dmg, ab),
-          type: ab.dmg.type,
-          fx: ab.fx,
-          color,
-        };
-        this.zones.push(zn);
-        this.emit({ e: 'zone', id: zn.id, x: r1(zn.x), z: r1(zn.z), r: zn.r, t: zn.t, c: color, tm: h.team, o: h.id });
+        const cx = h.x + dx * k;
+        const cz = h.z + dz * k;
+        let line = null;
+        if (ab.line) {
+          const half = ab.line / 2;
+          const [ax, az] = clampWalk(cx + dz * half, cz - dx * half);
+          const [bx, bz] = clampWalk(cx - dz * half, cz + dx * half);
+          line = [r1(ax), r1(az), r1(bx), r1(bz)];
+        }
+        this.spawnZone(h, cx, cz, { r: ab.radius, dur: ab.dur, tick: ab.tick, dmg: this.val(h, ab.dmg, ab), type: ab.dmg.type, fx: ab.fx, line }, color);
         break;
       }
       default:
@@ -881,6 +931,7 @@ export class Sim {
     if (ab.buff) {
       const b = { ...ab.buff, t: ab.buff.t, src };
       if (b.aura) b.auraT = 0;
+      if (b.hp && typeof b.hp === 'object') b.hp = this.val(src, b.hp, ab);
       target.buffs.push(b);
       this.calcStats(target);
     }
@@ -894,9 +945,9 @@ export class Sim {
     this.emit({ e: 'boom', x: r1(t.x), z: r1(t.z), r: 1.2, c: ab.color || h.def.color, o: h.id });
   }
 
-  startDash(h, ab, tx, tz, tgt, color) {
+  startDash(h, ab, tx, tz, tgt, color, opts = {}) {
     const d = Math.hypot(tx - h.x, tz - h.z);
-    h.dash = { ab, tx, tz, tgt, speed: ab.speed || 26, hit: new Set(), left: d / (ab.speed || 26) + 0.4, color };
+    h.dash = { ab, tx, tz, tgt, speed: ab.speed || 26, hit: new Set(), left: d / (ab.speed || 26) + 0.4, color, ...opts, gained: 0 };
     h.windup = 0;
     this.emit({ e: 'dash', id: h.id, d: r2(d / (ab.speed || 26)), a: ab.arc ? 1 : 0, c: color });
   }
@@ -934,19 +985,33 @@ export class Sim {
     this.resolveStatic(h);
     const ab = ds.ab;
     if (ab.path) {
-      const dmg = this.val(h, ab.path.dmg, ab);
+      const emp = ds.emp ? ab.recast.emp : null;
+      const dmg = this.val(h, ab.path.dmg, ab) * (emp?.dmg || 1);
       for (const u of this.units) {
         if (ds.hit.has(u.id) || !this.abilityTargetable(h, u, ab)) continue;
         const [d2] = segDist2(u.x, u.z, ox, oz, h.x, h.z);
         const w = ab.path.width / 2 + u.r;
         if (d2 > w * w) continue;
         ds.hit.add(u.id);
+        if (emp?.shred) {
+          u.shredP = Math.max(u.shredP, emp.shred[0]);
+          u.shredT = Math.max(u.shredT, emp.shred[1]);
+        }
         this.damage(u, h, dmg, ab.path.dmg.type);
         this.applyFx(u, ab.path.fx, h);
+        if (ab.fury && !ds.emp && ds.gained < ab.fury[2]) {
+          const g = Math.min(ab.fury[2] - ds.gained, u.isHero ? ab.fury[1] : ab.fury[0]);
+          ds.gained += g;
+          this.addFury(h, g);
+        }
       }
     }
     if (arrived || ds.left <= 0) {
       h.dash = null;
+      if (ab.recast && !ds.second && ds.hit.size > 0 && ds.slot) {
+        h.recast = { slot: ds.slot, t: ab.recast.t, cd: h.cds[ds.slot] };
+        h.cds[ds.slot] = 0;
+      }
       if (ds.tgt) this.targetHit(h, ab, ds.tgt);
       if (ab.end) this.hitArea(h, h.x, h.z, ab.end.radius, this.val(h, ab.end.dmg, ab), ab.end.dmg.type, ab.end.fx, ds.color);
       if (ab.buff) this.applySelf(h, h, { buff: ab.buff });
@@ -954,8 +1019,8 @@ export class Sim {
     }
   }
 
-  addDelayed(h, x, z, r, delay, dmg, type, fx, color, follow = null) {
-    this.delayed.push({ owner: h, team: h.team, x, z, r, t: delay, dmg, type: type || 'magic', fx, color });
+  addDelayed(h, x, z, r, delay, dmg, type, fx, color, follow = null, linger = null) {
+    this.delayed.push({ owner: h, team: h.team, x, z, r, t: delay, dmg, type: type || 'magic', fx, color, linger });
     this.emit({ e: 'aoe', x: r1(x), z: r1(z), r, t: delay, c: color, tm: h.team, o: h.id });
   }
 
@@ -975,6 +1040,16 @@ export class Sim {
     const firm = 1 - (t.stats?.ten || 0);
     if (fx.stun) t.stunT = Math.max(t.stunT, fx.stun * firm);
     if (fx.root) t.rootT = Math.max(t.rootT, fx.root * firm);
+    if (fx.fear) {
+      t.fearT = Math.max(t.fearT, fx.fear * firm);
+      t.fearX = ox ?? src?.x ?? t.x;
+      t.fearZ = oz ?? src?.z ?? t.z;
+    }
+    if (fx.burn && src?.def?.burn) {
+      const bd = src.def.burn;
+      const dmg = this.val(src, bd);
+      if (!t.burn || t.burn.dmg <= dmg || t.burn.t < fx.burn) t.burn = { src, dmg, type: bd.type || 'magic', t: fx.burn, tick: bd.tick, tickT: bd.tick };
+    }
     if (fx.knockup) {
       t.airT = Math.max(t.airT, fx.knockup);
       t.airMax = t.airT;
@@ -987,7 +1062,7 @@ export class Sim {
       const T = 0.25;
       t.disp = { vx: ((dx / d) * fx.knockback) / T, vz: ((dz / d) * fx.knockback) / T, t: T };
     }
-    if (fx.stun || fx.knockup || fx.knockback) {
+    if (fx.stun || fx.knockup || fx.knockback || fx.fear) {
       t.windup = 0;
       if (t.castT > 0) {
         t.castT = 0;
@@ -1016,6 +1091,7 @@ export class Sim {
     let res = type === 'phys' ? t.stats.armor : type === 'magic' ? t.stats.mres : 0;
     const pierce = type === 'phys' ? src?.stats?.pen : type === 'magic' ? src?.stats?.mpen : 0;
     if (pierce) res *= 1 - pierce;
+    if (type === 'phys' && t.shredT > 0) res *= 1 - t.shredP;
     amount *= 100 / (100 + Math.max(0, res));
     let left = amount;
     for (const sh of t.shields) {
@@ -1164,9 +1240,10 @@ export class Sim {
     t.buffs = [];
     t.shields = [];
     t.slows = [];
-    t.stunT = t.rootT = t.airT = 0;
+    t.stunT = t.rootT = t.airT = t.fearT = 0;
     this.endStasis(t);
     t.hot = null;
+    this.clearHeroState(t);
     t.disp = null;
     t.windup = 0;
     t.order = { type: 'idle' };
@@ -1286,6 +1363,7 @@ export class Sim {
       this.expireFresh(h);
       if ((h.isBot || h.dummy) && skillPoints(h.level, h.ranks) > 0) this.autoRank(h);
       if (h.hp < h.maxHp) h.hp = Math.min(h.maxHp, h.hp + h.stats.regen * dt);
+      if (h.def.fury && h.fury > 0 && this.time - h.combatT > h.def.fury.idle && !h.buffs.some((b) => b.fury)) h.fury = Math.max(0, h.fury - h.def.fury.decay * dt);
       if (h.isBot) this.brains.get(h.id)?.update(dt);
       if (this.phase !== 'playing') return;
       if (h.alive) this.updateHero(h, dt);
@@ -1318,6 +1396,49 @@ export class Sim {
     if (u.stunT > 0) u.stunT -= dt;
     if (u.rootT > 0) u.rootT -= dt;
     if (u.airT > 0) u.airT -= dt;
+    if (u.shredT > 0) u.shredT -= dt;
+    if (u.fearT > 0) {
+      u.fearT -= dt;
+      if (u.stunT <= 0 && u.airT <= 0 && !u.disp && u.stasisT <= 0 && u.rootT <= 0 && !u.dash) {
+        let fx = u.x - u.fearX;
+        let fz = u.z - u.fearZ;
+        let fd = Math.hypot(fx, fz);
+        if (fd < 0.1) {
+          fx = -pushDir(u.team);
+          fz = 0;
+          fd = 1;
+        }
+        const sp = (u.isHero ? u.stats.ms : u.stats.ms * (u.slowMult ?? 1)) * 0.8;
+        u.vx = (fx / fd) * sp;
+        u.vz = (fz / fd) * sp;
+        u.facing = Math.atan2(fz, fx);
+      }
+    }
+    if (u.burn) {
+      const b = u.burn;
+      b.t -= dt;
+      b.tickT -= dt;
+      if (b.tickT <= 0) {
+        b.tickT += b.tick;
+        this.damage(u, b.src, b.dmg, b.type);
+      }
+      if (u.burn && u.burn.t <= 0) u.burn = null;
+    }
+    if (u.empower) {
+      u.empower.t -= dt;
+      if (u.empower.t <= 0) {
+        u.empower = null;
+        if (u.isHero) this.calcStats(u);
+      }
+    }
+    if (u.recast) {
+      u.recast.t -= dt;
+      u.recast.cd -= dt;
+      if (u.recast.t <= 0) {
+        u.cds[u.recast.slot] = Math.max(u.cds[u.recast.slot], u.recast.cd);
+        u.recast = null;
+      }
+    }
     if (u.stasisT > 0) {
       u.stasisT -= dt;
       if (u.stasisT <= 0) this.endStasis(u);
@@ -1348,6 +1469,7 @@ export class Sim {
     if (u.buffs.length) {
       for (const b of u.buffs) {
         b.t -= dt;
+        if (b.fury) this.addFury(u, b.fury * dt);
         if (b.aura) {
           b.auraT -= dt;
           if (b.auraT <= 0) {
@@ -1567,7 +1689,7 @@ export class Sim {
         this.engage(h, o.target, dt);
         break;
       case 'amove': {
-        if (!this.attackable(h, h.target) || edgeDist(h, h.target) > 9) h.target = this.nearestEnemy(h, 7.5, true);
+        if (!this.attackable(h, h.target) || edgeDist(h, h.target) > 9 || (o.heroes && !h.target.isHero)) h.target = this.nearestEnemy(h, 7.5, !o.heroes, o.heroes);
         if (h.target) this.engage(h, h.target, dt);
         else if (!this.moveToward(h, o.x, o.z, dt)) h.order = { type: 'idle' };
         break;
@@ -1591,11 +1713,12 @@ export class Sim {
     }
   }
 
-  nearestEnemy(h, range, structures) {
+  nearestEnemy(h, range, structures, heroesOnly = false) {
     let best = null;
     let bestD = Infinity;
     for (const u of this.units) {
       if (!this.attackable(h, u)) continue;
+      if (heroesOnly && !u.isHero) continue;
       if (u.isStructure && !structures) continue;
       const d = edgeDist(h, u);
       if (d > range) continue;
@@ -1658,8 +1781,41 @@ export class Sim {
 
   autoHit(u, t, dmg) {
     if (!t.alive) return;
+    if (u.isHero && u.empower && !t.isStructure) return this.biteHit(u, t);
     const crit = u.isHero && u.stats.crit > 0 && !t.isStructure && Math.random() < u.stats.crit;
     this.damage(t, u, crit ? dmg * CRIT_MULT : dmg, 'phys', { auto: true, crit });
+    if (u.isHero && u.def.fury) this.addFury(u, u.def.fury.auto * (u.hp < u.maxHp * 0.5 ? u.def.fury.lowHp : 1));
+  }
+
+  biteHit(u, t) {
+    const em = u.empower;
+    u.empower = null;
+    this.calcStats(u);
+    const nh = em.ab.nextHit;
+    const dmg = this.val(u, nh.dmg, em.ab);
+    this.emit({ e: 'bite', id: u.id, v: t.id, n: em.hits, emp: em.emp ? 1 : 0 });
+    for (let i = 0; i < em.hits && t.alive; i++) this.damage(t, u, dmg, nh.dmg.type, { auto: i === 0 });
+    if (t.alive) this.applyFx(t, { stun: em.stun }, u);
+    if (!em.emp) this.addFury(u, nh.fury || 0);
+  }
+
+  drainNova(h, slot, ab, color) {
+    const emp = !!ab.emp && this.spendFury(h, slot);
+    const dmg = this.val(h, ab.dmg, ab) * (emp ? ab.emp.dmg : 1);
+    let healed = 0;
+    let gained = 0;
+    for (const u of this.units) {
+      if (!u.alive || u.team === h.team || u.isStructure) continue;
+      if (Math.hypot(u.x - h.x, u.z - h.z) > ab.radius + u.r) continue;
+      const hero = u.isHero;
+      const dealt = this.damage(u, h, dmg, ab.dmg.type);
+      healed += dealt * (hero ? ab.drain.h : ab.drain.m) * (emp ? ab.emp.drain : 1);
+      if (ab.fury && !emp) gained += hero ? ab.fury[1] : ab.fury[0];
+      this.applyFx(u, ab.fx, h);
+    }
+    if (healed > 0) this.heal(h, healed, h);
+    if (gained > 0) this.addFury(h, Math.min(gained, ab.fury[2]));
+    this.emit({ e: 'boom', x: r1(h.x), z: r1(h.z), r: ab.radius, c: emp ? '#ef4444' : color, o: h.id });
   }
 
   // ---------- tropas ----------
@@ -1856,9 +2012,20 @@ export class Sim {
     if (!this.delayed.length) return;
     for (const a of this.delayed) {
       a.t -= dt;
-      if (a.t <= 0) this.hitArea(a.owner, a.x, a.z, a.r, a.dmg, a.type, a.fx, a.color);
+      if (a.t > 0) continue;
+      this.hitArea(a.owner, a.x, a.z, a.r, a.dmg, a.type, a.fx, a.color);
+      if (a.linger) this.spawnZone(a.owner, a.x, a.z, { r: a.r, dur: a.linger.dur, tick: a.linger.tick, dmg: a.linger.dmg, type: a.linger.type, fx: a.linger.fx }, a.color);
     }
     this.delayed = this.delayed.filter((a) => a.t > 0);
+  }
+
+  spawnZone(h, x, z, o, color) {
+    const zn = { id: this.zoneSeq++, owner: h, team: h.team, x, z, r: o.r, t: o.dur, tick: o.tick, tickT: 0, dmg: o.dmg, type: o.type || 'magic', fx: o.fx, line: o.line || null, color };
+    this.zones.push(zn);
+    const m = { e: 'zone', id: zn.id, x: r1(x), z: r1(z), r: zn.r, t: zn.t, c: color, tm: h.team, o: h.id };
+    if (zn.line) m.l = zn.line;
+    this.emit(m);
+    return zn;
   }
 
   updateZones(dt) {
@@ -1870,7 +2037,10 @@ export class Sim {
       zn.tickT += zn.tick;
       for (const u of this.units) {
         if (!u.alive || u.team === zn.team || u.isStructure) continue;
-        if (Math.hypot(u.x - zn.x, u.z - zn.z) > zn.r + u.r) continue;
+        if (zn.line) {
+          const [d2] = segDist2(u.x, u.z, zn.line[0], zn.line[1], zn.line[2], zn.line[3]);
+          if (d2 > (zn.r + u.r) ** 2) continue;
+        } else if (Math.hypot(u.x - zn.x, u.z - zn.z) > zn.r + u.r) continue;
         this.damage(u, zn.owner, zn.dmg, zn.type);
         this.applyFx(u, zn.fx, zn.owner);
       }
@@ -2004,7 +2174,7 @@ export class Sim {
         this.orderMove(h, x, z);
         break;
       case 'am':
-        this.orderAmove(h, x, z);
+        this.orderAmove(h, x, z, Number(msg.h) === 1);
         break;
       case 'at':
         this.orderAttack(h, this.byId.get(Number(msg.id)));
@@ -2058,6 +2228,10 @@ export class Sim {
     if (u.castT > 0) f |= F.cast;
     if (u.buffs.length) f |= F.buff;
     if (u.buffs.some((b) => b.aura)) f |= F.aura;
+    if (u.fearT > 0) f |= F.fear;
+    if (u.burn) f |= F.burn;
+    if (u.isHero && u.buffs.some((b) => b.big)) f |= F.big;
+    if (u.isHero && u.def?.fury && u.fury >= u.def.fury.cost) f |= F.fury;
     return f;
   }
 
@@ -2108,6 +2282,7 @@ export class Sim {
       s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.ls * 100)],
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
+      fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,
     };
   }
 

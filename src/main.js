@@ -367,6 +367,7 @@ function renderHelp() {
   const how = { release: 'solte pra lançar', instant: 'lançam na hora', click: 'clique pra lançar' }[settings.cast];
   $('help-keys').innerHTML = [
     '<kbd>Botão direito</kbd> andar · atacar',
+    '<kbd>Shift</kbd> + <kbd>Botão direito</kbd> ataca só heróis',
     `${k('q', 'w', 'e', 'r')} habilidades (${how})`,
     `<kbd>Shift</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
     `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,

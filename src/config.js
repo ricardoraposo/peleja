@@ -227,9 +227,43 @@ export const HEROES = {
       r: { name: 'Ventania', icon: 'tornado', kind: 'self', cd: 60, cast: 0.1, buff: { t: 4, ms: 0.3, aura: { radius: 3.4, tick: 0.5, dmg: { b: 45, l: 9, ad: 0.3, type: 'phys' } } }, color: '#dc2626', desc: 'Vira um redemoinho por 4 s, ferindo quem chegar perto.' },
     },
   },
+  cuca: {
+    name: 'Cuca',
+    title: 'Bruxa-jacaré',
+    role: 'lutador',
+    color: '#22c55e',
+    look: { weapon: 'claws', hat: 'gator', scale: 1.1, bulk: 1.2, extra: 'tail', skin: '#3f7d3a' },
+    ranged: false,
+    fury: { max: 100, cost: 50, auto: 5, lowHp: 1.5, idle: 6, decay: 5 },
+    skillOrder: ['q', 'e', 'w'],
+    stats: { hp: 650, hpL: 102, atk: 67, atkL: 3.7, armor: 34, armorL: 4.4, mres: 32, mresL: 1.6, as: 0.665, asL: 0.025, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.2 },
+    abilities: {
+      q: { name: 'Bocada Faminta', icon: 'jaws', kind: 'nova', cd: 7, cast: 0.1, radius: 3.6, delay: 0, dmg: { b: 65, l: 18, ad: 0.9, type: 'phys' }, drain: { m: 0.06, h: 0.2 }, fury: [2.5, 7.5, 25], emp: { dmg: 1.5, drain: 3 }, color: '#86efac', desc: 'Gira a bocarra e o rabo em volta: fere todo mundo e cura pelo dano. Com fúria, fere 50% a mais e cura o triplo.' },
+      w: { name: 'Mordida do Jacaré', icon: 'bite', kind: 'self', cd: 13, cast: 0, nextHit: { t: 4, range: 0.8, hits: 2, stun: 0.75, dmg: { b: 12, l: 8, ad: 0.75, type: 'phys' }, fury: 10, emp: { hits: 3, stun: 1.5 } }, color: '#4ade80', desc: 'O próximo ataque vira duas mordidas que atordoam. Com fúria, são três mordidas e o atordoamento dobra.' },
+      e: { name: 'Bote do Pântano', icon: 'lunge', kind: 'dash', cd: 15, cast: 0, range: 5.5, speed: 24, path: { width: 2.2, dmg: { b: 45, l: 15, ad: 0.9, type: 'phys' } }, fury: [2.5, 5, 15], recast: { t: 4, emp: { dmg: 1.5, shred: [0.25, 4] } }, color: '#16a34a', desc: 'Avança cortando quem estiver no caminho. Se acertar alguém, dá pra dar o bote de novo em até 4 s. Com fúria, o segundo bote fere 50% a mais e racha a armadura.' },
+      r: { name: 'Cuca Vem Pegar', icon: 'witch', kind: 'self', cd: 80, cast: 0.25, furyGain: 25, burst: { radius: 3.8, dmg: { b: 60, l: 16, ad: 0.3, type: 'magic' }, fx: { fear: 0.75 } }, buff: { t: 15, big: 1, range: 0.5, hp: { b: 220, l: 26 }, fury: 5, aura: { radius: 3.8, tick: 0.5, dmg: { b: 20, l: 5, ad: 0.06, type: 'magic' } } }, color: '#a855f7', desc: 'Dorme, neném: a Cuca cresce, ganha vida, assusta quem estiver perto e queima tudo em volta por 15 s, enchendo a fúria.' },
+    },
+  },
+  curupira: {
+    name: 'Curupira',
+    title: 'Guardião da Mata',
+    role: 'mago',
+    color: '#ff4d1a',
+    look: { weapon: 'torch', hat: 'firehair', scale: 0.94, extra: 'leaves', backFeet: true, body: '#3f6212', skin: '#9a5b34' },
+    ranged: true,
+    burn: { b: 3, l: 1, ap: 0.02, type: 'magic', tick: 0.5 },
+    skillOrder: ['q', 'w', 'e'],
+    stats: { hp: 530, hpL: 86, atk: 51, atkL: 2.7, armor: 22, armorL: 3.5, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 6.0, range: 9.2, regen: 1.5, regenL: 0.14 },
+    abilities: {
+      q: { name: 'Tocha', icon: 'torch', kind: 'proj', cd: 5, cast: 0.2, range: 14, speed: 30, width: 0.9, explode: 1.8, dmg: { b: 65, l: 19, ap: 0.6, type: 'magic' }, fx: { burn: 3 }, color: '#ff7a1a', desc: 'Arremessa uma tocha de bem longe: explode no primeiro inimigo e deixa todo mundo em volta queimando.' },
+      w: { name: 'Trilha de Brasa', icon: 'firewall', kind: 'zone', cd: 14, cast: 0.2, range: 11, radius: 1.1, line: 7, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.08, type: 'magic' }, fx: { slow: [0.35, 0.6], burn: 2 }, color: '#ffb020', desc: 'Risca uma parede de fogo atravessada no chão: queima e deixa lento quem passar por ela.' },
+      e: { name: 'Pés Virados', icon: 'feet', kind: 'blink', cd: 15, cast: 0, range: 6.5, origin: { radius: 2.4, delay: 0.5, dmg: { b: 60, l: 18, ap: 0.5, type: 'magic' }, fx: { burn: 3 } }, color: '#fb923c', desc: 'Some e reaparece mais adiante. As pegadas ficam viradas pro outro lado e explodem em brasa onde você estava.' },
+      r: { name: 'Fúria da Mata', icon: 'forestfire', kind: 'aoe', cd: 80, cast: 0.35, range: 16, radius: 4.4, delay: 0.9, dmg: { b: 180, l: 32, ap: 0.8, type: 'magic' }, fx: { fear: 1.25, burn: 4 }, linger: { dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.06, type: 'magic' }, fx: { slow: [0.3, 0.6] } }, color: '#ff3d00', desc: 'De bem longe, a mata pega fogo: depois de um instante explode, os inimigos fogem de medo e o chão fica queimando.' },
+    },
+  },
 };
 
-export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci'];
+export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // `group`: só um item do grupo por herói (as botas e suas melhorias). `max`: quantos iguais dá pra carregar.

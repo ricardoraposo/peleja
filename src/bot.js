@@ -408,7 +408,11 @@ export class BotBrain {
     }
     if (ab.kind === 'self') {
       const fightingNear = near.some((e) => dist(e, h) < 7);
-      if (ab.buff?.aura) return fightingNear && ctx.fight ? [h.x, h.z, 0] : null;
+      if (ab.nextHit) {
+        const t = ctx.target;
+        return ctx.fight && t && !h.empower && dist(t, h) <= h.stats.range + h.r + t.r + ab.nextHit.range + 1 ? [h.x, h.z, 0] : null;
+      }
+      if (ab.buff?.aura) return (fightingNear && ctx.fight) || (fightingNear && life < 0.35) ? [h.x, h.z, 0] : null;
       if (ab.heal && life < 0.55 && (fightingNear || sim.time - h.combatT < 3)) return [h.x, h.z, 0];
       if (ab.shield && fightingNear && (ctx.fight || life < 0.6)) return [h.x, h.z, 0];
       if (!ab.heal && !ab.shield && ab.buff && ctx.fight && ctx.target && dist(ctx.target, h) < 9) return [h.x, h.z, 0];

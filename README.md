@@ -24,7 +24,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 
 ## Heróis
 
-Oito heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
+Dez heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
 
 | Herói | Papel | Alcance |
 | --- | --- | --- |
@@ -36,6 +36,8 @@ Oito heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e
 | **Iara** | Suporte | À distância |
 | **Boitatá** | Mago | À distância |
 | **Saci** | Duelista | Corpo a corpo |
+| **Cuca** | Bruxa-jacaré (lutadora com Fúria) | Corpo a corpo |
+| **Curupira** | Mago de fogo | À distância |
 
 Antes da partida você também escolhe dois **feitiços** pras teclas D e F:
 
@@ -67,11 +69,12 @@ Todos os atalhos podem ser trocados em **Configurações**.
 | Tecla | Ação |
 | --- | --- |
 | Botão direito | Andar e atacar |
+| `Shift` + botão direito | Ataca só heróis (sem herói no mouse, só anda) |
 | `Q` `W` `E` `R` | Habilidades (por padrão, mira segurando e lança ao soltar) |
 | `Shift` + habilidade | Evolui a habilidade ao subir de nível |
 | `D` `F` | Feitiços |
 | `1` a `6` | Usa os itens do inventário |
-| `A` + clique | Avança atacando o que aparecer |
+| `A` + clique | Avança atacando o que aparecer (com `Shift`, só heróis) |
 | `S` | Parar |
 | `B` | Loja |
 | `Espaço` | Centraliza a câmera no herói |

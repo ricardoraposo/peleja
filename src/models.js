@@ -127,6 +127,15 @@ function weapon(kind, M, color) {
     const tip = part(steel, 0.05, 0.14, 0.2, 0, -0.01, 1.14);
     tip.rotation.x = 0.35;
     g.add(tip);
+  } else if (kind === 'torch') {
+    g.add(part(M.wood, 0.08, 0.08, 0.8, 0, 0, 0.25));
+    g.add(part(mat('#3f2a14'), 0.13, 0.13, 0.16, 0, 0, 0.62));
+    const outer = part(glowMat(color, 0.85), 0.2, 0.2, 0.32, 0, 0, 0.8, OCTA);
+    const inner = part(glowMat('#ffe08a', 0.95), 0.1, 0.1, 0.18, 0, 0, 0.78, OCTA);
+    outer.castShadow = inner.castShadow = false;
+    g.add(outer, inner);
+    g.userData.orb = outer;
+    g.userData.flame = inner;
   }
   return g;
 }
@@ -168,6 +177,50 @@ function hat(kind, M, color) {
     const f = part(glowMat(color, 0.85), 0.3, 0.45, 0.3, 0, 0.45, 0, OCTA);
     g.add(f);
     g.userData.flame = f;
+  } else if (kind === 'gator') {
+    const teeth = mat('#f8fafc');
+    g.add(part(M.skin, 0.32, 0.12, 0.44, 0, 0.1, 0.36));
+    g.add(part(M.skin, 0.22, 0.06, 0.1, 0, 0.18, 0.54));
+    for (const x of [-0.08, 0.08]) g.add(part(M.dark, 0.04, 0.03, 0.04, x, 0.17, 0.57));
+    for (let i = 0; i < 4; i++) for (const x of [-0.13, 0.13]) g.add(part(teeth, 0.04, 0.07, 0.04, x, 0.02, 0.22 + i * 0.1));
+    const jaw = new THREE.Group();
+    jaw.position.set(0, 0.04, 0.16);
+    jaw.add(part(M.skin, 0.28, 0.07, 0.42, 0, -0.03, 0.2));
+    for (let i = 0; i < 4; i++) for (const x of [-0.11, 0.11]) jaw.add(part(teeth, 0.035, 0.06, 0.035, x, 0.02, 0.08 + i * 0.1));
+    g.add(jaw);
+    g.userData.jaw = jaw;
+    const eyes = [];
+    for (const x of [-0.11, 0.11]) {
+      g.add(part(M.skin, 0.12, 0.1, 0.12, x, 0.33, 0.1));
+      g.add(part(mat('#fde047'), 0.09, 0.06, 0.04, x, 0.35, 0.16));
+      const glow = part(glowMat('#ef4444', 0.95), 0.1, 0.07, 0.05, x, 0.35, 0.165);
+      glow.castShadow = false;
+      glow.visible = false;
+      g.add(glow);
+      eyes.push(glow);
+    }
+    g.userData.eyes = eyes;
+    const hair = mat('#facc15');
+    g.add(part(hair, 0.44, 0.22, 0.24, 0, 0.32, -0.12));
+    g.add(part(hair, 0.4, 0.5, 0.1, 0, 0.06, -0.24));
+    g.add(part(hair, 0.12, 0.34, 0.1, -0.2, 0.02, -0.16));
+    g.add(part(hair, 0.12, 0.34, 0.1, 0.2, 0.02, -0.16));
+    g.add(part(mat('#7e22ce'), 0.46, 0.06, 0.06, 0, 0.36, 0.0));
+  } else if (kind === 'firehair') {
+    const flames = [];
+    const spots = [[0, 0.42, -0.02, 0.3, 0.55], [-0.15, 0.36, -0.05, 0.2, 0.42], [0.15, 0.36, -0.05, 0.2, 0.42], [0, 0.3, -0.2, 0.26, 0.5], [-0.12, 0.22, -0.2, 0.16, 0.38], [0.12, 0.22, -0.2, 0.16, 0.38], [0, 0.48, 0.1, 0.16, 0.3]];
+    spots.forEach(([x, y, z, w, h], i) => {
+      const f = part(glowMat(i % 2 ? '#ffb020' : color, 0.9), w, h, w, x, y, z, OCTA);
+      f.castShadow = false;
+      f.userData.h = h;
+      f.userData.ph = i * 1.7;
+      g.add(f);
+      flames.push(f);
+    });
+    const core = part(glowMat('#ffe08a', 0.95), 0.14, 0.3, 0.14, 0, 0.36, -0.06, OCTA);
+    core.castShadow = false;
+    g.add(core);
+    g.userData.flames = flames;
   } else if (kind === 'cap') {
     g.add(part(mat('#dc2626'), 0.46, 0.18, 0.46, 0, 0.3, 0));
     const tip = part(mat('#dc2626'), 0.22, 0.32, 0.22, 0, 0.5, -0.08);
@@ -180,7 +233,7 @@ function hat(kind, M, color) {
 // ---------- animações ----------
 // Cada quadro monta uma "pose" (ângulos-alvo das juntas) e o modelo persegue esses alvos.
 // Braço: rotação x negativa levanta pra frente (-1.57 = estendido, -3.1 = pra cima).
-const POSE = { aRx: 0, aRz: 0, aLx: 0, aLz: 0, twist: 0, pitch: 0, spin: 0, hop: 0, pulse: 1, wR: 0, pull: 0, glow: 0 };
+const POSE = { aRx: 0, aRz: 0, aLx: 0, aLz: 0, twist: 0, pitch: 0, spin: 0, hop: 0, pulse: 1, wR: 0, pull: 0, glow: 0, jaw: 0 };
 const ZERO = { ...POSE };
 // do preparo (a) até o golpe (b), acelerando
 const sw = (a, b, pre) => a + (b - a) * pre * pre;
@@ -596,6 +649,111 @@ const STYLES = {
   },
 };
 
+STYLES.claws = {
+  idle(P) {
+    P.aRx = -0.5;
+    P.aLx = -0.5;
+    P.aRz = 0.25;
+    P.aLz = -0.25;
+    P.pitch = 0.12;
+  },
+  attack(P, pre, post, combo) {
+    if (combo === 2) {
+      P.pitch = sw(-0.25, 0.55, pre);
+      P.aRx = -0.3;
+      P.aLx = -0.3;
+      P.aRz = 0.6;
+      P.aLz = -0.6;
+      P.jaw = post > 0 ? 0 : pre;
+      return;
+    }
+    const right = combo === 0;
+    const slash = sw(-2.7, -0.3, pre);
+    P.aRx = right ? slash : -0.7;
+    P.aLx = right ? -0.7 : slash;
+    P.twist = (right ? 1 : -1) * sw(0.55, -0.5, pre);
+    P.pitch = 0.15 + pre * 0.2;
+    P.jaw = post > 0 ? 0.4 * (1 - post) : pre * 0.4;
+  },
+  dash(P) {
+    P.pitch = 0.75;
+    P.aRx = -1.7;
+    P.aLx = -1.7;
+    P.jaw = 1;
+  },
+  q: [0.08, 0.45, (P, pw, pr, e, arc) => {
+    P.spin = e * Math.PI * 2;
+    P.aRx = -1.5;
+    P.aLx = -1.5;
+    P.aRz = 1.2;
+    P.aLz = -1.2;
+    P.jaw = arc;
+    P.hop = 0.1 * arc;
+  }],
+  w: [0, 0.45, (P, pw, pr, e, arc) => {
+    P.aRx = -2.5 + arc;
+    P.aLx = -2.5 + arc;
+    P.jaw = arc;
+    P.pitch = -0.25 * arc;
+    P.pulse = 1 + 0.08 * arc;
+    P.glow = 1;
+  }],
+  r: [0.2, 0.8, (P, pw, pr, e, arc) => {
+    P.aRx = -2.9 * pw;
+    P.aLx = -2.9 * pw;
+    P.aRz = 0.9;
+    P.aLz = -0.9;
+    P.pitch = -0.45 * pw * (1 - e * 0.5);
+    P.jaw = pw;
+    P.hop = 0.3 * arc;
+    P.pulse = 1 + 0.2 * arc;
+  }],
+};
+
+STYLES.torch = {
+  idle(P) {
+    P.aRx = -0.9;
+    P.glow = 0.3;
+  },
+  attack(P, pre, post) {
+    P.aRx = sw(-2.6, -1.2, pre) + arcOf(post) * 0.2;
+    P.twist = sw(0.4, -0.3, pre);
+    P.aLx = -0.6;
+    P.glow = 1 - post * 0.5;
+  },
+  dash(P) {
+    P.aRx = -1.2;
+    P.pitch = 0.4;
+  },
+  q: [0.15, 0.3, (P, pw, pr, e) => {
+    P.aRx = -3.1 * pw + e * 2.2;
+    P.twist = 0.6 * pw - e * 1.1;
+    P.pitch = e * 0.25;
+    P.glow = 1;
+  }],
+  w: [0.15, 0.4, (P, pw, pr, e) => {
+    P.aRx = -1.3;
+    P.twist = -1.2 * pw + e * 2.4;
+    P.pitch = 0.3;
+    P.hop = -0.1;
+    P.glow = 1;
+  }],
+  e: [0, 0.3, (P, pw, pr, e, arc) => {
+    P.pulse = 0.4 + 0.6 * e + 0.2 * arc;
+    P.aRz = 1.1 * (1 - e);
+    P.aLz = -1.1 * (1 - e);
+  }],
+  r: [0.3, 0.6, (P, pw, pr, e, arc) => {
+    P.aRx = -3.0 * pw + e * 2.4;
+    P.aLx = -2.8 * pw + e * 1.5;
+    P.aLz = -0.6;
+    P.hop = 0.35 * pw * (1 - e);
+    P.pitch = -0.3 * pw + e * 0.6;
+    P.glow = 1;
+    P.pulse = 1 + 0.1 * arc;
+  }],
+};
+
 // poses genéricas (feitiços de todo mundo e o que um estilo não definir)
 const GENERIC = {
   flex: [0, 0.5, (P, pw, pr, e, arc) => {
@@ -639,11 +797,11 @@ export class HeroModel {
     this.attackHit = 0.6;
     this.combo = 0;
     this.lean = 0;
-    const color = new THREE.Color(def.color);
+    const color = new THREE.Color(look.body || def.color);
     this.mats = {
       main: new THREE.MeshStandardMaterial({ color, roughness: 0.65, flatShading: true }),
       dark: new THREE.MeshStandardMaterial({ color: '#2a2d3a', roughness: 0.85, flatShading: true }),
-      skin: new THREE.MeshStandardMaterial({ color: look.oneLeg ? '#5b3a29' : '#e8b48a', roughness: 0.8, flatShading: true }),
+      skin: new THREE.MeshStandardMaterial({ color: look.skin || (look.oneLeg ? '#5b3a29' : '#e8b48a'), roughness: 0.8, flatShading: true }),
       metal: mat('#3a4049', { metalness: 0.4, roughness: 0.5 }),
       wood: mat('#7c5a3a'),
     };
@@ -671,8 +829,11 @@ export class HeroModel {
       this.legL.position.x = -0.14 * wide;
       this.legR.position.x = 0.14 * wide;
       for (const l of [this.legL, this.legR]) {
-        l.add(part(M.dark, 0.2 * wide, 0.8, 0.24, 0, -0.4, 0));
-        l.add(part(M.main, 0.22 * wide, 0.12, 0.32, 0, -0.75, 0.04));
+        l.add(part(look.backFeet ? M.skin : M.dark, 0.2 * wide, 0.8, 0.24, 0, -0.4, 0));
+        if (look.backFeet) {
+          l.add(part(M.skin, 0.22, 0.12, 0.4, 0, -0.75, -0.12));
+          for (const x of [-0.06, 0, 0.06]) l.add(part(M.skin, 0.05, 0.06, 0.06, x, -0.77, -0.34));
+        } else l.add(part(look.skin ? M.skin : M.main, 0.22 * wide, 0.12, 0.32, 0, -0.75, 0.04));
       }
       this.hips.add(this.legL, this.legR);
     }
@@ -739,9 +900,26 @@ export class HeroModel {
         arm.add(fl);
         this.glows.push(fl);
       }
+    } else if (w === 'claws') {
+      this.furyBits = [];
+      const claw = mat('#f1f5f9');
+      for (const arm of [this.armR, this.armL]) {
+        arm.add(part(M.skin, 0.2, 0.14, 0.2, 0, -0.5, 0.02));
+        for (const x of [-0.06, 0, 0.06]) {
+          const c = part(claw, 0.04, 0.16, 0.04, x, -0.6, 0.09);
+          c.rotation.x = 0.5;
+          arm.add(c);
+        }
+        const fl = part(glowMat('#ef4444', 0.85), 0.14, 0.2, 0.14, 0, -0.6, 0.06, OCTA);
+        fl.castShadow = false;
+        fl.visible = false;
+        arm.add(fl);
+        this.furyBits.push(fl);
+      }
     } else if (w && w !== 'none') {
       this.weapon = hold(this.armR, weapon(w, M, def.color));
       if (this.weapon.userData.orb) this.glows.push(this.weapon.userData.orb);
+      this.torchFlame = this.weapon.userData.flame || null;
     }
     this.weaponBase = this.weapon ? this.weapon.rotation.x : 0;
     for (const g of this.glows) g.userData.base = g.scale.clone();
@@ -780,6 +958,37 @@ export class HeroModel {
     } else if (extra === 'scales') {
       this.torso.add(part(glowMat('#e0f2fe', 0.8), 0.3, 0.08, 0.04, 0, 0.5, 0.18));
       if (this.robe) this.robe.add(part(glowMat(def.color, 0.5), 0.7, 0.08, 0.5, 0, -0.78, 0));
+    } else if (extra === 'tail') {
+      this.tailG = new THREE.Group();
+      this.tailG.position.set(0, -0.1, -0.2);
+      let z = 0;
+      const segs = [[0.34, 0.26], [0.28, 0.22], [0.22, 0.17], [0.16, 0.12], [0.1, 0.08]];
+      segs.forEach(([w, h], i) => {
+        const len = 0.3;
+        this.tailG.add(part(M.main, w, h, len, 0, -i * 0.07, z - len / 2));
+        this.tailG.add(part(M.dark, 0.05, 0.08, 0.08, 0, h / 2 - i * 0.07 + 0.03, z - len / 2));
+        z -= len - 0.02;
+      });
+      this.hips.add(this.tailG);
+      this.torso.add(part(mat('#7e22ce'), 0.62 * wide, 0.36, 0.38 * wide, 0, 0.12, 0));
+      this.torso.add(part(mat('#581c87'), 0.66 * wide, 0.06, 0.4 * wide, 0, 0.32, 0));
+      const bone = mat('#f5f5f4');
+      for (let i = 0; i < 5; i++) this.torso.add(part(bone, 0.06, 0.1, 0.05, -0.16 + i * 0.08, 0.5 - Math.abs(i - 2) * 0.03, 0.2 * wide));
+    } else if (extra === 'leaves') {
+      const leaf = mat('#4d7c0f');
+      const leaf2 = mat('#65a30d');
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const l = part(i % 2 ? leaf : leaf2, 0.18, 0.34, 0.05, Math.sin(a) * 0.26, -0.12, Math.cos(a) * 0.2);
+        l.rotation.y = a;
+        l.rotation.x = 0.25;
+        this.hips.add(l);
+      }
+      const band = part(leaf2, 0.07, 0.75, 0.38, 0, 0.32, 0);
+      band.rotation.z = -0.7;
+      this.torso.add(band);
+      for (const arm of [this.armR, this.armL]) arm.add(part(leaf, 0.18, 0.08, 0.18, 0, -0.3, 0));
+      this.torso.add(part(mat('#b91c1c'), 0.06, 0.2, 0.06, 0.12, 0.6, 0.18));
     } else if (extra === 'embers') {
       if (this.robe) {
         const tail = part(glowMat(def.color, 0.7), 0.3, 0.2, 0.5, 0, -0.7, -0.35, OCTA);
@@ -817,6 +1026,33 @@ export class HeroModel {
     this.fx.add(this.tornado);
     this.buffGlow = groundRing(def.color, 1.3, 0.5);
     this.fx.add(this.buffGlow);
+    this.fearMark = new THREE.Group();
+    const fearMat = glowMat('#c084fc', 0.95);
+    const drop = part(fearMat, 0.16, 0.3, 0.16, 0, 0, 0, OCTA);
+    const dot = part(fearMat, 0.1, 0.1, 0.1, 0, -0.3, 0, OCTA);
+    drop.castShadow = dot.castShadow = false;
+    this.fearMark.add(drop, dot);
+    this.fearMark.position.y = 2.8;
+    this.fx.add(this.fearMark);
+    this.burnFlames = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const f = part(glowMat(i % 2 ? '#ffb020' : '#ff3d00', 0.85), 0.2, 0.42, 0.2, Math.cos(a) * 0.45, 0.4 + (i % 3) * 0.45, Math.sin(a) * 0.45, OCTA);
+      f.castShadow = false;
+      f.userData.ph = i * 1.3;
+      this.burnFlames.add(f);
+    }
+    this.fx.add(this.burnFlames);
+    this.bigAura = new THREE.Group();
+    this.bigAura.add(groundRing('#a855f7', 3.8, 0.6));
+    const inner = groundRing('#4ade80', 2.6, 0.45);
+    this.bigAura.add(inner);
+    const swirl = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.0, 1.4, 24, 1, true), glowMat('#a855f7', 0.12));
+    swirl.position.y = 0.7;
+    this.bigAura.add(swirl);
+    this.bigSwirl = swirl;
+    this.fx.add(this.bigAura);
+    this.bigK = 0;
 
     this.walk = 0;
     this.attackT = 0;
@@ -999,6 +1235,16 @@ export class HeroModel {
       this.wings[1].rotation.z = -0.3 - beat;
     }
     if (this.tail) this.tail.rotation.y = Math.sin(time * 6) * 0.5;
+    if (this.tailG) {
+      this.tailG.rotation.y = Math.sin(time * (moving ? 9 : 3)) * (moving ? 0.35 : 0.18) - P.twist * 0.4;
+      this.tailG.rotation.x = -0.15;
+    }
+    const jaw = this.hat.userData.jaw;
+    if (jaw) jaw.rotation.x += (P.jaw * 0.75 - jaw.rotation.x) * Math.min(1, dt * 30);
+    if (this.hat.userData.flames) {
+      for (const fl of this.hat.userData.flames) fl.scale.y = fl.userData.h * (0.8 + Math.sin(time * 15 + fl.userData.ph) * 0.2 + this.glowK * 0.3);
+    }
+    if (this.torchFlame) this.torchFlame.scale.z = 0.18 * (0.8 + Math.sin(time * 18) * 0.25);
 
     const decay = Math.exp(-dt * 13);
     this.kx *= decay;
@@ -1007,7 +1253,8 @@ export class HeroModel {
     this.squash *= Math.exp(-dt * 16);
     this.body.position.x = this.kx + Math.cos(u.facing) * this.lunge * 0.55;
     this.body.position.z = this.kz + Math.sin(u.facing) * this.lunge * 0.55;
-    const bs = this.baseScale * P.pulse;
+    this.bigK += ((u.flags & F.big ? 1 : 0) - this.bigK) * Math.min(1, dt * 4);
+    const bs = this.baseScale * P.pulse * (1 + this.bigK * 0.4);
     this.body.scale.set(bs * (1 + this.squash * 0.1), bs * (1 - this.squash * 0.14), bs * (1 + this.squash * 0.1));
 
     if (this.hat.userData.flame) this.hat.userData.flame.scale.y = 0.45 + Math.sin(time * 14) * 0.08;
@@ -1017,7 +1264,30 @@ export class HeroModel {
     this.rootRing.visible = !!(f & F.root);
     this.slowRing.visible = !!(f & F.slow) && !(f & F.root);
     this.shield.visible = u.shield > 0;
-    this.tornado.visible = !!(f & F.aura);
+    this.tornado.visible = !!(f & F.aura) && !(f & F.big);
+    this.bigAura.visible = this.bigK > 0.05;
+    if (this.bigAura.visible) {
+      this.bigAura.scale.setScalar(0.4 + this.bigK * 0.6);
+      this.bigAura.rotation.y = time * 1.5;
+      this.bigSwirl.material.opacity = 0.08 + Math.sin(time * 5) * 0.05;
+    }
+    const fear = !!(f & F.fear);
+    this.fearMark.visible = fear;
+    if (fear) {
+      this.fearMark.position.y = 2.8 + Math.sin(time * 10) * 0.1;
+      this.body.rotation.z = Math.sin(time * 40) * 0.06;
+    } else this.body.rotation.z = 0;
+    this.burnFlames.visible = !!(f & F.burn);
+    if (this.burnFlames.visible) {
+      this.burnFlames.rotation.y = time * 2;
+      for (const fl of this.burnFlames.children) fl.scale.y = 0.42 * (0.6 + Math.abs(Math.sin(time * 12 + fl.userData.ph)) * 0.6);
+    }
+    const fury = !!(f & F.fury) || this.bigK > 0.5;
+    if (this.furyBits) for (const b of this.furyBits) {
+      b.visible = fury;
+      if (fury) b.scale.y = 0.2 * (0.8 + Math.sin(time * 16) * 0.25);
+    }
+    if (this.hat.userData.eyes) for (const e of this.hat.userData.eyes) e.visible = fury;
     this.tornado.rotation.y = -time * 8;
     this.buffGlow.visible = !!(f & F.buff) && !(f & F.aura);
     this.buffGlow.material.opacity = 0.3 + Math.sin(time * 6) * 0.2;
