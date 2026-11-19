@@ -34,7 +34,7 @@ export const MATCH = {
   maxLevel: 18,
   startGold: 1400,
   goldPerSec: 4,
-  xpPerSec: 5,
+  xpPerSec: 3.5,
   firstWave: 12,
   waveEvery: 26,
   packRespawn: 40,
@@ -169,7 +169,7 @@ export const HEROES = {
     color: '#eab308',
     look: { weapon: 'stingers', hat: 'antennae', scale: 0.95, extra: 'wings' },
     ranged: false,
-    stats: { hp: 600, hpL: 95, atk: 68, atkL: 3.8, armor: 30, armorL: 2.8, mres: 30, mresL: 1.4, as: 0.7, asL: 0.03, ms: 6.25, range: 1.9, regen: 1.9, regenL: 0.2 },
+    stats: { hp: 660, hpL: 101, atk: 68, atkL: 3.8, armor: 30, armorL: 2.8, mres: 30, mresL: 1.4, as: 0.7, asL: 0.03, ms: 6.25, range: 1.9, regen: 1.9, regenL: 0.2 },
     abilities: {
       q: { name: 'Ferroada', icon: 'sting', kind: 'target', cd: 7, cast: 0, range: 6.5, dashTo: true, dmg: { b: 60, l: 19, ad: 1.0, type: 'phys' }, color: '#fde047', desc: 'Avança no alvo e fere.' },
       w: { name: 'Adrenalina', icon: 'heart', kind: 'self', cd: 14, cast: 0, heal: { b: 55, l: 17, ad: 0.3 }, buff: { t: 2.5, ms: 0.3, as: 0.3 }, desc: 'Cura e acelera ataque e passo.' },
@@ -202,7 +202,7 @@ export const HEROES = {
     stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
     abilities: {
       q: { name: 'Onda', icon: 'wave', kind: 'proj', cd: 7, cast: 0.2, range: 12, speed: 22, width: 1.3, pierce: true, dmg: { b: 60, l: 16, ap: 0.55, type: 'magic' }, fx: { slow: [0.25, 1.5] }, color: '#60a5fa', desc: 'Onda que atravessa todo mundo e deixa lento.' },
-      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 70, l: 20, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
+      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 55, l: 15, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
       e: { name: 'Bolha', icon: 'bubble', kind: 'ally', cd: 14, cast: 0, range: 0, radius: 6, shield: { b: 60, l: 20, ap: 0.35, t: 2.5 }, color: '#bae6fd', desc: 'Escudo em você e nos aliados por perto.' },
       r: { name: 'Maré Alta', icon: 'tide', kind: 'proj', cd: 75, cast: 0.3, range: 18, speed: 17, width: 4.2, pierce: true, dmg: { b: 150, l: 28, ap: 0.6, type: 'magic' }, fx: { knockback: 4, slow: [0.4, 2] }, color: '#3b82f6', desc: 'Uma onda gigante que empurra e fere todos.' },
     },
@@ -229,7 +229,7 @@ export const HEROES = {
     color: '#dc2626',
     look: { weapon: 'sword', hat: 'cap', oneLeg: true, pipe: true },
     ranged: false,
-    stats: { hp: 620, hpL: 98, atk: 66, atkL: 3.7, armor: 32, armorL: 2.9, mres: 30, mresL: 1.5, as: 0.7, asL: 0.028, ms: 6.3, range: 1.9, regen: 2, regenL: 0.2 },
+    stats: { hp: 680, hpL: 104, atk: 66, atkL: 3.7, armor: 32, armorL: 2.9, mres: 30, mresL: 1.5, as: 0.7, asL: 0.028, ms: 6.3, range: 1.9, regen: 2, regenL: 0.2 },
     abilities: {
       q: { name: 'Redemoinho', icon: 'spin', kind: 'nova', cd: 6, cast: 0.1, radius: 3.4, delay: 0, dmg: { b: 70, l: 19, ad: 0.9, type: 'phys' }, color: '#f87171', desc: 'Gira e fere todo mundo em volta.' },
       w: { name: 'Pulo de uma perna', icon: 'hop', kind: 'dash', cd: 10, cast: 0, range: 6, speed: 26, arc: true, end: { radius: 2.2, dmg: { b: 40, l: 12, ad: 0.6, type: 'phys' }, fx: { slow: [0.35, 1.2] } }, color: '#fca5a5', desc: 'Pula e deixa lento quem estiver na queda.' },
@@ -268,7 +268,7 @@ export const HEROES = {
       q: { name: 'Tocha', icon: 'torch', kind: 'proj', cd: 5, cast: 0.2, range: 14, speed: 30, width: 0.9, explode: 1.8, dmg: { b: 65, l: 19, ap: 0.6, type: 'magic' }, fx: { burn: 3 }, color: '#ff7a1a', desc: 'Arremessa uma tocha de bem longe: explode no primeiro inimigo e deixa todo mundo em volta queimando.' },
       w: { name: 'Trilha de Brasa', icon: 'firewall', kind: 'zone', cd: 14, cast: 0.2, range: 11, radius: 1.1, line: 7, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.08, type: 'magic' }, fx: { slow: [0.35, 0.6], burn: 2 }, color: '#ffb020', desc: 'Risca uma parede de fogo atravessada no chão: queima e deixa lento quem passar por ela.' },
       e: { name: 'Pés Virados', icon: 'feet', kind: 'blink', cd: 15, cast: 0, range: 6.5, origin: { radius: 2.4, delay: 0.5, dmg: { b: 60, l: 18, ap: 0.5, type: 'magic' }, fx: { burn: 3 } }, color: '#fb923c', desc: 'Some e reaparece mais adiante. As pegadas ficam viradas pro outro lado e explodem em brasa onde você estava.' },
-      r: { name: 'Fúria da Mata', icon: 'forestfire', kind: 'aoe', cd: 80, cast: 0.35, range: 16, radius: 4.4, delay: 0.9, dmg: { b: 180, l: 32, ap: 0.8, type: 'magic' }, fx: { fear: 1.25, burn: 4 }, linger: { dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.06, type: 'magic' }, fx: { slow: [0.3, 0.6] } }, color: '#ff3d00', desc: 'De bem longe, a mata pega fogo: depois de um instante explode, os inimigos fogem de medo e o chão fica queimando.' },
+      r: { name: 'Fúria da Mata', icon: 'forestfire', kind: 'aoe', cd: 80, cast: 0.35, range: 16, radius: 4.4, delay: 0.9, dmg: { b: 160, l: 28, ap: 0.8, type: 'magic' }, fx: { fear: 1.25, burn: 4 }, linger: { dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.06, type: 'magic' }, fx: { slow: [0.3, 0.6] } }, color: '#ff3d00', desc: 'De bem longe, a mata pega fogo: depois de um instante explode, os inimigos fogem de medo e o chão fica queimando.' },
     },
   },
   caipora: {
@@ -279,11 +279,11 @@ export const HEROES = {
     look: { weapon: 'coco', hat: 'cocar', scale: 0.9, extra: 'boar', body: '#a16207', skin: '#8d5a3b', pipe: true },
     ranged: true,
     skillOrder: ['q', 'e', 'w'],
-    stats: { hp: 535, hpL: 86, atk: 52, atkL: 2.8, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.1, range: 8.0, regen: 1.5, regenL: 0.14 },
+    stats: { hp: 560, hpL: 90, atk: 52, atkL: 2.8, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.1, range: 8.0, regen: 1.5, regenL: 0.14 },
     abilities: {
       q: { name: 'Coquinho', icon: 'coco', kind: 'proj', cd: 8, cast: 0.15, range: 7, speed: 22, width: 1.0, explode: 1.6, grow: { per: 0.09, max: 1.5 }, hover: { t: 2, reach: 9, speed: 30 }, dmg: { b: 56, l: 15, ap: 0.55, type: 'magic' }, color: '#e879f9', desc: 'Joga um coquinho que fere mais quanto mais longe voar. Se não acertar ninguém, ele para no ar: use de novo pra rebater pra onde o mouse aponta.' },
-      w: { name: 'Traquinagem', icon: 'mask', kind: 'self', cd: 12, cast: 0, buff: { t: 2, ms: 0.25 }, steal: { window: 40 }, bolts: { n: 3, range: 7, speed: 22, repeat: 0.3, wait: 2.5, dmg: { b: 26, l: 6, ap: 0.22, type: 'magic' } }, color: '#d946ef', desc: 'Lança de graça o último feitiço que um herói inimigo usou. Três vaga-lumes avançam nos inimigos próximos e você acelera.' },
-      e: { name: 'Fumaça do Sono', icon: 'sleep', kind: 'proj', cd: 16, cast: 0.25, range: 10, speed: 20, width: 1.1, dmg: { b: 50, l: 14, ap: 0.4, type: 'magic' }, fx: { drowsy: [1.2, 2], wake: { b: 40, l: 12, ap: 0.3 } }, trap: { r: 1.6, dur: 4 }, color: '#c4b5fd', desc: 'Sopra a fumaça do cachimbo: o primeiro inimigo fica com sono e logo dorme. O golpe que acordar ele dói em dobro. Se errar, a fumaça fica no chão como armadilha.' },
+      w: { name: 'Traquinagem', icon: 'mask', kind: 'self', cd: 12, cast: 0, buff: { t: 2, ms: 0.25 }, steal: { window: 40 }, bolts: { n: 3, range: 7, speed: 22, repeat: 0.3, wait: 2.5, dmg: { b: 34, l: 8, ap: 0.3, type: 'magic' } }, color: '#d946ef', desc: 'Lança de graça o último feitiço que um herói inimigo usou. Três vaga-lumes avançam nos inimigos próximos e você acelera.' },
+      e: { name: 'Fumaça do Sono', icon: 'sleep', kind: 'proj', cd: 16, cast: 0.25, range: 10, speed: 20, width: 1.1, dmg: { b: 60, l: 17, ap: 0.5, type: 'magic' }, fx: { drowsy: [1.2, 2], wake: { b: 40, l: 12, ap: 0.3 } }, trap: { r: 1.6, dur: 4 }, color: '#c4b5fd', desc: 'Sopra a fumaça do cachimbo: o primeiro inimigo fica com sono e logo dorme. O golpe que acordar ele dói em dobro. Se errar, a fumaça fica no chão como armadilha.' },
       r: { name: 'Buraco de Tatu', icon: 'portal', kind: 'blink', cd: 16, cast: 0, range: 6.5, ret: 1, bolts: { n: 3, range: 7, speed: 24, repeat: 0.4, dmg: { b: 35, l: 8, ap: 0.35, type: 'magic' } }, color: '#d946ef', desc: 'Some num buraco e sai onde o mouse aponta, solta três vaga-lumes e, depois de 1 s, volta pelo mesmo buraco pra onde estava. Não dá pra andar enquanto está do outro lado.' },
     },
   },
@@ -309,6 +309,8 @@ export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', '
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).
 // Preço: os básicos valem o que custam; intermediários rendem ~105-110% do preço e os grandes ~113-116%.
+// Exceções: os de poder rendem mais (~125%), porque poder escala menos que ataque; os de defesa rendem ~100%,
+// porque vida e resistência se multiplicam e um tanque cheio deles ficava quase imortal.
 // `group`: só um item do grupo por herói (as botas e suas melhorias).
 // `active`: item de usar, pela tecla do espaço dele no inventário. `cd` é a recarga.
 //   stasis = segundos como estátua: não leva dano nem controle, mas também não anda, não ataca e não lança nada
@@ -338,9 +340,9 @@ export const ITEMS = {
   flecha: { name: 'Flecha de Taquara', cost: 1200, from: ['zarabatana', 'dente'], stats: { as: 0.25, atk: 12 } },
   arraia: { name: 'Ferrão de Arraia', cost: 1250, from: ['acaua', 'dente'], stats: { crit: 0.15, atk: 15 } },
   borduna: { name: 'Borduna', cost: 1200, from: ['dente', 'beiju'], stats: { atk: 15, hp: 250 } },
-  maraca: { name: 'Maracá', cost: 1600, from: ['raio', 'guarana'], stats: { pow: 45, haste: 10 } },
-  muiraquita: { name: 'Muiraquitã', cost: 1200, from: ['pena', 'beiju'], stats: { pow: 30, hp: 200 } },
-  curare: { name: 'Dardo de Curare', cost: 1300, from: ['zarabatana', 'pena'], stats: { as: 0.2, pow: 30 } },
+  maraca: { name: 'Maracá', cost: 1600, from: ['raio', 'guarana'], stats: { pow: 52, haste: 10 } },
+  muiraquita: { name: 'Muiraquitã', cost: 1200, from: ['pena', 'beiju'], stats: { pow: 35, hp: 200 } },
+  curare: { name: 'Dardo de Curare', cost: 1300, from: ['zarabatana', 'pena'], stats: { as: 0.2, pow: 35 } },
   gibao: { name: 'Gibão de Vaqueiro', cost: 1300, from: ['tatu', 'beiju'], stats: { armor: 30, hp: 250 } },
   patua: { name: 'Patuá', cost: 1300, from: ['vitoria', 'beiju'], stats: { mres: 30, hp: 250 } },
   jacare: { name: 'Couro de Jacaré', cost: 1400, from: ['tatu', 'guarana'], stats: { armor: 35, haste: 10 } },
@@ -354,21 +356,21 @@ export const ITEMS = {
   caipora: { name: 'Arco da Caipora', cost: 2650, from: ['flecha', 'zarabatana'], stats: { as: 0.55, atk: 30 } },
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
-  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.45, pow: 50 } },
+  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.45, pow: 58 } },
   // ----- grandes: poder -----
-  tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 130 } },
-  cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 80, haste: 20 } },
-  maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 80, hp: 350 } },
-  maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 70, mres: 45 } },
-  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 70, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
-  benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 50, haste: 20, hp: 250 } },
+  tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 150 } },
+  cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
+  maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 92, hp: 350 } },
+  maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 80, mres: 45 } },
+  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 80, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+  benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
-  jabuti: { name: 'Casco de Jabuti', cost: 2450, from: ['gibao', 'tatu'], stats: { armor: 75, hp: 350 } },
-  jaci: { name: 'Manto de Jaci', cost: 2450, from: ['patua', 'vitoria'], stats: { mres: 75, hp: 350 } },
-  mapinguari: { name: 'Couro do Mapinguari', cost: 2650, from: ['gibao', 'vitoria'], stats: { armor: 45, mres: 45, hp: 300 } },
-  xiquexique: { name: 'Armadura de Xique-xique', cost: 2800, from: ['jacare', 'mandioca'], stats: { armor: 60, haste: 20, hp: 200 } },
-  sumauma: { name: 'Raiz de Sumaúma', cost: 2800, from: ['patua', 'guarana', 'vitoria'], stats: { mres: 55, haste: 20, hp: 250 } },
-  boibumba: { name: 'Tambor do Boi-Bumbá', cost: 2100, from: ['mandioca', 'mandioca'], stats: { hp: 900 } },
+  jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
+  jaci: { name: 'Manto de Jaci', cost: 2400, from: ['patua', 'vitoria'], stats: { mres: 65, hp: 300 } },
+  mapinguari: { name: 'Couro do Mapinguari', cost: 2600, from: ['gibao', 'vitoria'], stats: { armor: 40, mres: 40, hp: 250 } },
+  xiquexique: { name: 'Armadura de Xique-xique', cost: 2800, from: ['jacare', 'mandioca'], stats: { armor: 50, haste: 20, hp: 200 } },
+  sumauma: { name: 'Raiz de Sumaúma', cost: 2800, from: ['patua', 'guarana', 'vitoria'], stats: { mres: 45, haste: 20, hp: 250 } },
+  boibumba: { name: 'Tambor do Boi-Bumbá', cost: 2400, from: ['mandioca', 'mandioca'], stats: { hp: 900 } },
 };
 
 export const ITEM_ORDER = Object.keys(ITEMS);

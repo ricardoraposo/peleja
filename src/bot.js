@@ -346,6 +346,9 @@ export class BotBrain {
         return ab.range + 0.5;
       case 'dash':
         return ab.range + (ab.end ? ab.end.radius * 0.5 : 0) + (ab.bolts ? ab.bolts.range * 0.6 : 0);
+      // teleporte que fere: ou atira na chegada (bolts) ou explode onde você estava (origin), então o inimigo precisa estar colado
+      case 'blink':
+        return ab.bolts ? ab.range + ab.bolts.range * 0.6 : ab.origin ? ab.origin.radius * 0.8 : 0;
       default:
         return 0;
     }
@@ -363,7 +366,7 @@ export class BotBrain {
   plan(slot, ab, ctx) {
     const { h, sim, diff } = this;
     const { target, near, life } = ctx;
-    const offensive = ab.dmg || ab.end || ab.path || ab.kind === 'zone' || (ab.kind === 'dash' && ab.bolts);
+    const offensive = ab.dmg || ab.end || ab.path || ab.kind === 'zone' || (ab.kind === 'dash' && ab.bolts) || (ab.kind === 'blink' && (ab.bolts || ab.origin));
     if (offensive) {
       const reach = this.reachOf(ab);
       let e = target && dist(target, h) <= reach + target.r ? target : null;
@@ -389,7 +392,12 @@ export class BotBrain {
           if (hpf(e) > 0.65 && others === 0 && life > 0.35) return null;
         }
         if (ab.kind === 'nova' || (ab.kind === 'self' && ab.buff?.aura)) return [h.x, h.z, 0];
-        if (ab.kind === 'dash' && ab.bolts) {
+        if (ab.kind === 'blink' && ab.origin) {
+          // some pra longe do alvo e deixa a explosão pra trás, em cima dele
+          const d = dist(e, h) || 1;
+          return [h.x - ((e.x - h.x) / d) * ab.range, h.z - ((e.z - h.z) / d) * ab.range, 0];
+        }
+        if ((ab.kind === 'dash' || ab.kind === 'blink') && ab.bolts) {
           // mergulho que atira na chegada: para a uma distância segura do alvo em vez de cair em cima dele
           const d = dist(e, h) || 1;
           const keep = ab.bolts.range * 0.6;
@@ -443,6 +451,12 @@ export class BotBrain {
     if (ab.kind === 'dash' && ctx.fight && ctx.target && ab.buff) {
       const d = dist(ctx.target, h);
       if (d > h.stats.range + 1.5 && d < h.stats.range + ab.range && hpf(ctx.target) < 0.45) return [ctx.target.x, ctx.target.z, 0];
+      // quem bate de longe usa o avanço pra se afastar de quem chegou perto, e ainda ganha o bônus
+      const close = h.ranged && near.find((o) => !o.ranged && dist(o, h) < 3);
+      if (close) {
+        const c = dist(close, h) || 1;
+        return [h.x + ((h.x - close.x) / c) * ab.range, h.z + ((h.z - close.z) / c) * ab.range, 0];
+      }
     }
     return null;
   }
