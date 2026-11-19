@@ -162,18 +162,34 @@ export const itemIcon = (id) => ITEM_ICONS[id] || ICONS[ITEMS[id]?.icon] || '';
 const tierClass = (id) => `tier${itemTier(id)}`;
 
 // escolha dos feitiços do D e do F: `active` é a tecla que está sendo trocada
+// caixinha que aparece ao passar o mouse num feitiço: o que faz, os números e a recarga
+function spellTip(ab) {
+  const n = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+  const perLevel = (o) => (o.l ? ` (+${n(o.l)} por nível)` : '');
+  const kinds = { phys: 'físico', magic: 'mágico', true: 'que ignora defesas' };
+  const facts = [];
+  if (ab.dmg) facts.push(`${n(ab.dmg.b)} de dano ${kinds[ab.dmg.type] || ''}${perLevel(ab.dmg)}`);
+  if (ab.heal) facts.push(`Cura ${n(ab.heal.b)} de vida${perLevel(ab.heal)}`);
+  if (ab.shield) facts.push(`Escudo de ${n(ab.shield.b)}${perLevel(ab.shield)} por ${n(ab.shield.t)} s`);
+  if (ab.buff?.ms) facts.push(`+${n(ab.buff.ms * 100)}% de velocidade por ${n(ab.buff.t)} s`);
+  if (ab.fx?.slow) facts.push(`Alvo ${n(ab.fx.slow[0] * 100)}% mais lento por ${n(ab.fx.slow[1])} s`);
+  if (ab.range) facts.push(`Alcance ${n(ab.range)}${ab.heroesOnly ? ' · só em heróis inimigos' : ''}`);
+  facts.push(`Recarga de ${n(ab.cd)} s`);
+  return `<span class="tip"><b style="color:${ab.color}">${esc(ab.name)}</b><span>${esc(ab.desc)}</span>${facts.map((f) => `<small>${esc(f)}</small>`).join('')}</span>`;
+}
+
 export function spellPicker(spells, active) {
   const other = active === 'd' ? 'f' : 'd';
   const slots = ['d', 'f']
     .map((s) => {
       const ab = SPELL_POOL[spells[s]];
-      return `<button class="sp-slot${s === active ? ' on' : ''}" data-slot="${s}" style="--c:${ab.color}"><kbd>${s.toUpperCase()}</kbd><span class="sp-ic">${ICONS[ab.icon] || ''}</span><b>${esc(ab.name)}</b></button>`;
+      return `<button class="sp-slot${s === active ? ' on' : ''}" data-slot="${s}" style="--c:${ab.color}"><kbd>${s.toUpperCase()}</kbd><span class="sp-ic">${ICONS[ab.icon] || ''}</span><b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
     })
     .join('');
   const opts = SPELL_ORDER.map((id) => {
     const ab = SPELL_POOL[id];
     const mark = spells[active] === id ? active : spells[other] === id ? other : '';
-    return `<button class="sp-opt${mark === active ? ' on' : ''}" data-spell="${id}" style="--c:${ab.color}" title="${esc(ab.desc)}"><span class="sp-ic">${ICONS[ab.icon] || ''}</span>${mark ? `<kbd>${mark.toUpperCase()}</kbd>` : ''}<b>${esc(ab.name)}</b></button>`;
+    return `<button class="sp-opt${mark === active ? ' on' : ''}" data-spell="${id}" style="--c:${ab.color}"><span class="sp-ic">${ICONS[ab.icon] || ''}</span>${mark ? `<kbd>${mark.toUpperCase()}</kbd>` : ''}<b>${esc(ab.name)}</b>${spellTip(ab)}</button>`;
   }).join('');
   const cur = SPELL_POOL[spells[active]];
   return `<div class="sp-slots">${slots}</div><div class="sp-opts">${opts}</div><p class="sp-desc"><b style="color:${cur.color}">${esc(cur.name)}</b> · ${esc(cur.desc)} <i>Recarga de ${cur.cd} s.</i></p>`;
