@@ -1242,12 +1242,27 @@ export class Effects {
       this.indCircleEdge.scale.setScalar(r);
     };
     switch (ab.kind) {
-      case 'proj':
+      case 'proj': {
+        // projétil parado no ar esperando a rebatida: a mira sai dele e o alcance é medido do herói
+        let orb = null;
+        if (ab.hover) for (const p of this.projs.values()) if (p.o === hero.id && p.r === ab.range && p.traveled >= p.r - 0.05) orb = p;
+        if (orb) {
+          const k = Math.min(d, ab.hover.reach);
+          const lx = hx + dx * k - orb.mesh.position.x;
+          const lz = hz + dz * k - orb.mesh.position.z;
+          this.indRange.scale.setScalar(ab.hover.reach);
+          this.indRect.visible = true;
+          this.indRect.position.set(orb.mesh.position.x, 0.1, orb.mesh.position.z);
+          this.indRect.scale.set(ab.width, Math.max(1, Math.hypot(lx, lz)), 1);
+          this.indRect.rotation.z = -Math.atan2(lz, lx) - Math.PI / 2;
+          break;
+        }
         this.indRect.visible = true;
         this.indRect.position.set(hx, 0.1, hz);
         this.indRect.scale.set(ab.width, ab.range, 1);
         this.indRect.rotation.z = -Math.atan2(dz, dx) - Math.PI / 2;
         break;
+      }
       case 'aoe':
       case 'zone':
       case 'ally': {

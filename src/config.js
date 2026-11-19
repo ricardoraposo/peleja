@@ -111,7 +111,7 @@ export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_S
 //        wait = segundos que eles esperam alguém chegar ao alcance
 // charges: a habilidade pode ser usada n vezes em t segundos, com gap entre uma e outra; a recarga começa no fim
 // grow: o projétil fere mais quanto mais longe voa (per = fração a mais por passo, até max)
-// hover: se não acertar ninguém, o projétil para no ar por t segundos e dá pra lançar de novo (range e speed do segundo voo)
+// hover: se não acertar ninguém, o projétil para no ar por t segundos e dá pra lançar de novo (no segundo voo vai até onde o mouse aponta, no máximo a reach do herói, com speed)
 // trap: se errar, o projétil vira uma armadilha no chão (raio r, dura dur segundos, dispara no primeiro que pisar)
 // fx.drowsy [segundos lento, segundos dormindo] · fx.wake: teto do dano extra de quem acordar o alvo
 // steal: copia o último feitiço (D/F) que um herói inimigo lançou nos últimos `window` segundos
@@ -281,7 +281,7 @@ export const HEROES = {
     skillOrder: ['q', 'e', 'w'],
     stats: { hp: 535, hpL: 86, atk: 52, atkL: 2.8, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.1, range: 8.0, regen: 1.5, regenL: 0.14 },
     abilities: {
-      q: { name: 'Coquinho', icon: 'coco', kind: 'proj', cd: 8, cast: 0.15, range: 7, speed: 22, width: 1.0, explode: 1.6, grow: { per: 0.09, max: 1.5 }, hover: { t: 1.2, range: 17, speed: 30 }, dmg: { b: 56, l: 15, ap: 0.55, type: 'magic' }, color: '#e879f9', desc: 'Joga um coquinho que fere mais quanto mais longe voar. Se não acertar ninguém, ele para no ar: use de novo pra rebater pra onde o mouse aponta.' },
+      q: { name: 'Coquinho', icon: 'coco', kind: 'proj', cd: 8, cast: 0.15, range: 7, speed: 22, width: 1.0, explode: 1.6, grow: { per: 0.09, max: 1.5 }, hover: { t: 1.2, reach: 9, speed: 30 }, dmg: { b: 56, l: 15, ap: 0.55, type: 'magic' }, color: '#e879f9', desc: 'Joga um coquinho que fere mais quanto mais longe voar. Se não acertar ninguém, ele para no ar: use de novo pra rebater pra onde o mouse aponta.' },
       w: { name: 'Traquinagem', icon: 'mask', kind: 'self', cd: 12, cast: 0, buff: { t: 2, ms: 0.25 }, steal: { window: 40 }, bolts: { n: 3, range: 7, speed: 22, repeat: 0.3, wait: 2.5, dmg: { b: 26, l: 6, ap: 0.22, type: 'magic' } }, color: '#d946ef', desc: 'Lança de graça o último feitiço que um herói inimigo usou. Três vaga-lumes avançam nos inimigos próximos e você acelera.' },
       e: { name: 'Fumaça do Sono', icon: 'sleep', kind: 'proj', cd: 16, cast: 0.25, range: 10, speed: 20, width: 1.1, dmg: { b: 50, l: 14, ap: 0.4, type: 'magic' }, fx: { drowsy: [1.2, 2], wake: { b: 40, l: 12, ap: 0.3 } }, trap: { r: 1.6, dur: 4 }, color: '#c4b5fd', desc: 'Sopra a fumaça do cachimbo: o primeiro inimigo fica com sono e logo dorme. O golpe que acordar ele dói em dobro. Se errar, a fumaça fica no chão como armadilha.' },
       r: { name: 'Buraco de Tatu', icon: 'portal', kind: 'blink', cd: 16, cast: 0, range: 6.5, ret: 1, bolts: { n: 3, range: 7, speed: 24, repeat: 0.4, dmg: { b: 35, l: 8, ap: 0.35, type: 'magic' } }, color: '#d946ef', desc: 'Some num buraco e sai onde o mouse aponta, solta três vaga-lumes e, depois de 1 s, volta pra onde estava.' },
