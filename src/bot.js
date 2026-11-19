@@ -345,7 +345,7 @@ export class BotBrain {
       case 'target':
         return ab.range + 0.5;
       case 'dash':
-        return ab.range + (ab.end ? ab.end.radius * 0.5 : 0);
+        return ab.range + (ab.end ? ab.end.radius * 0.5 : 0) + (ab.bolts ? ab.bolts.range * 0.6 : 0);
       default:
         return 0;
     }
@@ -363,7 +363,7 @@ export class BotBrain {
   plan(slot, ab, ctx) {
     const { h, sim, diff } = this;
     const { target, near, life } = ctx;
-    const offensive = ab.dmg || ab.end || ab.path || ab.kind === 'zone';
+    const offensive = ab.dmg || ab.end || ab.path || ab.kind === 'zone' || (ab.kind === 'dash' && ab.bolts);
     if (offensive) {
       const reach = this.reachOf(ab);
       let e = target && dist(target, h) <= reach + target.r ? target : null;
@@ -389,6 +389,13 @@ export class BotBrain {
           if (hpf(e) > 0.65 && others === 0 && life > 0.35) return null;
         }
         if (ab.kind === 'nova' || (ab.kind === 'self' && ab.buff?.aura)) return [h.x, h.z, 0];
+        if (ab.kind === 'dash' && ab.bolts) {
+          // mergulho que atira na chegada: para a uma distância segura do alvo em vez de cair em cima dele
+          const d = dist(e, h) || 1;
+          const keep = ab.bolts.range * 0.6;
+          if (d <= keep) return [h.x - (e.z - h.z) / d * 3, h.z + (e.x - h.x) / d * 3, 0];
+          return [e.x - ((e.x - h.x) / d) * keep, e.z - ((e.z - h.z) / d) * keep, 0];
+        }
         const [x, z] = this.aimAt(e, this.delayOf(ab, dist(e, h)));
         return [x, z, e.id];
       }
@@ -407,6 +414,7 @@ export class BotBrain {
       return [cx / inReach.length, cz / inReach.length, 0];
     }
     if (ab.kind === 'self') {
+      if (ab.bolts) return near.some((e) => dist(e, h) <= ab.bolts.range + e.r) ? [h.x, h.z, 0] : null;
       const fightingNear = near.some((e) => dist(e, h) < 7);
       if (ab.nextHit) {
         const t = ctx.target;

@@ -37,6 +37,9 @@ export const ICONS = {
   hop: S('<path d="M12 21V9M8 13l4-4 4 4M5 5c3-3 11-3 14 0"/>'),
   cap: S('<path d="M4 18c0-6 4-12 10-14 2 3 1 7-1 9l7 5z"/>'),
   tornado: S('<path d="M3 4h18M5 8h14M7 12h10M9 16h6M11 20h2"/>'),
+  pearl: S('<circle cx="7" cy="12" r="4"/><path d="M14 8h7M18 5l3 3-3 3M21 16h-7M17 13l-3 3 3 3"/>'),
+  fish: S('<path d="M3 12c3-5 9-5 13 0-4 5-10 5-13 0zM16 12l5-4v8z"/><path d="M7.5 11h.01"/>'),
+  dive: S('<path d="M3 13c2-6 9-9 14-5l4-2-2 5c0 4-3 6-7 6M2 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>'),
   leaf: S('<path d="M5 19C5 10 10 4 20 4c0 10-6 15-15 15zM5 19l7-7"/>'),
   blink: S('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="3"/><path d="M8 16l2-2M12 12l2-2" stroke-dasharray="2 2"/>'),
   boots: S('<path d="M7 3v10l-3 3v4h16v-3l-6-2V3z"/>'),
@@ -108,6 +111,7 @@ function fxText(fx) {
   if (fx.slow) out.push(`deixa ${Math.round(fx.slow[0] * 100)}% mais lento por ${fx.slow[1]} s`);
   if (fx.stun) out.push(`atordoa por ${fx.stun} s`);
   if (fx.root) out.push(`prende no lugar por ${fx.root} s`);
+  if (fx.charm) out.push(`encanta por ${fx.charm} s: o alvo anda devagar até você e não faz mais nada`);
   if (fx.knockup) out.push(`joga pra cima por ${fx.knockup} s`);
   if (fx.knockback) out.push(`empurra ${fx.knockback} passos`);
   if (fx.fear) out.push(`faz fugir de medo por ${fx.fear} s`);
@@ -122,6 +126,8 @@ export function abilityTip(ab, slot, ctx = null) {
   const lines = [];
   const dmg = (label, d, extra = '') => valueLine(`${label} ${DMG_NAME[d.type] || ''}${extra}`, d, slot, c, DMG_CLASS[d.type]);
   if (ab.dmg) lines.push(dmg(ab.kind === 'zone' ? `Dano a cada ${ab.tick} s,` : 'Dano', ab.dmg));
+  if (ab.back) lines.push(valueLine('Dano verdadeiro na volta,', ab.back.dmg || ab.dmg, slot, c, DMG_CLASS[ab.back.type || ab.dmg.type]));
+  if (ab.bolts) lines.push(dmg(`Dano de cada um dos ${ab.bolts.n},`, ab.bolts.dmg));
   if (ab.end?.dmg) lines.push(dmg('Dano na chegada,', ab.end.dmg));
   if (ab.path?.dmg) lines.push(dmg('Dano no caminho,', ab.path.dmg));
   if (ab.buff?.aura) lines.push(dmg(`Dano a cada ${ab.buff.aura.tick} s,`, ab.buff.aura.dmg));
@@ -150,6 +156,8 @@ export function abilityTip(ab, slot, ctx = null) {
     if (b.mres) bits.push(`+${b.mres} resist. mágica`);
     if (bits.length) notes.push(`${bits.join(', ')} por ${b.t} s`);
   }
+  if (ab.bolts?.repeat < 1) notes.push(`repetir o alvo causa ${Math.round(ab.bolts.repeat * 100)}% do dano`);
+  if (ab.charges) notes.push(`${ab.charges.n} usos em ${ab.charges.t} s; a recarga começa depois do último`);
   if (ab.heroesOnly) notes.push('só acerta heróis');
   if (ab.pierce) notes.push('atravessa os inimigos');
   if (ab.explode) notes.push('explode em área');
@@ -309,9 +317,9 @@ export class Hud {
       d.style.setProperty('--c', ab.color || h.color);
       const max = RANK_MAX[slot] || 0;
       const pips = max ? `<div class="sk-rank">${'<i></i>'.repeat(max)}</div><button class="sk-up" data-up="${slot}" title="Evoluir (Shift+${keyLabel(slot)})">+</button>` : '';
-      d.innerHTML = `<div class="sk-icon">${ICONS[ab.icon] || ''}</div><div class="sk-cd"></div><div class="sk-num"></div><div class="sk-key">${keyLabel(slot)}</div>${pips}<div class="tip">${abilityTip(ab, slot)}</div>`;
+      d.innerHTML = `<div class="sk-icon">${ICONS[ab.icon] || ''}</div><div class="sk-cd"></div><div class="sk-num"></div><div class="sk-key">${keyLabel(slot)}</div>${ab.charges ? '<div class="sk-charge"></div>' : ''}${pips}<div class="tip">${abilityTip(ab, slot)}</div>`;
       this.el.skills.appendChild(d);
-      this.skillEls[slot] = { root: d, ab, tip: d.querySelector('.tip'), tipKey: '', cd: d.querySelector('.sk-cd'), num: d.querySelector('.sk-num'), pips: [...d.querySelectorAll('.sk-rank i')], rank: -1 };
+      this.skillEls[slot] = { root: d, ab, tip: d.querySelector('.tip'), tipKey: '', charge: d.querySelector('.sk-charge'), cd: d.querySelector('.sk-cd'), num: d.querySelector('.sk-num'), pips: [...d.querySelectorAll('.sk-rank i')], rank: -1 };
     }
     this.el.portrait.style.setProperty('--c', h.color);
     this.el.letter.textContent = h.name[0];
@@ -378,6 +386,12 @@ export class Hud {
       const ranks = { q: st.rk[0], w: st.rk[1], e: st.rk[2], r: st.rk[3] };
       const rank = ranks[slot] ?? 1;
       const locked = !!RANK_MAX[slot] && rank <= 0;
+      if (s.charge) {
+        // usos que ainda restam de uma habilidade de várias cargas
+        const left = st.ch || 0;
+        s.charge.textContent = left || '';
+        s.charge.classList.toggle('on', left > 0);
+      }
       if (RANK_MAX[slot]) {
         s.root.classList.toggle('up', canRankUp(st.lv, ranks, slot));
         if (rank !== s.rank) {

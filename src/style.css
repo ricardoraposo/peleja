@@ -438,6 +438,28 @@ kbd {
   color: #fff;
 }
 
+.skill .sk-charge {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #ff5d8f;
+  color: #1a0f08;
+  font-family: var(--num);
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  display: none;
+}
+
+.skill .sk-charge.on {
+  display: block;
+}
+
 .skill .sk-key {
   position: absolute;
   bottom: -7px;
@@ -1408,7 +1430,7 @@ input[type='range'] {
 
 #draft-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }

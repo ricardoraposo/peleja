@@ -221,6 +221,13 @@ function hat(kind, M, color) {
     core.castShadow = false;
     g.add(core);
     g.userData.flames = flames;
+  } else if (kind === 'boater') {
+    // chapéu de aba reta com fita branca: o boto nunca tira, é o que esconde o furo no alto da cabeça.
+    // Vai na cor do herói porque, de cima, o chapéu é quase tudo o que se vê dele.
+    const pink = mat(color);
+    g.add(part(pink, 0.82, 0.05, 0.82, 0, 0.31, 0));
+    g.add(part(pink, 0.44, 0.2, 0.44, 0, 0.43, 0));
+    g.add(part(mat('#f8fafc'), 0.47, 0.08, 0.47, 0, 0.37, 0));
   } else if (kind === 'cap') {
     g.add(part(mat('#dc2626'), 0.46, 0.18, 0.46, 0, 0.3, 0));
     const tip = part(mat('#dc2626'), 0.22, 0.32, 0.22, 0, 0.5, -0.08);
@@ -754,6 +761,57 @@ STYLES.torch = {
   }],
 };
 
+// pérola na mão direita: galã de festa, tudo com um gesto só
+STYLES.pearl = {
+  idle(P, moving, time) {
+    P.aRx = -0.9;
+    P.aRz = 0.25;
+    P.aLx = 0.25;
+    P.aLz = -0.2;
+    P.hop = Math.sin(time * 2.4) * 0.03;
+    P.glow = 0.3;
+  },
+  attack(P, pre) {
+    // peteleco de água com a mão da pérola
+    P.aRx = sw(-0.5, -1.7, pre);
+    P.twist = sw(0.4, -0.35, pre);
+    P.glow = 1;
+  },
+  dash(P) {
+    // Mergulho: corpo deitado, braços pra trás
+    P.pitch = 0.95;
+    P.aRx = 1.3;
+    P.aLx = 1.3;
+    P.glow = 1;
+  },
+  q: [0.15, 0.35, (P, pw, pr, e) => {
+    // Pérola do Rio: arremesso por baixo, braço acompanha até o fim
+    P.aRx = 0.9 * pw - e * 2.6;
+    P.twist = 0.5 * pw - e * 0.9;
+    P.pitch = 0.1 * pw + e * 0.25;
+    P.glow = 1;
+  }],
+  w: [0, 0.5, (P, pw, pr, e, arc) => {
+    // Cardume: rodopia com os braços abertos
+    P.spin = e * Math.PI * 2;
+    P.aRx = -1.5;
+    P.aLx = -1.5;
+    P.aRz = 0.9;
+    P.aLz = -0.9;
+    P.hop = 0.18 * arc;
+    P.glow = 1;
+  }],
+  e: [0.15, 0.4, (P, pw, pr, e, arc) => {
+    // Galanteio: mão na boca e solta o beijo
+    P.aLx = -2.5 * pw + e * 1.1;
+    P.aLz = 0.55 * pw * (1 - e);
+    P.aRx = -0.4;
+    P.twist = -0.3 * pw + e * 0.5;
+    P.pitch = -0.1 * pw + arc * 0.2;
+    P.glow = 1;
+  }],
+};
+
 // poses genéricas (feitiços de todo mundo e o que um estilo não definir)
 const GENERIC = {
   flex: [0, 0.5, (P, pw, pr, e, arc) => {
@@ -799,7 +857,7 @@ export class HeroModel {
     this.lean = 0;
     const color = new THREE.Color(look.body || def.color);
     this.mats = {
-      main: new THREE.MeshStandardMaterial({ color, roughness: 0.65, flatShading: true }),
+      main: new THREE.MeshStandardMaterial({ color: look.suit || color, roughness: 0.65, flatShading: true }),
       dark: new THREE.MeshStandardMaterial({ color: '#2a2d3a', roughness: 0.85, flatShading: true }),
       skin: new THREE.MeshStandardMaterial({ color: look.skin || (look.oneLeg ? '#5b3a29' : '#e8b48a'), roughness: 0.8, flatShading: true }),
       metal: mat('#3a4049', { metalness: 0.4, roughness: 0.5 }),
@@ -852,6 +910,11 @@ export class HeroModel {
     this.head.add(part(M.dark, 0.08, 0.06, 0.02, 0.08, 0.15, 0.19));
     this.hat = hat(look.hat, M, def.color);
     this.head.add(this.hat);
+    if (look.snout) {
+      // bico comprido de boto, com a ponta mais clara
+      this.head.add(part(M.skin, 0.16, 0.12, 0.3, 0, 0.04, 0.3));
+      this.head.add(part(mat('#ffd6e0'), 0.12, 0.08, 0.1, 0, 0.03, 0.48));
+    }
     if (look.pipe) {
       this.head.add(part(M.wood, 0.05, 0.05, 0.26, 0.08, 0.04, 0.3));
       this.head.add(part(M.wood, 0.1, 0.12, 0.1, 0.08, 0.09, 0.42));
@@ -916,6 +979,13 @@ export class HeroModel {
         arm.add(fl);
         this.furyBits.push(fl);
       }
+    } else if (w === 'pearl') {
+      // mãos da cor da pele saindo do paletó e a pérola brilhando na direita
+      for (const arm of [this.armR, this.armL]) arm.add(part(M.skin, 0.13, 0.12, 0.13, 0, -0.5, 0));
+      const pearl = part(glowMat('#fff1f5', 0.95), 0.13, 0.13, 0.13, 0, -0.64, 0.05, SPHERE);
+      pearl.castShadow = false;
+      this.armR.add(pearl);
+      this.glows.push(pearl);
     } else if (w && w !== 'none') {
       this.weapon = hold(this.armR, weapon(w, M, def.color));
       if (this.weapon.userData.orb) this.glows.push(this.weapon.userData.orb);
@@ -989,6 +1059,14 @@ export class HeroModel {
       this.torso.add(band);
       for (const arm of [this.armR, this.armL]) arm.add(part(leaf, 0.18, 0.08, 0.18, 0, -0.3, 0));
       this.torso.add(part(mat('#b91c1c'), 0.06, 0.2, 0.06, 0.12, 0.6, 0.18));
+    } else if (extra === 'fin') {
+      // nadadeira nas costas rasgando o paletó, gravata-borboleta e faixa na cintura
+      const pink = mat(def.color);
+      const fin = part(M.skin, 0.09, 0.42, 0.36, 0, 0.44, -0.28);
+      fin.rotation.x = -0.6;
+      this.torso.add(fin);
+      this.torso.add(part(pink, 0.22, 0.09, 0.05, 0, 0.53, 0.18));
+      this.torso.add(part(pink, 0.6, 0.09, 0.37, 0, 0.07, 0));
     } else if (extra === 'embers') {
       if (this.robe) {
         const tail = part(glowMat(def.color, 0.7), 0.3, 0.2, 0.5, 0, -0.7, -0.35, OCTA);
@@ -1013,6 +1091,25 @@ export class HeroModel {
     }
     this.stars.position.y = 2.6;
     this.fx.add(this.stars);
+    // encantado: coraçõezinhos rodando sobre a cabeça
+    this.hearts = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const s = part(glowMat('#ff5d8f', 1), 0.13, 0.13, 0.13, Math.cos((i * Math.PI * 2) / 3) * 0.42, 0, Math.sin((i * Math.PI * 2) / 3) * 0.42, SPHERE);
+      s.castShadow = false;
+      this.hearts.add(s);
+    }
+    this.hearts.position.y = 2.6;
+    this.fx.add(this.hearts);
+    // projéteis esperando um alvo (Cardume): ficam rodando em volta do herói
+    this.orbit = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const s = part(glowMat(def.color, 0.95), 0.3, 0.14, 0.14, Math.cos((i * Math.PI * 2) / 3) * 1.1, 0, Math.sin((i * Math.PI * 2) / 3) * 1.1, SPHERE);
+      s.rotation.y = -(i * Math.PI * 2) / 3 + Math.PI / 2;
+      s.castShadow = false;
+      this.orbit.add(s);
+    }
+    this.orbit.position.y = 1.2;
+    this.fx.add(this.orbit);
     this.rootRing = groundRing('#84cc16', 1.05, 0.9);
     this.fx.add(this.rootRing);
     this.slowRing = groundRing('#7dd3fc', 0.75, 0.6);
@@ -1261,6 +1358,11 @@ export class HeroModel {
 
     this.stars.visible = !!(f & F.stun) || !!(f & F.air);
     this.stars.rotation.y = time * 5;
+    this.hearts.visible = !!(f & F.charm);
+    this.hearts.rotation.y = -time * 3;
+    this.hearts.position.y = 2.6 + Math.sin(time * 5) * 0.08;
+    this.orbit.visible = !!(f & F.orbs);
+    this.orbit.rotation.y = time * 6;
     this.rootRing.visible = !!(f & F.root);
     this.slowRing.visible = !!(f & F.slow) && !(f & F.root);
     this.shield.visible = u.shield > 0;

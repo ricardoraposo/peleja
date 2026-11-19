@@ -184,6 +184,40 @@ export class Effects {
         g.userData.spinAxis = 'x';
         break;
       }
+      case 'pearl': {
+        // pérola grande com brilho e um anel d'água em volta
+        const k = Math.max(0.9, width * 0.8);
+        add(SPHERE, shared('#fff1f5'), 0.3 * k, 0.3 * k, 0.3 * k);
+        add(SPHERE, shared('#ffffff', 0.95), 0.09 * k, 0.09 * k, 0.09 * k, 0.1 * k, 0.16 * k, 0.1 * k);
+        g.userData.pulse = add(SPHERE, shared(color, 0.4, true), 0.5 * k, 0.5 * k, 0.5 * k);
+        const spin = new THREE.Group();
+        add(RING, shared('#7dd3fc', 0.8), 0.62 * k, 0.62 * k, 1, 0, 0, 0, spin);
+        spin.rotation.x = Math.PI / 2;
+        g.add(spin);
+        g.userData.spin = spin;
+        g.userData.spinAxis = 'z';
+        break;
+      }
+      case 'fish':
+        // peixinho: corpo, rabo e um risco d'água atrás
+        add(SPHERE, shared(color), 0.34, 0.15, 0.13);
+        add(CONE_X, shared(color), 0.22, 0.17, 0.05, -0.38);
+        add(SPHERE, shared('#ffffff'), 0.04, 0.04, 0.04, 0.2, 0.05, 0.08);
+        add(BOX, shared('#bae6fd', 0.45, true), 0.8, 0.04, 0.04, -0.85);
+        break;
+      case 'kiss': {
+        // coração: duas bolas e uma ponta, sempre de frente pra câmera de cima
+        const k = Math.max(1, width);
+        const heart = new THREE.Group();
+        add(SPHERE, shared(color), 0.2 * k, 0.2 * k, 0.12 * k, 0, 0.1 * k, -0.15 * k, heart);
+        add(SPHERE, shared(color), 0.2 * k, 0.2 * k, 0.12 * k, 0, 0.1 * k, 0.15 * k, heart);
+        const tip = add(BOX, shared(color), 0.12 * k, 0.26 * k, 0.26 * k, 0, -0.08 * k, 0, heart);
+        tip.rotation.x = Math.PI / 4;
+        heart.rotation.z = -0.9;
+        g.add(heart);
+        g.userData.pulse = add(SPHERE, shared('#ffc2d1', 0.3, true), 0.5 * k, 0.5 * k, 0.5 * k);
+        break;
+      }
       default: {
         // esfera de energia: tropas, torres e habilidades sem forma própria
         add(SPHERE, shared(color, 0.95, true), sc, sc, sc);
@@ -250,6 +284,17 @@ export class Effects {
       case 'thorns':
         this.puff(x, pos.y, z, 'thorn', 12, 5, 0.11, 0.4);
         break;
+      case 'pearl':
+        this.puff(x, pos.y, z, 'rose', 8, 3, 0.12, 0.35);
+        break;
+      case 'fish':
+        this.puff(x, pos.y, z, 'water', 7, 4, 0.1, 0.35);
+        this.ripple(x, z, 0.8, p.c, 0.3);
+        break;
+      case 'kiss':
+        this.puff(x, pos.y, z, 'rose', 16, 4, 0.15, 0.6);
+        this.ripple(x, z, 1.3, p.c, 0.4);
+        break;
       default:
         if (p.k === 's') this.puff(x, 1.1, z, p.el, 14, 6, 0.16, 0.45);
         else this.burst(pos.x, pos.y, pos.z, p.c, 5, 3, 0.1, 0.25);
@@ -285,6 +330,15 @@ export class Effects {
       }
       case 'orb':
         if (Math.random() < 0.6) this.spawn(pos.x + r() * 0.2, pos.y - 0.1, pos.z + r() * 0.2, 0, 0, 0, '#bae6fd', 0.3, 0.08, 8);
+        break;
+      case 'pearl':
+        this.spawn(pos.x + r() * 0.3, pos.y + r() * 0.3, pos.z + r() * 0.3, 0, 0.3, 0, Math.random() < 0.5 ? '#ffc2d1' : '#bae6fd', 0.35, 0.1, 4);
+        break;
+      case 'fish':
+        if (Math.random() < 0.6) this.spawn(pos.x, pos.y - 0.05, pos.z, 0, 0, 0, '#bae6fd', 0.25, 0.07, 8);
+        break;
+      case 'kiss':
+        this.spawn(pos.x + r() * 0.3, pos.y + r() * 0.3, pos.z + r() * 0.3, 0, 0.8, 0, Math.random() < 0.6 ? '#ff5d8f' : '#ffffff', 0.4, 0.09, -2);
         break;
       case 'wave': {
         const dir = -p.mesh.rotation.y;

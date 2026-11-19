@@ -14,6 +14,7 @@ export const ELEMENTS = {
   wind: { cols: ['#ffffff', '#fca5a5', '#e5e7eb'], g: -1.2, up: 1.4 },
   swamp: { cols: ['#4ade80', '#86efac', '#a855f7', '#365314', '#d9f99d'], g: 7, up: 3.4 },
   ember: { cols: ['#ff3d00', '#ffb020', '#ffe08a', '#ff7a1a', '#7c2d12'], g: -4.5, up: 2.4 },
+  rose: { cols: ['#ff8fab', '#ffe4ec', '#ffffff', '#7dd3fc'], g: 9, up: 4.5 },
 };
 
 // auto: forma do tiro do ataque básico (atiradores) · slash: rastro do golpe (corpo a corpo)
@@ -59,6 +60,12 @@ export const HERO_FX = {
     auto: 'fireball',
     proj: { q: 'fireball' },
     snd: { shoot: 'fire', hit: 'sizzle', cast: 'fire', boom: 'fireBoom' },
+  },
+  boto: {
+    el: 'rose',
+    auto: 'orb',
+    proj: { q: 'pearl', w: 'fish', e: 'kiss', r: 'fish' },
+    snd: { shoot: 'bubble', hit: 'splash', cast: 'water', boom: 'splash' },
   },
   saci: {
     el: 'wind',

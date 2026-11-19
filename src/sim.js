@@ -29,7 +29,7 @@ import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -75,6 +75,8 @@ class Unit {
     this.shredP = 0;
     this.shredT = 0;
     this.airT = 0;
+    this.charmT = 0;
+    this.charmBy = null;
     this.slows = [];
     this.shields = [];
     this.buffs = [];
@@ -104,7 +106,7 @@ class Unit {
   }
 
   get cc() {
-    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0;
+    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0 || this.charmT > 0;
   }
 
   shieldTotal() {
@@ -258,7 +260,7 @@ export class Sim {
     const full = (u) => {
       this.calcStats(u);
       u.hp = u.stats.maxHp;
-      u.stunT = u.rootT = u.airT = 0;
+      u.stunT = u.rootT = u.airT = u.charmT = 0;
       u.slows = [];
     };
     switch (m.c) {
@@ -442,7 +444,9 @@ export class Sim {
     h.z = z;
     h.alive = true;
     h.facing = h.team === 0 ? 0 : Math.PI;
-    h.stunT = h.rootT = h.airT = h.castT = h.fearT = 0;
+    h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = 0;
+    h.bolts = null;
+    h.charge = null;
     this.endStasis(h);
     h.hot = null;
     this.clearHeroState(h);
@@ -761,6 +765,13 @@ export class Sim {
       const cd = this.cooldownOf(h, slot, ab);
       h.cds[slot] = cd;
       h.cdMax[slot] = cd;
+      if (ab.charges) {
+        // habilidade de várias cargas: entre uma e outra só um intervalo curto; a recarga cheia vem no fim
+        if (h.charge?.slot !== slot) h.charge = { slot, left: ab.charges.n, t: ab.charges.t, cd };
+        h.charge.left--;
+        if (h.charge.left > 0) h.cds[slot] = h.cdMax[slot] = ab.charges.gap;
+        else h.charge = null;
+      }
     }
     h.windup = 0;
     if (Math.hypot(x - h.x, z - h.z) > 0.05) h.facing = Math.atan2(z - h.z, x - h.x);
@@ -770,6 +781,68 @@ export class Sim {
       h.castT = ab.cast;
       h.pending = { slot, ab, x, z, t };
     } else this.execute(h, slot, ab, x, z, t);
+  }
+
+  // acabou o prazo das cargas (ou o herói caiu): começa a recarga cheia
+  endCharges(h) {
+    const c = h.charge;
+    h.charge = null;
+    if (!c) return;
+    h.cds[c.slot] = c.cd;
+    h.cdMax[c.slot] = c.cd;
+  }
+
+  // Projéteis teleguiados de habilidade: um por inimigo próximo, heróis primeiro.
+  // Se sobrar projétil, ele repete num alvo já escolhido com dano reduzido (bolts.repeat).
+  fireBolts(h, ab, slot, color) {
+    const b = ab.bolts;
+    const near = [];
+    for (const u of this.units) {
+      if (!this.abilityTargetable(h, u, ab)) continue;
+      const d = edgeDist(h, u);
+      if (d <= b.range) near.push({ u, score: d - (u.isHero ? 100 : 0) });
+    }
+    if (!near.length) return false;
+    near.sort((a, c) => a.score - c.score);
+    const dmg = this.val(h, b.dmg, ab);
+    for (let i = 0; i < b.n; i++) {
+      const again = i >= near.length;
+      this.spawnProj({
+        owner: h,
+        team: h.team,
+        x: h.x,
+        z: h.z,
+        homing: near[i % near.length].u,
+        skill: true,
+        speed: b.speed,
+        dmg: again ? dmg * (b.repeat ?? 1) : dmg,
+        type: b.dmg.type || 'magic',
+        color,
+        slot,
+        kind: 's',
+        size: 0.3,
+        width: 0.7,
+      });
+    }
+    return true;
+  }
+
+  // encantado: anda devagar até quem encantou, sem poder fazer mais nada
+  charmWalk(u) {
+    const src = u.charmBy;
+    if (!src || !src.alive || this.byId.get(src.id) !== src) {
+      u.charmT = 0;
+      return;
+    }
+    u.windup = 0;
+    const dx = src.x - u.x;
+    const dz = src.z - u.z;
+    const d = Math.hypot(dx, dz);
+    if (d < u.r + src.r + 0.2 || u.rootT > 0) return;
+    const sp = (u.isHero ? u.stats.ms : u.stats.ms * (u.slowMult ?? 1)) * 0.45;
+    u.vx = (dx / d) * sp;
+    u.vz = (dz / d) * sp;
+    u.facing = Math.atan2(dz, dx);
   }
 
   slotOf(h, ab) {
@@ -815,6 +888,8 @@ export class Sim {
           pierce: !!ab.pierce,
           heroesOnly: !!ab.heroesOnly,
           explode: ab.explode || 0,
+          back: ab.back || null,
+          backDmg: ab.back ? this.val(h, ab.back.dmg || ab.dmg, ab) : 0,
           color,
           slot,
           kind: 's',
@@ -885,6 +960,8 @@ export class Sim {
         }
         this.applySelf(h, h, ab);
         if (ab.furyGain) this.addFury(h, ab.furyGain);
+        // os projéteis esperam um pouco por alguém ao alcance antes de se perderem
+        if (ab.bolts && !this.fireBolts(h, ab, slot, color)) h.bolts = { ab, slot, color, t: ab.bolts.wait || 0 };
         this.emit({ e: 'buff', id: h.id, s: slot, c: color });
         if (ab.burst) this.hitArea(h, h.x, h.z, ab.burst.radius, this.val(h, ab.burst.dmg, ab), ab.burst.dmg.type, ab.burst.fx, color);
         break;
@@ -1015,6 +1092,7 @@ export class Sim {
       if (ds.tgt) this.targetHit(h, ab, ds.tgt);
       if (ab.end) this.hitArea(h, h.x, h.z, ab.end.radius, this.val(h, ab.end.dmg, ab), ab.end.dmg.type, ab.end.fx, ds.color);
       if (ab.buff) this.applySelf(h, h, { buff: ab.buff });
+      if (ab.bolts) this.fireBolts(h, ab, this.slotOf(h, ab), ds.color);
       if (ds.tgt && this.attackable(h, ds.tgt) && h.order.type === 'idle') this.orderAttack(h, ds.tgt);
     }
   }
@@ -1050,6 +1128,10 @@ export class Sim {
       const dmg = this.val(src, bd);
       if (!t.burn || t.burn.dmg <= dmg || t.burn.t < fx.burn) t.burn = { src, dmg, type: bd.type || 'magic', t: fx.burn, tick: bd.tick, tickT: bd.tick };
     }
+    if (fx.charm && src && src !== t) {
+      t.charmT = Math.max(t.charmT, fx.charm * firm);
+      t.charmBy = src;
+    }
     if (fx.knockup) {
       t.airT = Math.max(t.airT, fx.knockup);
       t.airMax = t.airT;
@@ -1062,7 +1144,7 @@ export class Sim {
       const T = 0.25;
       t.disp = { vx: ((dx / d) * fx.knockback) / T, vz: ((dz / d) * fx.knockback) / T, t: T };
     }
-    if (fx.stun || fx.knockup || fx.knockback || fx.fear) {
+    if (fx.stun || fx.knockup || fx.knockback || fx.fear || fx.charm) {
       t.windup = 0;
       if (t.castT > 0) {
         t.castT = 0;
@@ -1240,7 +1322,9 @@ export class Sim {
     t.buffs = [];
     t.shields = [];
     t.slows = [];
-    t.stunT = t.rootT = t.airT = t.fearT = 0;
+    t.stunT = t.rootT = t.airT = t.fearT = t.charmT = 0;
+    t.bolts = null;
+    if (t.charge) this.endCharges(t);
     this.endStasis(t);
     t.hot = null;
     this.clearHeroState(t);
@@ -1439,6 +1523,12 @@ export class Sim {
         u.recast = null;
       }
     }
+    if (u.charmT > 0) u.charmT -= dt;
+    if (u.bolts) {
+      if (this.fireBolts(u, u.bolts.ab, u.bolts.slot, u.bolts.color)) u.bolts = null;
+      else if ((u.bolts.t -= dt) <= 0) u.bolts = null;
+    }
+    if (u.charge && (u.charge.t -= dt) <= 0) this.endCharges(u);
     if (u.stasisT > 0) {
       u.stasisT -= dt;
       if (u.stasisT <= 0) this.endStasis(u);
@@ -1660,6 +1750,7 @@ export class Sim {
     }
     if (h.cc) {
       h.windup = 0;
+      if (h.charmT > 0 && h.stunT <= 0 && h.airT <= 0 && !h.disp && h.stasisT <= 0 && h.fearT <= 0) this.charmWalk(h);
       return;
     }
     if (h.castT > 0) {
@@ -1823,6 +1914,7 @@ export class Sim {
   updateMinion(m, dt) {
     if (m.cc) {
       m.windup = 0;
+      if (m.charmT > 0 && m.stunT <= 0 && m.airT <= 0 && !m.disp && m.fearT <= 0) this.charmWalk(m);
       return;
     }
     m.retargetT -= dt;
@@ -1933,6 +2025,7 @@ export class Sim {
 
   updateProjectiles(dt) {
     const done = [];
+    const back = [];
     for (const p of this.projectiles) {
       if (p.homing) {
         const t = p.homing;
@@ -1944,10 +2037,32 @@ export class Sim {
         const dz = t.z - p.z;
         const d = Math.hypot(dx, dz);
         const step = p.speed * dt;
-        if (d <= step + t.r * 0.5) {
+        const arrived = d <= step + t.r * 0.5;
+        if (p.sweep) {
+          // a volta pra mão do dono: fere uma vez cada inimigo que estiver no caminho
+          const k = arrived ? d : step;
+          const nx = d > 0.001 ? p.x + (dx / d) * k : p.x;
+          const nz = d > 0.001 ? p.z + (dz / d) * k : p.z;
+          for (const u of this.units) {
+            if (!u.alive || u.team === p.team || u.isStructure || p.hit.has(u.id)) continue;
+            const [d2] = segDist2(u.x, u.z, p.x, p.z, nx, nz);
+            const w = p.width / 2 + u.r;
+            if (d2 > w * w) continue;
+            p.hit.add(u.id);
+            this.damage(u, p.owner, p.dmg, p.type);
+          }
+          p.x = nx;
+          p.z = nz;
+          if (arrived) done.push(p);
+          continue;
+        }
+        if (arrived) {
           done.push(p);
           if (p.kind === 't') this.towerHit(p.owner, t);
-          else this.autoHit(p.owner, t, p.dmg);
+          else if (p.skill) {
+            this.damage(t, p.owner, p.dmg, p.type);
+            this.applyFx(t, p.fx, p.owner);
+          } else this.autoHit(p.owner, t, p.dmg);
           continue;
         }
         p.x += (dx / d) * step;
@@ -1982,12 +2097,18 @@ export class Sim {
         p.z = nz;
         p.traveled += step;
       }
-      if (stopped || p.traveled >= p.range - 0.01) done.push(p);
+      if (stopped || p.traveled >= p.range - 0.01) {
+        done.push(p);
+        if (!stopped && p.back && p.owner.alive) {
+          back.push({ owner: p.owner, team: p.team, x: p.x, z: p.z, homing: p.owner, sweep: true, speed: p.back.speed || p.speed, dmg: p.backDmg, type: p.back.type || p.type, width: p.width, color: p.color, slot: p.slot, kind: 's', size: p.width });
+        }
+      }
     }
     if (done.length) {
       for (const p of done) this.emit({ e: 'pjx', id: p.id, x: r1(p.x), z: r1(p.z) });
       this.projectiles = this.projectiles.filter((p) => !done.includes(p));
     }
+    for (const p of back) this.spawnProj(p);
   }
 
   skillHit(p, u) {
@@ -2224,6 +2345,8 @@ export class Sim {
     if (u.attackAnim > 0) f |= F.attack;
     if (u.invuln) f |= F.invuln;
     if (u.stasisT > 0) f |= F.stasis;
+    if (u.charmT > 0) f |= F.charm;
+    if (u.bolts) f |= F.orbs;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;
     if (u.buffs.length) f |= F.buff;
@@ -2282,6 +2405,7 @@ export class Sim {
       s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.ls * 100)],
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
+      ch: h.charge ? h.charge.left : 0,
       fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,
     };
   }
