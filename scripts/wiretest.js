@@ -3,7 +3,7 @@
 //   node scripts/wiretest.js [minutos de jogo]
 import { isDeepStrictEqual } from 'node:util';
 import { Sim } from '../src/sim.js';
-import { decode, encode, fallbacks, pack } from '../src/wire.js';
+import { SnapDelta, SnapReader, decode, encode, fallbacks, pack } from '../src/wire.js';
 
 const MINUTES = Number(process.argv[2]) || 12;
 const DT = 1 / 30;
@@ -27,6 +27,29 @@ function check(msg, dir = 'e') {
   all.push(msg);
 }
 
+// retrato só com o que mudou: o que o navegador remonta tem que ser igual ao retrato inteiro.
+// De vez em quando um pacote "se perde" e o seguinte vai inteiro, como o servidor faz.
+const stream = new SnapDelta();
+const reader = new SnapReader();
+const delta = { n: 0, whole: 0, bytes: 0 };
+let needWhole = true;
+function viaDelta(snap) {
+  const change = stream.next(snap);
+  if (delta.n % 400 === 399) {
+    delta.n++;
+    needWhole = true;
+    return;
+  }
+  const out = needWhole || !change ? snap : change;
+  if (out === snap) delta.whole++;
+  needWhole = false;
+  const bytes = pack(out);
+  delta.n++;
+  delta.bytes += bytes.length;
+  const got = reader.read(decode(bytes, 'e')[0]);
+  if (!isDeepStrictEqual(got, JSON.parse(JSON.stringify(snap)))) wrong.push(wrong.length < 8 ? `retrato remontado diferente em t=${snap.t}` : 'sd');
+}
+
 const sim = new Sim({ difficulty: 'normal', emit: (msg) => check(msg) });
 const me = sim.addHuman('Zé da Peleja');
 check({ e: 'welcome', id: me.id });
@@ -41,8 +64,10 @@ while (sim.phase === 'playing' && sim.gameTime < 60 * MINUTES) {
   sim.step(DT);
   steps++;
   if (steps % 3 === 0) {
-    check(sim.snapshot());
+    const snap = sim.snapshot();
+    check(snap);
     check(sim.meState(me));
+    viaDelta(snap);
   }
   if (steps % 30 === 0) check(sim.board());
 }
@@ -99,6 +124,20 @@ try {
   /* é pra recusar */
 }
 
+// lista de unidades fora de ordem, sumindo e voltando: a diferença tem que dar conta
+{
+  const s2 = new SnapDelta();
+  const r2 = new SnapReader();
+  const unit = (id, x) => [id, 1, 0, x, 0, 0, 100, 100, 1, 0, 0, 0, 0];
+  const frames = [[1, 2, 3, 4], [1, 3, 2, 4], [4, 3, 2, 1], [], [5, 1], [1, 5, 6], [6, 5, 1]];
+  frames.forEach((idsNow, f) => {
+    const snap = { e: 'snap', t: f, ph: f < 3 ? 'draft' : 'playing', pt: 0, gt: f, k: [f, 0], wv: 0, u: idsNow.map((id) => unit(id, id + f / 10)), pk: [1, f % 2] };
+    const got = r2.read(decode(pack(s2.next(snap) || snap), 'e')[0]);
+    if (!isDeepStrictEqual(got, snap)) wrong.push(`lista fora de ordem (quadro ${f}) voltou errada`);
+  });
+  if (new SnapReader().read({ e: 'sd', t: 0, pt: 0, gt: 0, wv: 0, x: [], c: [], n: [] }) !== null) wrong.push('diferença sem retrato anterior devia ser descartada');
+}
+
 // tempo: o mesmo conjunto de mensagens, ida e volta, nos dois formatos
 const sample = all.filter((m) => m.e).slice(-20000);
 const time = (fn) => {
@@ -122,6 +161,7 @@ for (const [name, s] of rows.slice(0, 14)) {
   console.log(`${name.padEnd(9)} ${String(s.n).padStart(8)} ${(s.json / s.n).toFixed(0).padStart(10)} B ${(s.bin / s.n).toFixed(0).padStart(13)} B ${((100 * s.bin) / s.json).toFixed(0).padStart(8)}%`);
 }
 console.log(`\ntotal: ${(tot.json / 1024).toFixed(0)} KB em JSON, ${(tot.bin / 1024).toFixed(0)} KB em binário (${((100 * tot.bin) / tot.json).toFixed(0)}%)`);
+console.log(`retrato pelo fio: ${(delta.bytes / delta.n).toFixed(0)} B em média mandando só o que mudou (${delta.whole} inteiros em ${delta.n}), contra ${(stats.snap.bin / stats.snap.n).toFixed(0)} B inteiro`);
 console.log(`montar ${sample.length} mensagens: binário ${tEncBin.toFixed(1)} ms · JSON ${tEncJson.toFixed(1)} ms`);
 console.log(`ler    ${sample.length} mensagens: binário ${tDecBin.toFixed(1)} ms · JSON ${tDecJson.toFixed(1)} ms`);
 const game = Object.entries(before);

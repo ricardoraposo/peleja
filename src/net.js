@@ -1,5 +1,5 @@
 import { Sim } from './sim.js';
-import { decode, encode } from './wire.js';
+import { SnapReader, decode, encode } from './wire.js';
 
 const STEP = 1 / 30;
 
@@ -76,6 +76,7 @@ export class SocketTransport {
     this.pending = [];
     this.open = false;
     this.closed = false;
+    this.snaps = new SnapReader();
     this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
     this.ws.addEventListener('open', () => {
@@ -91,7 +92,10 @@ export class SocketTransport {
       } catch {
         return;
       }
-      for (const m of list) this.handler?.(m);
+      for (const raw of list) {
+        const m = this.snaps.read(raw);
+        if (m) this.handler?.(m);
+      }
     });
     this.ws.addEventListener('close', () => {
       this.closed = true;

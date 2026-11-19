@@ -45,6 +45,8 @@ const EVENTS = {
   full: {},
   noroom: {},
   busy: {},
+  // retrato só com o que mudou desde o anterior (ver SnapDelta lá embaixo)
+  sd: { t: 'd2', pt: 'd1', gt: 'd1', wv: 'd1', ph: 's?', k: 'u*?', pk: 'u*?', x: 'u*', c: 'i*', n: ['u', 'u', 'u', 'd1', 'd1', 'd2', 'u', 'u', 'u', 'u', 'i', 'u', 'd1'] },
 };
 
 const COMMANDS = {
@@ -409,4 +411,151 @@ export function decode(bytes, only) {
     out.push(msg);
   }
   return out;
+}
+
+// ---------- retrato só com o que mudou ----------
+// A conexão entrega tudo em ordem e sem perder, então o servidor pode mandar só a diferença pro retrato anterior:
+//   x  posições (na lista anterior) das unidades que sumiram
+//   c  mudanças das que ficaram, tudo inteiro: [pulo até a próxima que mudou, quais colunas, diferença de cada uma] ...
+//   n  linhas completas das unidades novas, que entram no fim da lista
+// O estado da partida, o placar e os pacotes de vida só vão quando mudam. Quem acabou de entrar (ou perdeu
+// um pacote) recebe um retrato inteiro, e dali pra frente as diferenças valem de novo.
+
+const COLS = EVENTS.snap.u;
+const SCALE = COLS.map((t) => (t === 'd1' ? 10 : t === 'd2' ? 100 : 1));
+// ordem dos bits de "quais colunas": as que mais mudam primeiro, pra caber em um byte
+const BITS = [3, 4, 5, 6, 8, 9, 7, 12, 11, 10, 1, 2];
+
+// as colunas de uma unidade (menos o id) como inteiros na escala de cada uma; null se algum valor não é exato
+function toInts(row) {
+  if (!Array.isArray(row) || row.length !== COLS.length || row[0] >>> 0 !== row[0]) return null;
+  const out = new Array(COLS.length - 1);
+  for (let c = 1; c < COLS.length; c++) {
+    const n = Math.round(row[c] * SCALE[c]);
+    if (n / SCALE[c] !== row[c] || n >= LIMIT || n < -LIMIT) return null;
+    out[c - 1] = n;
+  }
+  return out;
+}
+
+function capture(snap) {
+  if (!snap || !Array.isArray(snap.u) || !Array.isArray(snap.k) || !Array.isArray(snap.pk) || typeof snap.ph !== 'string') return null;
+  let keys = 0;
+  for (const k in snap) if (snap[k] !== undefined) keys++;
+  if (keys !== 9) return null;
+  const ids = new Array(snap.u.length);
+  const rows = new Array(snap.u.length);
+  for (let i = 0; i < ids.length; i++) {
+    const r = toInts(snap.u[i]);
+    if (!r) return null;
+    ids[i] = snap.u[i][0];
+    rows[i] = r;
+  }
+  return { ids, rows, ph: snap.ph, k: snap.k.slice(), pk: snap.pk.slice() };
+}
+
+const sameList = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+// Lado do servidor, um por sala.
+export class SnapDelta {
+  constructor() {
+    this.prev = null;
+  }
+
+  reset() {
+    this.prev = null;
+  }
+
+  // Devolve a mensagem de diferença pro retrato passado na chamada anterior, ou null quando não dá
+  // (primeiro retrato, ou algum valor fora do formato): aí vai o retrato inteiro pra todo mundo.
+  next(snap) {
+    const prev = this.prev;
+    const cur = (this.prev = capture(snap));
+    if (!cur || !prev) return null;
+    const x = [];
+    const c = [];
+    const n = [];
+    let j = 0;
+    let kept = 0;
+    let last = 0;
+    for (let i = 0; i < prev.ids.length; i++) {
+      if (j >= cur.ids.length || cur.ids[j] !== prev.ids[i]) {
+        x.push(i);
+        continue;
+      }
+      const a = prev.rows[i];
+      const b = cur.rows[j];
+      let mask = 0;
+      for (let bit = 0; bit < BITS.length; bit++) if (a[BITS[bit] - 1] !== b[BITS[bit] - 1]) mask |= 1 << bit;
+      if (mask) {
+        c.push(kept - last, mask);
+        for (let bit = 0; bit < BITS.length; bit++) if (mask & (1 << bit)) c.push(b[BITS[bit] - 1] - a[BITS[bit] - 1]);
+        last = kept;
+      }
+      kept++;
+      j++;
+    }
+    for (; j < cur.ids.length; j++) n.push(snap.u[j]);
+    const msg = { e: 'sd', t: snap.t, pt: snap.pt, gt: snap.gt, wv: snap.wv, x, c, n };
+    if (cur.ph !== prev.ph) msg.ph = cur.ph;
+    if (!sameList(cur.k, prev.k)) msg.k = cur.k;
+    if (!sameList(cur.pk, prev.pk)) msg.pk = cur.pk;
+    return msg;
+  }
+}
+
+// Lado de quem recebe: guarda o último retrato e remonta o inteiro a partir da diferença.
+export class SnapReader {
+  constructor() {
+    this.base = null;
+  }
+
+  // Passe toda mensagem recebida por aqui. Volta a mesma mensagem, ou o retrato remontado no lugar da
+  // diferença, ou null se a diferença chegou sem o retrato em que ela se apoia.
+  read(m) {
+    if (m.e === 'snap') {
+      this.base = capture(m);
+      return m;
+    }
+    if (m.e !== 'sd') return m;
+    const p = this.base;
+    this.base = null;
+    if (!p) return null;
+    const ids = [];
+    const rows = [];
+    let gone = 0;
+    for (let i = 0; i < p.ids.length; i++) {
+      if (m.x[gone] === i) {
+        gone++;
+        continue;
+      }
+      ids.push(p.ids[i]);
+      rows.push(p.rows[i]);
+    }
+    const c = m.c;
+    for (let at = 0, idx = 0; at < c.length; ) {
+      idx += c[at++];
+      const mask = c[at++];
+      if (!rows[idx]) return null;
+      const row = rows[idx].slice();
+      for (let bit = 0; bit < BITS.length; bit++) if (mask & (1 << bit)) row[BITS[bit] - 1] += c[at++];
+      rows[idx] = row;
+    }
+    for (const r of m.n) {
+      const v = toInts(r);
+      if (!v) return null;
+      ids.push(r[0]);
+      rows.push(v);
+    }
+    const base = (this.base = { ids, rows, ph: m.ph ?? p.ph, k: m.k ?? p.k, pk: m.pk ?? p.pk });
+    const u = new Array(ids.length);
+    for (let i = 0; i < u.length; i++) {
+      const r = rows[i];
+      const row = new Array(COLS.length);
+      row[0] = ids[i];
+      for (let col = 1; col < COLS.length; col++) row[col] = r[col - 1] / SCALE[col];
+      u[i] = row;
+    }
+    return { e: 'snap', t: m.t, ph: base.ph, pt: m.pt, gt: m.gt, k: base.k.slice(), wv: m.wv, u, pk: base.pk.slice() };
+  }
 }

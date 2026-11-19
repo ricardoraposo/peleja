@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Sim } from '../src/sim.js';
-import { decode, encode, pack } from '../src/wire.js';
+import { SnapDelta, decode, encode, pack } from '../src/wire.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const PORT = Number(process.env.PORT) || 7788;
@@ -48,6 +48,7 @@ class Room {
     this.host = null;
     this.state = 'lobby';
     this.sim = null;
+    this.stream = new SnapDelta();
     this.acc = 0;
     this.snapAcc = 0;
     this.boardAcc = 0;
@@ -108,6 +109,7 @@ class Room {
     c.queue.push({ e: 'phase', ph: this.sim.phase, m: this.sim.matchNo });
     c.queue.push(this.sim.board());
     c.queue.push(this.sim.snapshot());
+    c.full = true;
   }
 
   route(msg, opts) {
@@ -128,6 +130,7 @@ class Room {
     if (this.state !== 'lobby') return;
     this.sim = new Sim({ difficulty: this.diff, teamSize: this.size, readyDelay: 3, emit: (msg, opts) => this.route(msg, opts) });
     this.state = 'match';
+    this.stream.reset();
     this.acc = this.snapAcc = this.boardAcc = this.backT = 0;
     for (const m of this.members) {
       m.hero = this.sim.addHuman(m.name, m.team);
@@ -187,10 +190,17 @@ class Room {
     if (this.snapAcc >= SNAP) {
       // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
       this.snapAcc = Math.min(this.snapAcc - SNAP, SNAP);
-      const snap = pack(this.sim.snapshot());
+      // quem está em dia recebe só o que mudou desde o retrato anterior; quem acabou de entrar ou perdeu
+      // um pacote recebe o retrato inteiro (os dois são montados uma vez só pra sala)
+      const snap = this.sim.snapshot();
+      const change = this.stream.next(snap);
+      const delta = change && pack(change);
+      let whole = null;
       for (const m of this.members) {
         if (!m.hero) continue;
-        m.queue.push(snap);
+        if (m.full || !delta) m.queue.push((whole ||= pack(snap)));
+        else m.queue.push(delta);
+        m.full = false;
         m.queue.push(this.sim.meState(m.hero));
       }
     }
@@ -240,7 +250,7 @@ const server = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 16 * 1024 });
 
 wss.on('connection', (ws) => {
-  const c = { ws, id: nextClientId++, name: 'Jogador', room: null, team: 0, hero: null, queue: [], budget: MAX_MSGS_PER_SEC, budgetT: Date.now() };
+  const c = { ws, id: nextClientId++, name: 'Jogador', room: null, team: 0, hero: null, full: true, queue: [], budget: MAX_MSGS_PER_SEC, budgetT: Date.now() };
   clients.set(ws, c);
   const refuse = (e) => {
     ws.send(encode([{ e }]));
@@ -298,6 +308,7 @@ function flush() {
   for (const c of clients.values()) {
     if (c.queue.length === 0) continue;
     if (c.ws.readyState === 1 && c.ws.bufferedAmount < 1024 * 1024) c.ws.send(encode(c.queue));
+    else c.full = true; // perdeu um pacote: o próximo retrato tem que ir inteiro
     c.queue = [];
   }
 }

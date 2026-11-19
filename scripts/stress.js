@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 import { HERO_ORDER, ITEM_ORDER, SPELL_ORDER } from '../src/config.js';
-import { decode, encode, fallbacks, pack } from '../src/wire.js';
+import { SnapReader, decode, encode, fallbacks, pack } from '../src/wire.js';
 
 const SECS = Number(process.argv[2]) || 40;
 const N = Number(process.argv[3]) || 10;
@@ -42,6 +42,8 @@ class Fake {
     this.frames = 0;
     this.gaps = [];
     this.snapBytes = [];
+    this.wholeSnaps = 0;
+    this.snaps = new SnapReader();
     this.lastSnap = 0;
     this.events = {};
     this.phase = '';
@@ -75,7 +77,14 @@ class Fake {
           this.events.lixo = (this.events.lixo || 0) + 1;
           return;
         }
-        for (const m of list) this.on(m);
+        for (const raw of list) {
+          // tamanho do retrato como veio pelo fio: inteiro ou só a diferença
+          if (raw.e === 'snap' || raw.e === 'sd') this.snapBytes.push(pack(raw).length);
+          if (raw.e === 'snap') this.wholeSnaps++;
+          const m = this.snaps.read(raw);
+          if (m) this.on(m);
+          else this.events.semBase = (this.events.semBase || 0) + 1;
+        }
       });
     });
   }
@@ -102,7 +111,6 @@ class Fake {
       this.lastSnap = now;
       this.phase = m.ph;
       this.units = m.u;
-      this.snapBytes.push(pack(m).length);
     }
   }
 
@@ -189,6 +197,7 @@ try {
     f.frames = 0;
     f.gaps = [];
     f.snapBytes = [];
+    f.wholeSnaps = 0;
   }
   const cpu0 = cpuTicks();
   const start = performance.now();
@@ -210,6 +219,9 @@ try {
   say('memória do servidor', `${rssMb().toFixed(0)} MB`);
   say('banda por jogador', `${(fakes.reduce((a, f) => a + f.bytes, 0) / N / dur / 1024).toFixed(1)} KB/s (${(fakes[0].frames / dur).toFixed(0)} pacotes/s)`);
   say('tamanho do retrato do mundo', `médio ${(sizes.reduce((a, b) => a + b, 0) / sizes.length / 1024).toFixed(1)} KB · maior ${(Math.max(...sizes) / 1024).toFixed(1)} KB`);
+  const noBase = fakes.reduce((a, f) => a + (f.events.semBase || 0), 0);
+  say('retratos inteiros', `${fakes.reduce((a, f) => a + f.wholeSnaps, 0)} de ${sizes.length} (o resto é só o que mudou)${noBase ? ` · ${noBase} DIFERENÇAS SEM BASE` : ''}`);
+  if (noBase) problems.push(`${noBase} retratos parciais chegaram sem o retrato anterior`);
   say('intervalo entre retratos', `mediana ${pct(gaps, 0.5).toFixed(0)} ms · p99 ${pct(gaps, 0.99).toFixed(0)} ms · pior ${Math.max(...gaps).toFixed(0)} ms (alternam 33 e 67)`);
   say('resposta a um comando (compra)', rtt.length ? `mediana ${pct(rtt, 0.5).toFixed(0)} ms · p95 ${pct(rtt, 0.95).toFixed(0)} ms (${rtt.length} amostras)` : 'sem amostras');
   const mean = gaps.reduce((a, b) => a + b, 0) / (gaps.length || 1);
