@@ -128,7 +128,8 @@ setInterval(() => {
   snapAcc += dt;
   boardAcc += dt;
   if (snapAcc >= SNAP) {
-    snapAcc = 0;
+    // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
+    snapAcc = Math.min(snapAcc - SNAP, SNAP);
     const snap = sim.snapshot();
     for (const c of clients.values()) {
       if (!c.hero) continue;

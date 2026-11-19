@@ -9,7 +9,8 @@
     "server": "node server/index.js",
     "online": "vite build && node server/index.js",
     "tunnel": "ngrok http 7788",
-    "sim": "node scripts/simtest.js"
+    "sim": "node scripts/simtest.js",
+    "stress": "node scripts/stress.js"
   },
   "dependencies": {
     "three": "^0.170.0",
