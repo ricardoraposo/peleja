@@ -1195,11 +1195,11 @@ export class Sim {
     }
     if (fx.drowsy && !(t.sleepT > 0)) {
       // sono: primeiro fica lento, depois dorme; o golpe que acordar dói a mais (wake)
-      t.drowsy = { t: fx.drowsy[0], sleep: fx.drowsy[1] * firm, bonus: fx.wake && src ? this.val(src, fx.wake) : 0, src };
+      t.drowsy = { t: fx.drowsy[0], sleep: fx.drowsy[1], bonus: fx.wake && src ? this.val(src, fx.wake) : 0, src };
       t.slows.push({ p: 0.3, t: fx.drowsy[0] });
     }
     if (fx.charm && src && src !== t) {
-      t.charmT = Math.max(t.charmT, fx.charm * firm);
+      t.charmT = Math.max(t.charmT, fx.charm);
       t.charmBy = src;
     }
     if (fx.knockup) {
