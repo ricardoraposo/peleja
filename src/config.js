@@ -124,7 +124,7 @@ export const HEROES = {
     color: '#ff6b35',
     look: { weapon: 'pistol', hat: 'visor', extra: 'poncho' },
     ranged: true,
-    stats: { hp: 570, hpL: 92, atk: 62, atkL: 3.4, armor: 26, armorL: 4, mres: 30, mresL: 1.3, as: 0.68, asL: 0.032, ms: 5.95, range: 8.6, regen: 1.6, regenL: 0.15 },
+    stats: { hp: 570, hpL: 92, atk: 62, atkL: 3.4, armor: 26, armorL: 2.8, mres: 30, mresL: 1.3, as: 0.68, asL: 0.032, ms: 5.95, range: 8.6, regen: 1.6, regenL: 0.15 },
     abilities: {
       q: { name: 'Rajada', icon: 'bolt', kind: 'proj', cd: 6, cast: 0.15, range: 13, speed: 34, width: 0.8, dmg: { b: 55, l: 17, ad: 1.05, type: 'phys' }, color: '#ffb35c', desc: 'Disparo reto que fere o primeiro inimigo.' },
       w: { name: 'Arrancada', icon: 'dash', kind: 'dash', cd: 12, cast: 0, range: 5, speed: 26, buff: { t: 3, as: 0.45 }, desc: 'Avança e ganha velocidade de ataque.' },
@@ -139,9 +139,9 @@ export const HEROES = {
     color: '#8b5cf6',
     look: { weapon: 'hammer', hat: 'helm', scale: 1.1, bulk: 1.15, extra: 'pauldrons' },
     ranged: false,
-    stats: { hp: 660, hpL: 104, atk: 66, atkL: 3.6, armor: 35, armorL: 4.4, mres: 32, mresL: 1.6, as: 0.66, asL: 0.024, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.22 },
+    stats: { hp: 660, hpL: 104, atk: 66, atkL: 3.6, armor: 35, armorL: 3.1, mres: 32, mresL: 1.6, as: 0.66, asL: 0.024, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.22 },
     abilities: {
-      q: { name: 'Martelada', icon: 'hammer', kind: 'cone', cd: 6, cast: 0.2, range: 3.8, angle: 75, dmg: { b: 70, l: 19, ad: 1.0, type: 'phys' }, fx: { slow: [0.3, 1.5] }, color: '#c4b5fd', desc: 'Pancada em leque que deixa lento.' },
+      q: { name: 'Martelada', icon: 'hammer', kind: 'cone', cd: 6, cast: 0.2, range: 3.8, angle: 75, dmg: { b: 80, l: 22, ad: 1.0, type: 'phys' }, fx: { slow: [0.3, 1.5] }, color: '#c4b5fd', desc: 'Pancada em leque que deixa lento.' },
       w: { name: 'Couraça', icon: 'shield', kind: 'self', cd: 14, cast: 0, shield: { b: 80, l: 24, hp: 0.08, t: 3 }, buff: { t: 3, armor: 25 }, desc: 'Escudo e armadura por 3 segundos.' },
       e: { name: 'Salto-foguete', icon: 'leap', kind: 'dash', cd: 13, cast: 0.05, range: 8, speed: 20, arc: true, end: { radius: 2.7, dmg: { b: 60, l: 15, ad: 0.6, type: 'phys' }, fx: { knockup: 0.65 } }, color: '#a78bfa', desc: 'Salta e joga pra cima quem estiver na queda.' },
       r: { name: 'Trovoada', icon: 'storm', kind: 'nova', cd: 70, cast: 0.15, radius: 5.5, delay: 0.55, dmg: { b: 170, l: 30, ad: 0.8, type: 'magic' }, fx: { stun: 1.3 }, color: '#8b5cf6', desc: 'Depois de um instante, atordoa todos ao redor.' },
@@ -154,7 +154,7 @@ export const HEROES = {
     color: '#14b8a6',
     look: { weapon: 'bow', hat: 'tufts', extra: 'quiver' },
     ranged: true,
-    stats: { hp: 550, hpL: 88, atk: 64, atkL: 3.5, armor: 24, armorL: 3.8, mres: 30, mresL: 1.3, as: 0.64, asL: 0.03, ms: 5.9, range: 9.6, regen: 1.5, regenL: 0.15 },
+    stats: { hp: 550, hpL: 88, atk: 64, atkL: 3.5, armor: 24, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.64, asL: 0.03, ms: 5.9, range: 9.6, regen: 1.5, regenL: 0.15 },
     abilities: {
       q: { name: 'Agulha', icon: 'needle', kind: 'proj', cd: 8, cast: 0.25, range: 16, speed: 44, width: 0.55, dmg: { b: 80, l: 21, ad: 1.2, type: 'phys' }, color: '#5eead4', desc: 'Tiro longo e fino, muito dano.' },
       w: { name: 'Rede', icon: 'net', kind: 'proj', cd: 13, cast: 0.15, range: 10, speed: 28, width: 1.1, dmg: { b: 40, l: 10, ap: 0.3, type: 'magic' }, fx: { root: 1.3 }, color: '#99f6e4', desc: 'Prende o primeiro inimigo no lugar.' },
@@ -169,7 +169,7 @@ export const HEROES = {
     color: '#eab308',
     look: { weapon: 'stingers', hat: 'antennae', scale: 0.95, extra: 'wings' },
     ranged: false,
-    stats: { hp: 600, hpL: 95, atk: 68, atkL: 3.8, armor: 30, armorL: 4, mres: 30, mresL: 1.4, as: 0.7, asL: 0.03, ms: 6.25, range: 1.9, regen: 1.9, regenL: 0.2 },
+    stats: { hp: 600, hpL: 95, atk: 68, atkL: 3.8, armor: 30, armorL: 2.8, mres: 30, mresL: 1.4, as: 0.7, asL: 0.03, ms: 6.25, range: 1.9, regen: 1.9, regenL: 0.2 },
     abilities: {
       q: { name: 'Ferroada', icon: 'sting', kind: 'target', cd: 7, cast: 0, range: 6.5, dashTo: true, dmg: { b: 60, l: 19, ad: 1.0, type: 'phys' }, color: '#fde047', desc: 'Avança no alvo e fere.' },
       w: { name: 'Adrenalina', icon: 'heart', kind: 'self', cd: 14, cast: 0, heal: { b: 55, l: 17, ad: 0.3 }, buff: { t: 2.5, ms: 0.3, as: 0.3 }, desc: 'Cura e acelera ataque e passo.' },
@@ -184,7 +184,7 @@ export const HEROES = {
     color: '#65a30d',
     look: { weapon: 'shield', hat: 'spikes', scale: 1.18, bulk: 1.3 },
     ranged: false,
-    stats: { hp: 700, hpL: 112, atk: 60, atkL: 3.2, armor: 38, armorL: 4.6, mres: 32, mresL: 1.9, as: 0.62, asL: 0.02, ms: 6.0, range: 1.9, regen: 2.6, regenL: 0.25 },
+    stats: { hp: 700, hpL: 112, atk: 60, atkL: 3.2, armor: 38, armorL: 3.2, mres: 32, mresL: 1.9, as: 0.62, asL: 0.02, ms: 6.0, range: 1.9, regen: 2.6, regenL: 0.25 },
     abilities: {
       q: { name: 'Espinhos', icon: 'thorns', kind: 'proj', cd: 10, cast: 0.2, range: 11, speed: 24, width: 1.2, dmg: { b: 60, l: 15, ap: 0.4, hp: 0.03, type: 'magic' }, fx: { stun: 0.9 }, color: '#a3e635', desc: 'Arremessa espinhos que atordoam.' },
       w: { name: 'Casca Grossa', icon: 'bark', kind: 'self', cd: 15, cast: 0, shield: { b: 60, l: 20, hp: 0.1, t: 4 }, buff: { t: 4, armor: 30, mres: 30 }, desc: 'Escudo, armadura e resistência mágica.' },
@@ -199,7 +199,7 @@ export const HEROES = {
     color: '#3b82f6',
     look: { weapon: 'staff', hat: 'hair', robe: true, extra: 'scales' },
     ranged: true,
-    stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 3.8, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
+    stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
     abilities: {
       q: { name: 'Onda', icon: 'wave', kind: 'proj', cd: 7, cast: 0.2, range: 12, speed: 22, width: 1.3, pierce: true, dmg: { b: 60, l: 16, ap: 0.55, type: 'magic' }, fx: { slow: [0.25, 1.5] }, color: '#60a5fa', desc: 'Onda que atravessa todo mundo e deixa lento.' },
       w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 70, l: 20, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
@@ -214,7 +214,7 @@ export const HEROES = {
     color: '#ec4899',
     look: { weapon: 'hands', hat: 'flame', robe: true, extra: 'embers' },
     ranged: true,
-    stats: { hp: 545, hpL: 88, atk: 52, atkL: 2.8, armor: 24, armorL: 3.6, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 5.95, range: 8.3, regen: 1.6, regenL: 0.15 },
+    stats: { hp: 545, hpL: 88, atk: 52, atkL: 2.8, armor: 24, armorL: 2.5, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 5.95, range: 8.3, regen: 1.6, regenL: 0.15 },
     abilities: {
       q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 80, l: 22, ap: 0.7, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
       w: { name: 'Fogo-fátuo', icon: 'wisp', kind: 'aoe', cd: 12, cast: 0.15, range: 10, radius: 2.6, delay: 0.75, dmg: { b: 70, l: 19, ap: 0.6, type: 'magic' }, fx: { stun: 1.1 }, color: '#f9a8d4', desc: 'Depois de um instante, atordoa quem estiver na área.' },
@@ -229,7 +229,7 @@ export const HEROES = {
     color: '#dc2626',
     look: { weapon: 'sword', hat: 'cap', oneLeg: true, pipe: true },
     ranged: false,
-    stats: { hp: 620, hpL: 98, atk: 66, atkL: 3.7, armor: 32, armorL: 4.2, mres: 30, mresL: 1.5, as: 0.7, asL: 0.028, ms: 6.3, range: 1.9, regen: 2, regenL: 0.2 },
+    stats: { hp: 620, hpL: 98, atk: 66, atkL: 3.7, armor: 32, armorL: 2.9, mres: 30, mresL: 1.5, as: 0.7, asL: 0.028, ms: 6.3, range: 1.9, regen: 2, regenL: 0.2 },
     abilities: {
       q: { name: 'Redemoinho', icon: 'spin', kind: 'nova', cd: 6, cast: 0.1, radius: 3.4, delay: 0, dmg: { b: 70, l: 19, ad: 0.9, type: 'phys' }, color: '#f87171', desc: 'Gira e fere todo mundo em volta.' },
       w: { name: 'Pulo de uma perna', icon: 'hop', kind: 'dash', cd: 10, cast: 0, range: 6, speed: 26, arc: true, end: { radius: 2.2, dmg: { b: 40, l: 12, ad: 0.6, type: 'phys' }, fx: { slow: [0.35, 1.2] } }, color: '#fca5a5', desc: 'Pula e deixa lento quem estiver na queda.' },
@@ -246,12 +246,12 @@ export const HEROES = {
     ranged: false,
     fury: { max: 100, cost: 50, auto: 5, lowHp: 1.5, idle: 6, decay: 5 },
     skillOrder: ['q', 'e', 'w'],
-    stats: { hp: 650, hpL: 102, atk: 67, atkL: 3.7, armor: 34, armorL: 4.4, mres: 32, mresL: 1.6, as: 0.665, asL: 0.025, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.2 },
+    stats: { hp: 650, hpL: 102, atk: 67, atkL: 3.7, armor: 34, armorL: 3.1, mres: 32, mresL: 1.6, as: 0.665, asL: 0.025, ms: 6.1, range: 1.9, regen: 2.2, regenL: 0.2 },
     abilities: {
-      q: { name: 'Bocada Faminta', icon: 'jaws', kind: 'nova', cd: 7, cast: 0.1, radius: 3.6, delay: 0, dmg: { b: 65, l: 18, ad: 0.9, type: 'phys' }, drain: { m: 0.06, h: 0.2 }, fury: [2.5, 7.5, 25], emp: { dmg: 1.5, drain: 3 }, color: '#86efac', desc: 'Gira a bocarra e o rabo em volta: fere todo mundo e cura pelo dano. Com fúria, fere 50% a mais e cura o triplo.' },
-      w: { name: 'Mordida do Jacaré', icon: 'bite', kind: 'self', cd: 13, cast: 0, nextHit: { t: 4, range: 0.8, hits: 2, stun: 0.75, dmg: { b: 12, l: 8, ad: 0.75, type: 'phys' }, fury: 10, emp: { hits: 3, stun: 1.5 } }, color: '#4ade80', desc: 'O próximo ataque vira duas mordidas que atordoam. Com fúria, são três mordidas e o atordoamento dobra.' },
-      e: { name: 'Bote do Pântano', icon: 'lunge', kind: 'dash', cd: 15, cast: 0, range: 5.5, speed: 24, path: { width: 2.2, dmg: { b: 45, l: 15, ad: 0.9, type: 'phys' } }, fury: [2.5, 5, 15], recast: { t: 4, emp: { dmg: 1.5, shred: [0.25, 4] } }, color: '#16a34a', desc: 'Avança cortando quem estiver no caminho. Se acertar alguém, dá pra dar o bote de novo em até 4 s. Com fúria, o segundo bote fere 50% a mais e racha a armadura.' },
-      r: { name: 'Cuca Vem Pegar', icon: 'witch', kind: 'self', cd: 80, cast: 0.25, furyGain: 25, burst: { radius: 3.8, dmg: { b: 60, l: 16, ad: 0.3, type: 'magic' }, fx: { fear: 0.75 } }, buff: { t: 15, big: 1, range: 0.5, hp: { b: 220, l: 26 }, fury: 5, aura: { radius: 3.8, tick: 0.5, dmg: { b: 20, l: 5, ad: 0.06, type: 'magic' } } }, color: '#a855f7', desc: 'Dorme, neném: a Cuca cresce, ganha vida, assusta quem estiver perto e queima tudo em volta por 15 s, enchendo a fúria.' },
+      q: { name: 'Bocada Faminta', icon: 'jaws', kind: 'nova', cd: 7, cast: 0.1, radius: 3.6, delay: 0, dmg: { b: 65, l: 18, ad: 0.75, type: 'phys' }, drain: { m: 0.06, h: 0.2 }, fury: [2.5, 7.5, 25], emp: { dmg: 1.5, drain: 3 }, color: '#86efac', desc: 'Gira a bocarra e o rabo em volta: fere todo mundo e cura pelo dano. Com fúria, fere 50% a mais e cura o triplo.' },
+      w: { name: 'Mordida do Jacaré', icon: 'bite', kind: 'self', cd: 13, cast: 0, nextHit: { t: 4, range: 0.8, hits: 2, stun: 0.75, dmg: { b: 12, l: 8, ad: 0.6, type: 'phys' }, fury: 10, emp: { hits: 3, stun: 1.5 } }, color: '#4ade80', desc: 'O próximo ataque vira duas mordidas que atordoam. Com fúria, são três mordidas e o atordoamento dobra.' },
+      e: { name: 'Bote do Pântano', icon: 'lunge', kind: 'dash', cd: 15, cast: 0, range: 5.5, speed: 24, path: { width: 2.2, dmg: { b: 45, l: 15, ad: 0.7, type: 'phys' } }, fury: [2.5, 5, 15], recast: { t: 4, emp: { dmg: 1.5, shred: [0.25, 4] } }, color: '#16a34a', desc: 'Avança cortando quem estiver no caminho. Se acertar alguém, dá pra dar o bote de novo em até 4 s. Com fúria, o segundo bote fere 50% a mais e racha a armadura.' },
+      r: { name: 'Cuca Vem Pegar', icon: 'witch', kind: 'self', cd: 80, cast: 0.25, furyGain: 25, burst: { radius: 3.8, dmg: { b: 60, l: 16, ad: 0.3, type: 'magic' }, fx: { fear: 0.75 } }, buff: { t: 15, big: 1, range: 0.5, hp: { b: 220, l: 26 }, fury: 5, aura: { radius: 3.8, tick: 0.5, dmg: { b: 14, l: 3.5, ad: 0.05, type: 'magic' } } }, color: '#a855f7', desc: 'Dorme, neném: a Cuca cresce, ganha vida, assusta quem estiver perto e queima tudo em volta por 15 s, enchendo a fúria.' },
     },
   },
   curupira: {
@@ -263,7 +263,7 @@ export const HEROES = {
     ranged: true,
     burn: { b: 3, l: 1, ap: 0.02, type: 'magic', tick: 0.5 },
     skillOrder: ['q', 'w', 'e'],
-    stats: { hp: 530, hpL: 86, atk: 51, atkL: 2.7, armor: 22, armorL: 3.5, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 6.0, range: 9.2, regen: 1.5, regenL: 0.14 },
+    stats: { hp: 530, hpL: 86, atk: 51, atkL: 2.7, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 6.0, range: 9.2, regen: 1.5, regenL: 0.14 },
     abilities: {
       q: { name: 'Tocha', icon: 'torch', kind: 'proj', cd: 5, cast: 0.2, range: 14, speed: 30, width: 0.9, explode: 1.8, dmg: { b: 65, l: 19, ap: 0.6, type: 'magic' }, fx: { burn: 3 }, color: '#ff7a1a', desc: 'Arremessa uma tocha de bem longe: explode no primeiro inimigo e deixa todo mundo em volta queimando.' },
       w: { name: 'Trilha de Brasa', icon: 'firewall', kind: 'zone', cd: 14, cast: 0.2, range: 11, radius: 1.1, line: 7, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.08, type: 'magic' }, fx: { slow: [0.35, 0.6], burn: 2 }, color: '#ffb020', desc: 'Risca uma parede de fogo atravessada no chão: queima e deixa lento quem passar por ela.' },
@@ -279,12 +279,12 @@ export const HEROES = {
     look: { weapon: 'coco', hat: 'cocar', scale: 0.9, extra: 'boar', body: '#a16207', skin: '#8d5a3b', pipe: true },
     ranged: true,
     skillOrder: ['q', 'e', 'w'],
-    stats: { hp: 535, hpL: 86, atk: 52, atkL: 2.8, armor: 22, armorL: 3.5, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.1, range: 8.0, regen: 1.5, regenL: 0.14 },
+    stats: { hp: 535, hpL: 86, atk: 52, atkL: 2.8, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.1, range: 8.0, regen: 1.5, regenL: 0.14 },
     abilities: {
-      q: { name: 'Coquinho', icon: 'coco', kind: 'proj', cd: 8, cast: 0.15, range: 7, speed: 22, width: 1.0, explode: 1.6, grow: { per: 0.09, max: 1.5 }, hover: { t: 1.2, range: 17, speed: 30 }, dmg: { b: 44, l: 12, ap: 0.4, type: 'magic' }, color: '#e879f9', desc: 'Joga um coquinho que fere mais quanto mais longe voar. Se não acertar ninguém, ele para no ar: use de novo pra rebater pra onde o mouse aponta.' },
+      q: { name: 'Coquinho', icon: 'coco', kind: 'proj', cd: 8, cast: 0.15, range: 7, speed: 22, width: 1.0, explode: 1.6, grow: { per: 0.09, max: 1.5 }, hover: { t: 1.2, range: 17, speed: 30 }, dmg: { b: 56, l: 15, ap: 0.55, type: 'magic' }, color: '#e879f9', desc: 'Joga um coquinho que fere mais quanto mais longe voar. Se não acertar ninguém, ele para no ar: use de novo pra rebater pra onde o mouse aponta.' },
       w: { name: 'Traquinagem', icon: 'mask', kind: 'self', cd: 12, cast: 0, buff: { t: 2, ms: 0.25 }, steal: { window: 40 }, bolts: { n: 3, range: 7, speed: 22, repeat: 0.3, wait: 2.5, dmg: { b: 26, l: 6, ap: 0.22, type: 'magic' } }, color: '#d946ef', desc: 'Lança de graça o último feitiço que um herói inimigo usou. Três vaga-lumes avançam nos inimigos próximos e você acelera.' },
       e: { name: 'Fumaça do Sono', icon: 'sleep', kind: 'proj', cd: 16, cast: 0.25, range: 10, speed: 20, width: 1.1, dmg: { b: 50, l: 14, ap: 0.4, type: 'magic' }, fx: { drowsy: [1.2, 2], wake: { b: 40, l: 12, ap: 0.3 } }, trap: { r: 1.6, dur: 4 }, color: '#c4b5fd', desc: 'Sopra a fumaça do cachimbo: o primeiro inimigo fica com sono e logo dorme. O golpe que acordar ele dói em dobro. Se errar, a fumaça fica no chão como armadilha.' },
-      r: { name: 'Buraco de Tatu', icon: 'portal', kind: 'blink', cd: 16, cast: 0, range: 6.5, ret: 1, bolts: { n: 3, range: 7, speed: 24, repeat: 0.4, dmg: { b: 35, l: 8, ap: 0.25, type: 'magic' } }, color: '#d946ef', desc: 'Some num buraco e sai onde o mouse aponta, solta três vaga-lumes e, depois de 1 s, volta pra onde estava.' },
+      r: { name: 'Buraco de Tatu', icon: 'portal', kind: 'blink', cd: 16, cast: 0, range: 6.5, ret: 1, bolts: { n: 3, range: 7, speed: 24, repeat: 0.4, dmg: { b: 35, l: 8, ap: 0.35, type: 'magic' } }, color: '#d946ef', desc: 'Some num buraco e sai onde o mouse aponta, solta três vaga-lumes e, depois de 1 s, volta pra onde estava.' },
     },
   },
   boto: {
@@ -294,7 +294,7 @@ export const HEROES = {
     color: '#ff8fab',
     look: { weapon: 'pearl', hat: 'boater', extra: 'fin', suit: '#f8fafc', skin: '#f7a1b8', snout: true },
     ranged: true,
-    stats: { hp: 550, hpL: 90, atk: 53, atkL: 2.9, armor: 24, armorL: 3.7, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.05, range: 7.6, regen: 1.6, regenL: 0.15 },
+    stats: { hp: 550, hpL: 90, atk: 53, atkL: 2.9, armor: 24, armorL: 2.6, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.05, range: 7.6, regen: 1.6, regenL: 0.15 },
     abilities: {
       q: { name: 'Pérola do Rio', icon: 'pearl', kind: 'proj', cd: 7, cast: 0.2, range: 11, speed: 24, width: 1.1, pierce: true, back: { speed: 30, type: 'true' }, dmg: { b: 36, l: 10, ap: 0.35, type: 'magic' }, color: '#ffc2d1', desc: 'Joga uma pérola que atravessa todo mundo e volta pra sua mão. Na volta, o dano ignora defesas.' },
       w: { name: 'Cardume', icon: 'fish', kind: 'self', cd: 9, cast: 0, buff: { t: 1.5, ms: 0.3 }, bolts: { n: 3, range: 6.5, speed: 20, repeat: 0.3, wait: 2.5, dmg: { b: 30, l: 7, ap: 0.25, type: 'magic' } }, color: '#ff8fab', desc: 'Três peixinhos avançam nos inimigos mais próximos, de preferência heróis. Você acelera por um instante.' },
@@ -397,7 +397,7 @@ export const CRIT_MULT = 1.75;
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
 export const AFFINITY_BONUS = 0.2;
 export const AFFINITY = {
-  atirador: ['as', 'crit', 'atk'],
+  atirador: ['crit', 'atk'],
   assassino: ['atk', 'crit', 'haste'],
   lutador: ['atk', 'hp'],
   tanque: ['hp', 'armor', 'mres'],
