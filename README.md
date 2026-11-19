@@ -17,6 +17,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **Cura**: frutas espalhadas pela ponte, ou voltando pra base com `B` (8 segundos parado; dano ou qualquer ação cancela). Na fonte a vida volta depressa.
 - **A loja só abre na base ou quando você cai**, então voltar pra comprar custa tempo de rota.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
+- **Em estruturas só o ataque básico fere**, e ele soma o ataque inteiro mais 60% do poder: mago e suporte também derrubam torre.
 - **Habilidades em área também desgastam torres**, com 30% do dano. Disparos num alvo só passam direto por elas.
 
 <p align="center">

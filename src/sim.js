@@ -2078,6 +2078,13 @@ queueBolts(h, ab, slot, color) {
     if (!t.alive) return;
     if (u.isHero && u.empower && !t.isStructure) return this.biteHit(u, t);
     const crit = u.isHero && u.stats.crit > 0 && !t.isStructure && Math.random() < u.stats.crit;
+    if (u.isHero && t.isStructure) {
+      // em estrutura o poder também conta, pra mago e suporte conseguirem derrubar torre
+      const ap = u.stats.pow * TOWER.apRatio;
+      const base = u.def.stats.atk + u.def.stats.atkL * (u.level - 1);
+      this.damage(t, u, dmg + ap, ap > u.stats.atk - base ? 'magic' : 'phys', { auto: true });
+      return;
+    }
     this.damage(t, u, crit ? dmg * CRIT_MULT : dmg, 'phys', { auto: true, crit });
     if (u.isHero && u.def.fury) this.addFury(u, u.def.fury.auto * (u.hp < u.maxHp * 0.5 ? u.def.fury.lowHp : 1));
   }

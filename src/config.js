@@ -82,6 +82,8 @@ export const TOWER = {
   rampMax: 1.2,
   attackSpeed: 0.85,
   projSpeed: 24,
+  // ataque básico de herói em estrutura: ataque inteiro + essa fração do poder; se o poder pesar mais que o ataque dos itens, o golpe vira mágico
+  apRatio: 0.6,
   backdoorRange: 15,
   backdoorMult: 0.5,
   vsMinion: { melee: 0.45, ranged: 0.7, siege: 0.14, super: 0.08 },
