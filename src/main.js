@@ -3,6 +3,9 @@ import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS } from './config.
 import { Game } from './game.js';
 import { esc, heroCard, setKeyLabel, spellPicker } from './hud.js';
 import { ACTIONS, DEFAULT_KEYS, canBind, cleanKeys, keyName } from './keys.js';
+import { startDiag } from './diag.js';
+
+startDiag();
 import { LocalTransport, SocketTransport, serverUrl } from './net.js';
 
 const $ = (id) => document.getElementById(id);
