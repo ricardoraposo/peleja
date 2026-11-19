@@ -29,7 +29,7 @@ import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -66,6 +66,7 @@ class Unit {
     this.target = null;
     this.order = { type: 'idle' };
     this.stunT = 0;
+    this.stasisT = 0;
     this.rootT = 0;
     this.airT = 0;
     this.slows = [];
@@ -97,7 +98,7 @@ class Unit {
   }
 
   get cc() {
-    return this.stunT > 0 || this.airT > 0 || !!this.disp;
+    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0;
   }
 
   shieldTotal() {
@@ -405,6 +406,7 @@ export class Sim {
     h.gold = MATCH.startGold;
     h.goldEarned = MATCH.startGold;
     h.items = [];
+    h.itemCd = {};
     h.cds = { q: 0, w: 0, e: 0, r: 0, d: 0, f: 0 };
     h.cdMax = { q: 1, w: 1, e: 1, r: 1, d: 1, f: 1 };
     h.kills = h.deaths = h.assists = h.cs = h.streak = 0;
@@ -433,6 +435,8 @@ export class Sim {
     h.alive = true;
     h.facing = h.team === 0 ? 0 : Math.PI;
     h.stunT = h.rootT = h.airT = h.castT = 0;
+    this.endStasis(h);
+    h.hot = null;
     h.slows = [];
     h.shields = [];
     h.buffs = [];
@@ -966,7 +970,7 @@ export class Sim {
   }
 
   applyFx(t, fx, src, ox, oz) {
-    if (!fx || !t.alive || t.isStructure) return;
+    if (!fx || !t.alive || t.isStructure || t.stasisT > 0) return;
     if (fx.slow) t.slows.push({ p: fx.slow[0], t: fx.slow[1] });
     const firm = 1 - (t.stats?.ten || 0);
     if (fx.stun) t.stunT = Math.max(t.stunT, fx.stun * firm);
@@ -1004,7 +1008,7 @@ export class Sim {
   }
 
   damage(t, src, amount, type = 'phys', opts = {}) {
-    if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god) return 0;
+    if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god || t.stasisT > 0) return 0;
     if (t.isStructure) {
       if (t.invuln) return 0;
       if (src && src.isHero && !this.minionsNear(t, src.team, TOWER.backdoorRange)) amount *= TOWER.backdoorMult;
@@ -1161,6 +1165,8 @@ export class Sim {
     t.shields = [];
     t.slows = [];
     t.stunT = t.rootT = t.airT = 0;
+    this.endStasis(t);
+    t.hot = null;
     t.disp = null;
     t.windup = 0;
     t.order = { type: 'idle' };
@@ -1312,6 +1318,16 @@ export class Sim {
     if (u.stunT > 0) u.stunT -= dt;
     if (u.rootT > 0) u.rootT -= dt;
     if (u.airT > 0) u.airT -= dt;
+    if (u.stasisT > 0) {
+      u.stasisT -= dt;
+      if (u.stasisT <= 0) this.endStasis(u);
+    }
+    if (u.hot) {
+      this.heal(u, u.hot.rate * Math.min(dt, u.hot.t), null, true);
+      u.hot.t -= dt;
+      if (u.hot.t <= 0) u.hot = null;
+    }
+    if (u.itemCd) for (const id in u.itemCd) if (u.itemCd[id] > 0) u.itemCd[id] = Math.max(0, u.itemCd[id] - dt);
     if (u.disp) {
       u.x += u.disp.vx * dt;
       u.z += u.disp.vz * dt;
@@ -1891,8 +1907,11 @@ export class Sim {
       h.items.splice(i, 1);
       fresh.splice(i, 1);
     }
-    h.items.push(id);
-    fresh.push(p.cost + carried);
+    // o que some ao usar fica sempre no fim: assim beber uma garrafada não muda a tecla dos outros itens
+    let at = h.items.length;
+    if (!it.active?.consume) while (at > 0 && ITEMS[h.items[at - 1]].active?.consume) at--;
+    h.items.splice(at, 0, id);
+    fresh.splice(at, 0, p.cost + carried);
     h.freshAt = [h.x, h.z];
     this.calcStats(h);
     if (!h.isBot) this.emit({ e: 'bought', i: id }, { to: h.id });
@@ -1904,9 +1923,49 @@ export class Sim {
     const id = h.items[idx];
     if (!id) return false;
     h.gold += this.sellPrice(h, idx);
+    // pega a lista antes de mexer nos itens: com os tamanhos diferentes o freshOf zera a devolução dos outros
+    const fresh = this.freshOf(h);
     h.items.splice(idx, 1);
-    this.freshOf(h).splice(idx, 1);
+    fresh.splice(idx, 1);
     this.calcStats(h);
+    return true;
+  }
+
+  // ---------- itens de usar ----------
+
+  endStasis(u) {
+    if (u.stasisT > 0 || u.statue) u.invuln = false;
+    u.stasisT = 0;
+    u.statue = false;
+  }
+
+  // usa o item do espaço `idx` do inventário (ver `active` em ITEMS)
+  useItem(h, idx) {
+    if (!this.canAct(h) || h.cc || h.dash) return false;
+    const id = h.items[idx];
+    const act = ITEMS[id]?.active;
+    if (!act || h.itemCd[id] > 0) return false;
+    if (act.heal) {
+      // uma garrafada de cada vez, e não adianta beber de vida cheia
+      if (h.hot || h.hp >= h.maxHp) return false;
+      h.hot = { rate: act.heal / act.over, t: act.over };
+    }
+    if (act.shield) h.shields.push({ amt: (act.shield.b + (act.shield.l || 0) * h.level) * (1 + (h.stats.hsp || 0)), t: act.shield.t });
+    if (act.stasis) {
+      h.stasisT = act.stasis;
+      h.statue = true;
+      h.invuln = true;
+      h.windup = 0;
+      h.order = { type: 'idle' };
+    }
+    if (act.cd) h.itemCd[id] = act.cd;
+    if (act.consume) {
+      const fresh = this.freshOf(h);
+      h.items.splice(idx, 1);
+      fresh.splice(idx, 1);
+      this.calcStats(h);
+    }
+    this.emit({ e: 'use', id: h.id, i: id });
     return true;
   }
 
@@ -1965,6 +2024,9 @@ export class Sim {
       case 'sell':
         this.sell(h, Number(msg.n) | 0);
         break;
+      case 'use':
+        this.useItem(h, Number(msg.n) | 0);
+        break;
       case 'pick':
         this.pick(h, String(msg.h));
         break;
@@ -1991,6 +2053,7 @@ export class Sim {
     if (u.dash) f |= F.dash;
     if (u.attackAnim > 0) f |= F.attack;
     if (u.invuln) f |= F.invuln;
+    if (u.stasisT > 0) f |= F.stasis;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;
     if (u.buffs.length) f |= F.buff;
@@ -2036,6 +2099,7 @@ export class Sim {
       rk: RANK_SLOTS.map((k) => h.ranks?.[k] || 0),
       pt: h.ranks ? skillPoints(h.level, h.ranks) : 0,
       sp: h.items.map((_, i) => this.sellPrice(h, i)),
+      ic: h.items.map((id) => r1(h.itemCd?.[id] || 0)),
       cd: SLOTS.map((k) => r1(h.cds[k])),
       cm: SLOTS.map((k) => r1(h.cdMax[k])),
       xp: Math.floor(h.xp),

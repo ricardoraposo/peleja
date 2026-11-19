@@ -98,7 +98,12 @@ export class Overlay {
         c.strokeText(name, p[0] + 10, y - 10);
         c.fillStyle = rel === 'enemy' ? '#ffd0d6' : rel === 'me' ? '#fff3c4' : '#d6ebff';
         c.fillText(name, p[0] + 10, y - 10);
-        if (u.flags & F.stun || u.flags & F.root || u.flags & F.air) {
+        if (u.flags & F.stasis) {
+          c.font = '700 11px Rubik, sans-serif';
+          c.fillStyle = '#e8c170';
+          c.strokeText('ESTÁTUA', p[0] + 10, y + 22);
+          c.fillText('ESTÁTUA', p[0] + 10, y + 22);
+        } else if (u.flags & F.stun || u.flags & F.root || u.flags & F.air) {
           c.font = '700 11px Rubik, sans-serif';
           c.fillStyle = '#fde047';
           const tag = u.flags & F.root ? 'PRESO' : u.flags & F.air ? 'NO AR' : 'ATORDOADO';

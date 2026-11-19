@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { DEFAULT_KEYS, keyName } from './keys.js';
 import { MouseGrab } from './grab.js';
 import { initAudio, playSound, setListener, setMuted } from './audio.js';
-import { HERO_ORDER, HEROES, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
+import { HERO_ORDER, HEROES, ITEMS, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
 import { Effects } from './effects.js';
 import { fxOf, projShape } from './fxstyle.js';
 import { PACKS } from './geo.js';
@@ -389,6 +389,15 @@ export class Game {
       case 'bought':
         playSound('buy');
         break;
+      case 'use': {
+        const u = this.units.get(m.id);
+        const act = ITEMS[m.i]?.active;
+        if (u && act) {
+          this.effects.buffFx(u.x, u.z, act.stasis ? '#e8c170' : act.shield ? '#cbd5e1' : '#5ee67a', this.styleOf(m.id).el);
+          playSound(act.heal ? 'heal' : 'shield', u);
+        }
+        break;
+      }
       case 'end':
         this.onMatchEnd(m);
         break;
@@ -741,6 +750,20 @@ export class Game {
     this.send({ t: 'c', s: slot, x: Math.round(this.mouse.wx * 10) / 10, z: Math.round(this.mouse.wz * 10) / 10, id: this.hoverId || 0 });
   }
 
+  // usa o item do espaço `n` do inventário (poção, escudo, estátua...)
+  useItem(n) {
+    const st = this.meState;
+    if (!this.playing || !st) return;
+    const act = ITEMS[st.it[n]]?.active;
+    if (!act) return;
+    if (!this.me?.alive || st.ic?.[n] > 0) {
+      this.hud.flashItem(n);
+      playSound('error');
+      return;
+    }
+    this.send({ t: 'use', n });
+  }
+
   rankUp(slot) {
     if (this.phase !== 'playing' || !this.meState) return;
     const st = this.meState;
@@ -925,6 +948,10 @@ export class Game {
       if (SLOTS.includes(act)) {
         if (e.shiftKey) this.rankUp(act);
         else this.pressSlot(act);
+        return;
+      }
+      if (/^i[1-6]$/.test(act)) {
+        this.useItem(Number(act[1]) - 1);
         return;
       }
       switch (act) {

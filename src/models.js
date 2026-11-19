@@ -1023,9 +1023,12 @@ export class HeroModel {
     this.buffGlow.material.opacity = 0.3 + Math.sin(time * 6) * 0.2;
 
     if (this.flash > 0) this.flash -= dt;
+    // virou estátua (Carranca): o corpo todo fica dourado e parado
     const e = this.flash > 0 ? 0.7 : 0;
+    const statue = !!(f & F.stasis);
     for (const key of ['main', 'dark', 'skin']) {
-      this.mats[key].emissive.setRGB(e, e, e);
+      if (statue) this.mats[key].emissive.setRGB(0.85, 0.6, 0.18);
+      else this.mats[key].emissive.setRGB(e, e, e);
     }
   }
 

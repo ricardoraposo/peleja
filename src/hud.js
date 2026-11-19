@@ -65,6 +65,7 @@ const SHOP_CATS = [
   { id: 'pow', name: 'Poder', stats: ['pow', 'haste', 'mpen', 'sv', 'hsp'], icon: ICONS.gem },
   { id: 'def', name: 'Defesa', stats: ['hp', 'armor', 'mres', 'regen', 'thorns', 'ten'], icon: ICONS.vest },
   { id: 'mov', name: 'Passo', stats: ['ms'], icon: ICONS.boots },
+  { id: 'use', name: 'De usar', active: true, icon: ICONS.drop },
 ];
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -154,6 +155,7 @@ export function itemStats(it, heroId = null, sep = ' · ') {
       const val = STAT_PCT.includes(k) ? `+${Math.round(v * 100)}%` : `+${Math.round(v * 10) / 10}`;
       return up ? `<em class="aff">${val} ${STAT_LABEL[k]} ★</em>` : `${val} ${STAT_LABEL[k]}`;
     })
+    .concat(it.active ? [`<em class="use">Usar: ${esc(it.active.desc)}</em>`] : [])
     .join(sep);
 }
 
@@ -255,6 +257,10 @@ export class Hud {
       const b = e.target.closest('[data-up]');
       if (b) game.rankUp(b.dataset.up);
     });
+    this.el.items.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-use]');
+      if (b) game.useItem(Number(b.dataset.use));
+    });
     $('shop-close').addEventListener('click', (e) => {
       e.stopPropagation();
       game.toggleShop(false);
@@ -284,6 +290,14 @@ export class Hud {
     }
     this.el.portrait.style.setProperty('--c', h.color);
     this.el.letter.textContent = h.name[0];
+  }
+
+  flashItem(n) {
+    const el = this.el.items.children[n];
+    if (!el) return;
+    el.classList.remove('deny');
+    void el.offsetWidth;
+    el.classList.add('deny');
   }
 
   flashSkill(slot) {
@@ -365,15 +379,28 @@ export class Hud {
       this.statsKey = statsHtml;
       this.el.stats.innerHTML = statsHtml;
     }
-    const key = st.it.join(',');
+    const key = st.it.join(',') + '|' + [1, 2, 3, 4, 5, 6].map((n) => keyLabel('i' + n)).join(',');
     if (key !== this.itemsKey) {
       this.itemsKey = key;
       this.el.items.innerHTML = Array.from({ length: 6 }, (_, i) => {
         const id = st.it[i];
         if (!id) return '<div class="item empty"></div>';
         const it = ITEMS[id];
-        return `<div class="item ${tierClass(id)}" style="--c:${itemColor(id)}">${itemIcon(id)}<div class="tip"><b>${esc(it.name)}</b><span>${itemStats(it, this.heroId)}</span></div></div>`;
+        // item de usar: mostra a tecla e a recarga, e também dá pra clicar
+        const use = it.active ? ` usable" data-use="${i}` : '';
+        return `<div class="item ${tierClass(id)}${use}" style="--c:${itemColor(id)}">${itemIcon(id)}${it.active ? `<kbd>${esc(keyLabel('i' + (i + 1)))}</kbd><div class="it-cd"></div>` : ''}<div class="tip"><b>${esc(it.name)}</b><span>${itemStats(it, this.heroId)}</span></div></div>`;
       }).join('');
+      this.itemCdEls = [...this.el.items.children].map((el) => el.querySelector('.it-cd'));
+    }
+    for (let i = 0; i < 6; i++) {
+      const el = this.itemCdEls?.[i];
+      if (!el) continue;
+      const cd = st.ic?.[i] || 0;
+      const txt = cd > 0 ? String(Math.ceil(cd)) : '';
+      if (el.textContent !== txt) {
+        el.textContent = txt;
+        el.parentElement.classList.toggle('cooling', cd > 0);
+      }
     }
     this.el.dead.classList.toggle('hidden', me.alive || g.phase !== 'playing');
     if (!me.alive) this.el.deadCount.textContent = Math.ceil(me.respawn);
@@ -576,7 +603,7 @@ export class Hud {
       b.classList.toggle('owned', st.it.includes(id));
       b.classList.toggle('sel', id === this.shopSel);
       b.classList.toggle('next', id === next && !!b.closest('#shop-rec'));
-      b.classList.toggle('off', !!b.closest('#shop-all') && !!cat?.stats && !Object.keys(ITEMS[id].stats).some((k) => cat.stats.includes(k)));
+      b.classList.toggle('off', !!b.closest('#shop-all') && (cat?.active ? !ITEMS[id].active : !!cat?.stats && !Object.keys(ITEMS[id].stats).some((k) => cat.stats.includes(k))));
     }
   }
 
@@ -682,6 +709,9 @@ export class Hud {
 }
 
 const ITEM_COLORS = {
+  garrafada: '#f87171',
+  broquel: '#cbd5e1',
+  carranca: '#e8c170',
   botas: '#a3a3a3',
   lamina: '#fb923c',
   arco: '#facc15',

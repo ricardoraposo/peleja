@@ -232,8 +232,16 @@ export const HEROES = {
 export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
-// `group`: só um item do grupo por herói (as botas e suas melhorias).
+// `group`: só um item do grupo por herói (as botas e suas melhorias). `max`: quantos iguais dá pra carregar.
+// `active`: item de usar, pela tecla do espaço dele no inventário. `cd` é a recarga; `consume` some ao usar.
+//   heal/over = vida recuperada ao longo de tantos segundos · shield = escudo (b + l por nível, por t segundos)
+//   stasis = segundos como estátua: não leva dano nem controle, mas também não anda, não ataca e não lança nada
 export const ITEMS = {
+  // ----- de usar -----
+  garrafada: { name: 'Garrafada', icon: 'drop', cost: 120, stats: {}, max: 2, active: { heal: 200, over: 10, consume: true, cd: 0, desc: 'Recupera 200 de vida ao longo de 10 s. Some ao usar; dá pra levar duas.' } },
+  broquel: { name: 'Broquel de Couro', icon: 'shield', cost: 1650, from: ['colete', 'capa'], stats: { armor: 30, mres: 30 }, active: { shield: { b: 150, l: 25, t: 3 }, cd: 60, desc: 'Escudo de 150 (+25 por nível) por 3 s. Recarga de 60 s.' } },
+  carranca: { name: 'Carranca', icon: 'skull', cost: 2900, from: ['varinha', 'colete'], stats: { pow: 85, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+
   // ----- básicos -----
   botas: { name: 'Botas Ligeiras', icon: 'boots', cost: 350, stats: { ms: 0.8 }, group: 'botas' },
   lamina: { name: 'Lâmina de Aço', icon: 'sword', cost: 850, stats: { atk: 20 } },
@@ -356,7 +364,7 @@ export function itemPrice(items, id) {
   };
   const cost = walk(id);
   const it = ITEMS[id];
-  const clash = !!it.group && owned.some((o) => ITEMS[o].group === it.group);
+  const clash = (!!it.group && owned.some((o) => ITEMS[o].group === it.group)) || (!!it.max && items.filter((o) => o === id).length >= it.max);
   return { cost, use, fits: items.length - use.length + 1 <= 6, clash };
 }
 
