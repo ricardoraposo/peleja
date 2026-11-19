@@ -406,6 +406,8 @@ $('settings').addEventListener('mousedown', (e) => {
   if (e.target === $('settings')) openSettings(false);
 });
 for (const id of ['grab', 'cast']) $(id).addEventListener('click', applySettings);
+// tela cheia entra por um clique de interface (escolher o modo, dar pronto, começar), nunca pelo botão direito no campo
+for (const id of ['grab', 'ready', 'play', 'again', 'lobby-start', 'resume']) $(id).addEventListener('click', () => game.grab.fullscreen());
 $('camlock').addEventListener('click', () => (game.cam.locked = !!settings.camLock));
 $('camspeed').addEventListener('input', (e) => {
   settings.camSpeed = Number(e.target.value);

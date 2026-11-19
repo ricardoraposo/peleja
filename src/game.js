@@ -861,6 +861,10 @@ export class Game {
     this.grab = new MouseGrab(this);
     // na captura: nenhum outro handler consegue segurar o evento e deixar o menu do navegador abrir
     window.addEventListener('contextmenu', (e) => e.preventDefault(), true);
+    document.addEventListener('contextmenu', (e) => e.preventDefault(), true);
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // arrastar o canvas também oferece salvar a imagem em alguns navegadores
+    this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
     this.canvas.addEventListener('mousedown', (e) => {
       initAudio();
       if (e.button === 2) {

@@ -23,7 +23,9 @@ export class MouseGrab {
           if (this.forward('mousedown', e.button)) e.stopImmediatePropagation();
         } else if (e.target === this.canvas && this.wanted) {
           if (this.mode === 1) this.lock(e.clientX, e.clientY);
-          else if (this.mode === 2 && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+          // só o botão esquerdo: pedir tela cheia no meio de um clique direito deixava escapar o menu do navegador
+          // ("Salvar imagem como" no canvas), que abria um diálogo escondido atrás da tela cheia e travava tudo
+          else if (e.button === 0) this.fullscreen();
         }
       },
       true,
@@ -66,6 +68,16 @@ export class MouseGrab {
   get wanted() {
     const g = this.game;
     return this.mode > 0 && g.phase === 'playing' && !g.spectator && !g.paused;
+  }
+
+  // modo "Tela cheia": entra em tela cheia. Só funciona chamado de dentro de um clique ou tecla.
+  fullscreen() {
+    if (this.mode !== 2 || document.fullscreenElement) return;
+    try {
+      document.documentElement.requestFullscreen?.()?.catch?.(() => {});
+    } catch {
+      return;
+    }
   }
 
   lock(x, y) {
