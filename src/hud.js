@@ -1,5 +1,6 @@
-import { HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, BUILDS, BUILD_WHY, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, BUILDS_ALT, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
+import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, BUILDS, BUILD_WHY, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, BUILDS_ALT, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
 import { OBSTACLES } from './geo.js';
+import { ITEM_ICONS } from './itemicons.js';
 
 const S = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
 
@@ -156,6 +157,28 @@ export function itemStats(it, heroId = null, sep = ' · ') {
     .join(sep);
 }
 
+// desenho do item (cada um tem o seu) e a classe da moldura, que fica mais rica a cada nível do item
+export const itemIcon = (id) => ITEM_ICONS[id] || ICONS[ITEMS[id]?.icon] || '';
+const tierClass = (id) => `tier${itemTier(id)}`;
+
+// escolha dos feitiços do D e do F: `active` é a tecla que está sendo trocada
+export function spellPicker(spells, active) {
+  const other = active === 'd' ? 'f' : 'd';
+  const slots = ['d', 'f']
+    .map((s) => {
+      const ab = SPELL_POOL[spells[s]];
+      return `<button class="sp-slot${s === active ? ' on' : ''}" data-slot="${s}" style="--c:${ab.color}"><kbd>${s.toUpperCase()}</kbd><span class="sp-ic">${ICONS[ab.icon] || ''}</span><b>${esc(ab.name)}</b></button>`;
+    })
+    .join('');
+  const opts = SPELL_ORDER.map((id) => {
+    const ab = SPELL_POOL[id];
+    const mark = spells[active] === id ? active : spells[other] === id ? other : '';
+    return `<button class="sp-opt${mark === active ? ' on' : ''}" data-spell="${id}" style="--c:${ab.color}" title="${esc(ab.desc)}"><span class="sp-ic">${ICONS[ab.icon] || ''}</span>${mark ? `<kbd>${mark.toUpperCase()}</kbd>` : ''}<b>${esc(ab.name)}</b></button>`;
+  }).join('');
+  const cur = SPELL_POOL[spells[active]];
+  return `<div class="sp-slots">${slots}</div><div class="sp-opts">${opts}</div><p class="sp-desc"><b style="color:${cur.color}">${esc(cur.name)}</b> · ${esc(cur.desc)} <i>Recarga de ${cur.cd} s.</i></p>`;
+}
+
 export function heroCard(heroId, big = false) {
   const h = HEROES[heroId];
   const abil = ['q', 'w', 'e', 'r']
@@ -222,13 +245,14 @@ export class Hud {
     this.el.root.classList.toggle('hidden', !v);
   }
 
-  buildSkills(heroId) {
+  buildSkills(heroId, spells = null) {
     this.heroId = heroId;
+    this.spellKey = spells ? spells.d + spells.f : '';
     const h = HEROES[heroId];
     this.el.skills.innerHTML = '';
     this.skillEls = {};
     for (const slot of SLOTS) {
-      const ab = abilityOf(heroId, slot);
+      const ab = abilityOf(heroId, slot, spells);
       const d = document.createElement('div');
       d.className = 'skill' + (slot === 'd' || slot === 'f' ? ' spell' : '') + (slot === 'r' ? ' ult' : '');
       d.style.setProperty('--c', ab.color || h.color);
@@ -264,7 +288,8 @@ export class Hud {
       if (this.annT <= 0) this.el.announce.classList.remove('on');
     }
     if (!me || !st) return;
-    if (me.heroId !== this.heroId) this.buildSkills(me.heroId);
+    const spells = g.mySpells;
+    if (me.heroId !== this.heroId || (spells ? spells.d + spells.f : '') !== this.spellKey) this.buildSkills(me.heroId, spells);
     const total = Math.max(me.maxHp, me.hp + me.shield);
     this.el.hpFill.style.width = `${(me.hp / total) * 100}%`;
     this.el.hpShield.style.left = `${(me.hp / total) * 100}%`;
@@ -327,7 +352,7 @@ export class Hud {
         const id = st.it[i];
         if (!id) return '<div class="item empty"></div>';
         const it = ITEMS[id];
-        return `<div class="item" style="--c:${itemColor(id)}">${ICONS[it.icon]}<div class="tip"><b>${esc(it.name)}</b><span>${itemStats(it, this.heroId)}</span></div></div>`;
+        return `<div class="item ${tierClass(id)}" style="--c:${itemColor(id)}">${itemIcon(id)}<div class="tip"><b>${esc(it.name)}</b><span>${itemStats(it, this.heroId)}</span></div></div>`;
       }).join('');
     }
     this.el.dead.classList.toggle('hidden', me.alive || g.phase !== 'playing');
@@ -365,7 +390,7 @@ export class Hud {
     const it = ITEMS[id];
     const aff = affinityOf(this.shopHero || this.heroId);
     const hit = Object.keys(it.stats).some((k) => aff.includes(k));
-    return `<button class="tile${extra}${hit ? ' aff' : ''}" data-id="${id}" style="--c:${itemColor(id)}"><span class="tile-icon">${ICONS[it.icon]}</span>${hit ? '<span class="tile-aff" title="Combina com a sua classe">★</span>' : ''}<span class="tile-cost">${it.cost}</span></button>`;
+    return `<button class="tile ${tierClass(id)}${extra}${hit ? ' aff' : ''}" data-id="${id}" style="--c:${itemColor(id)}"><span class="tile-icon">${itemIcon(id)}</span>${hit ? '<span class="tile-aff" title="Combina com a sua classe">★</span>' : ''}<span class="tile-cost">${it.cost}</span></button>`;
   }
 
   buildShop() {
@@ -500,7 +525,7 @@ export class Hud {
       const id = st.it[i];
       if (!id) return '<div class="inv-slot empty"></div>';
       const full = (st.sp?.[i] ?? 0) >= ITEMS[id].cost;
-      return `<button class="inv-slot${i === this.sellSel ? ' sel' : ''}${full ? ' refund' : ''}" data-n="${i}" data-id="${id}" style="--c:${itemColor(id)}" title="Botão direito vende por ${st.sp?.[i] ?? 0}">${ICONS[ITEMS[id].icon]}<small>${st.sp?.[i] ?? ''}</small></button>`;
+      return `<button class="inv-slot ${tierClass(id)}${i === this.sellSel ? ' sel' : ''}${full ? ' refund' : ''}" data-n="${i}" data-id="${id}" style="--c:${itemColor(id)}" title="Botão direito vende por ${st.sp?.[i] ?? 0}">${itemIcon(id)}<small>${st.sp?.[i] ?? ''}</small></button>`;
     }).join('');
     const sel = ITEMS[this.shopSel];
     const into = ITEM_ORDER.filter((id) => ITEMS[id].from?.includes(this.shopSel));
@@ -510,7 +535,7 @@ export class Hud {
     const it = ITEMS[shown];
     const p = this.shopPrice(st, shown);
     $('shop-detail').innerHTML =
-      `<div class="sd-head" style="--c:${itemColor(shown)}"><span class="tile-icon">${ICONS[it.icon]}</span><div><b>${esc(it.name)}</b><span class="sd-cost"><span class="coin"></span>${p.cost}${p.cost < it.cost ? ` <s>${it.cost}</s>` : ''}</span></div></div>` +
+      `<div class="sd-head ${tierClass(shown)}" style="--c:${itemColor(shown)}"><span class="tile-icon">${itemIcon(shown)}</span><div><b>${esc(it.name)}</b><span class="sd-cost"><span class="coin"></span>${p.cost}${p.cost < it.cost ? ` <s>${it.cost}</s>` : ''}</span></div></div>` +
       `<ul class="sd-stats">${itemStats(it, this.shopHero, '|').split('|').map((s) => `<li>${s}</li>`).join('')}</ul>` +
       (it.from ? `<p>Aproveita o que você já tiver de: ${it.from.map((c) => esc(ITEMS[c].name)).join(' e ')}.</p>` : '') +
       (it.group ? '<p>Só uma bota por herói.</p>' : '');
@@ -544,7 +569,7 @@ export class Hud {
       if (r.team !== team) continue;
       const b = g.board.get(id) || [id, 0, 0, 0, 0, 0, [], 0, 0, 0];
       const h = HEROES[HERO_ORDER[r.heroIdx]] || HEROES.faisca;
-      const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item" style="--c:${itemColor(it)}">${ICONS[ITEMS[it].icon]}</span>`).join('')}</div></td>` : '';
+      const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item" style="--c:${itemColor(it)}">${itemIcon(it)}</span>`).join('')}</div></td>` : '';
       rows.push(
         `<tr class="${id === g.myId ? 'me' : ''}"><td><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span></td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
       );
@@ -654,7 +679,12 @@ const ITEM_COLORS = {
   fonte: '#22d3ee',
 };
 const STAT_COLOR = { atk: '#fb923c', as: '#facc15', crit: '#fde047', ls: '#ef4444', pen: '#f97316', onhit: '#fbbf24', pow: '#818cf8', mpen: '#a78bfa', sv: '#c084fc', haste: '#38bdf8', hsp: '#22d3ee', regen: '#34d399', hp: '#f87171', armor: '#84cc16', mres: '#60a5fa', thorns: '#65a30d', ten: '#2dd4bf', ms: '#a3a3a3' };
-export const itemColor = (id) => ITEM_COLORS[id] || STAT_COLOR[Object.keys(ITEMS[id]?.stats || {})[0]] || '#e5e7eb';
+// a cor vem do primeiro atributo; nas botas melhoradas o passo é comum a todas, então vale o atributo que cada uma acrescenta
+export const itemColor = (id) => {
+  if (ITEM_COLORS[id]) return ITEM_COLORS[id];
+  const keys = Object.keys(ITEMS[id]?.stats || {});
+  return STAT_COLOR[keys.find((k) => k !== 'ms' || keys.length === 1)] || '#e5e7eb';
+};
 
 export function teamColor(t) {
   return TEAMS[t].color;

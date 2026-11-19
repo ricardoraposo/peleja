@@ -185,7 +185,7 @@ export class Game {
         break;
       case 'roster':
         this.roster.clear();
-        for (const [id, team, name, isBot, heroIdx] of m.l) this.roster.set(id, { team, name, isBot: !!isBot, heroIdx });
+        for (const [id, team, name, isBot, heroIdx, sp] of m.l) this.roster.set(id, { team, name, isBot: !!isBot, heroIdx, spells: sp ? { d: sp[0], f: sp[1] } : null });
         for (const u of this.units.values()) {
           const r = this.roster.get(u.id);
           if (r) u.name = r.name;
@@ -282,10 +282,23 @@ export class Game {
       case 'zonex':
         this.effects.endZone(m.id);
         break;
-      case 'blink':
-        this.effects.blink(m.a, m.b, m.c, this.styleOf(m.id).el);
-        playSound('blink', { x: m.b[0], z: m.b[1] });
+      case 'blink': {
+        // teleporte é instantâneo: esquece as posições antigas, senão o herói desliza até o destino como num avanço
+        const u = this.units.get(m.id);
+        if (u) {
+          u.samples = [];
+          u.x = m.b[0];
+          u.z = m.b[1];
+        }
+        if (m.fl) {
+          this.effects.flash(m.a, m.b, m.c);
+          playSound('flash', { x: m.b[0], z: m.b[1] });
+        } else {
+          this.effects.blink(m.a, m.b, m.c, this.styleOf(m.id).el);
+          playSound('blink', { x: m.b[0], z: m.b[1] });
+        }
         break;
+      }
       case 'dash': {
         const u = this.units.get(m.id);
         u?.model?.startDash?.(m.d, m.a);
@@ -570,10 +583,11 @@ export class Game {
   onCast(m) {
     const u = this.units.get(m.id);
     if (!u) return;
-    const cab = u.def && abilityOf(u.heroId, m.s);
+    const spells = this.roster.get(u.id)?.spells;
+    const cab = u.def && abilityOf(u.heroId, m.s, spells);
     if (cab) u.model?.cast?.(m.s, cab, m.ct);
     if (m.ct >= 0.6 && u.def) {
-      const ab = abilityOf(u.heroId, m.s);
+      const ab = abilityOf(u.heroId, m.s, spells);
       playSound('channel', u);
       const dx = m.x - u.x;
       const dz = m.z - u.z;
@@ -639,6 +653,15 @@ export class Game {
     playSound('click');
   }
 
+  setSpell(slot, id, quiet = false) {
+    this.send({ t: 'spell', s: slot, v: id });
+    if (!quiet) playSound('click');
+  }
+
+  get mySpells() {
+    return this.roster.get(this.myId)?.spells || null;
+  }
+
   ready() {
     this.send({ t: 'go' });
     playSound('click');
@@ -700,7 +723,7 @@ export class Game {
       playSound('error');
       return;
     }
-    const ab = abilityOf(me.heroId, slot);
+    const ab = abilityOf(me.heroId, slot, this.mySpells);
     if (ab.kind === 'self') {
       this.castSlot(slot);
       return;
@@ -1077,7 +1100,7 @@ export class Game {
         this.send({ t: 'mv', x: Math.round(this.mouse.wx * 10) / 10, z: Math.round(this.mouse.wz * 10) / 10 });
       }
     }
-    if (me && this.aiming && me.alive) this.effects.showIndicator(me, abilityOf(me.heroId, this.aiming), this.mouse.wx, this.mouse.wz);
+    if (me && this.aiming && me.alive) this.effects.showIndicator(me, abilityOf(me.heroId, this.aiming, this.mySpells), this.mouse.wx, this.mouse.wz);
     else if (me && this.amove && this.meState) this.effects.showIndicator(me, { kind: 'range', range: this.meState.s[6] + 0.65 }, this.mouse.wx, this.mouse.wz);
     else this.effects.hideIndicator();
     let ring = null;

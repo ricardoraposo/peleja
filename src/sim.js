@@ -18,6 +18,8 @@ import {
   effectiveLevel,
   skillPoints,
   SPELLS,
+  SPELL_POOL,
+  DEFAULT_SPELLS,
   TOWER,
   abilityOf,
   respawnTime,
@@ -136,6 +138,7 @@ export class Sim {
         h.isBot = true;
         h.name = this.nextBotName();
         h.heroId = HERO_ORDER[0];
+        h.spells = { ...DEFAULT_SPELLS };
         this.heroes.push(h);
       }
     }
@@ -154,7 +157,7 @@ export class Sim {
   }
 
   roster() {
-    return this.heroes.map((h) => [h.id, h.team, h.name, h.isBot ? 1 : 0, HERO_ORDER.indexOf(h.heroId)]);
+    return this.heroes.map((h) => [h.id, h.team, h.name, h.isBot ? 1 : 0, HERO_ORDER.indexOf(h.heroId), [h.spells.d, h.spells.f]]);
   }
 
   addHuman(name) {
@@ -171,6 +174,7 @@ export class Sim {
     slot.isBot = false;
     slot.name = clean;
     slot.ready = false;
+    slot.spells = { ...DEFAULT_SPELLS };
     this.brains.delete(slot.id);
     this.emit({ e: 'roster', l: this.roster() });
     return slot;
@@ -182,6 +186,8 @@ export class Sim {
     h.isBot = true;
     h.name = this.nextBotName();
     h.ready = false;
+    // os bots só sabem usar os feitiços padrão
+    h.spells = { ...DEFAULT_SPELLS };
     this.brains.set(h.id, new BotBrain(h, this, this.diff));
     this.emit({ e: 'roster', l: this.roster() });
     if (this.phase === 'draft' && this.humans().length > 0 && this.humans().every((x) => x.ready)) this.phaseT = Math.min(this.phaseT, 3);
@@ -208,6 +214,7 @@ export class Sim {
     h.dummy = !bot;
     h.name = bot ? this.nextBotName() : 'Boneco';
     h.heroId = HEROES[heroId] ? heroId : HERO_ORDER[Math.floor(Math.random() * HERO_ORDER.length)];
+    h.spells = { ...DEFAULT_SPELLS };
     h.home = [clampWalk(x, z)[0], clampWalk(x, z)[1]];
     this.heroes.push(h);
     this.resetHero(h);
@@ -477,6 +484,19 @@ export class Sim {
     this.emit({ e: 'roster', l: this.roster() });
   }
 
+  // Troca o feitiço do D ou do F. Não dá pra repetir: escolher o que está na outra tecla inverte os dois.
+  setSpell(h, slot, id) {
+    if ((this.phase !== 'draft' && !this.sandbox) || (slot !== 'd' && slot !== 'f') || !SPELL_POOL[id] || h.spells[slot] === id) return;
+    const other = slot === 'd' ? 'f' : 'd';
+    if (h.spells[other] === id) {
+      h.spells[other] = h.spells[slot];
+      [h.cds[other], h.cds[slot]] = [h.cds[slot], h.cds[other]];
+      [h.cdMax[other], h.cdMax[slot]] = [h.cdMax[slot], h.cdMax[other]];
+    }
+    h.spells[slot] = id;
+    this.emit({ e: 'roster', l: this.roster() });
+  }
+
   pickRandom(h) {
     const free = HERO_ORDER.filter((id) => id !== h.heroId && !this.heroes.some((x) => x !== h && x.team === h.team && !x.isBot && x.heroId === id));
     if (free.length) this.pick(h, free[Math.floor(Math.random() * free.length)]);
@@ -646,7 +666,7 @@ export class Sim {
 
   cast(h, slot, x, z, targetId) {
     if (!this.canAct(h) || !SLOTS.includes(slot)) return false;
-    const ab = abilityOf(h.heroId, slot);
+    const ab = abilityOf(h.heroId, slot, h.spells);
     if (!ab || h.cds[slot] > 0) return false;
     if (RANK_MAX[slot] && !(h.ranks?.[slot] > 0)) return false;
     if (h.cc || h.castT > 0 || h.dash) return false;
@@ -790,7 +810,7 @@ export class Sim {
         h.x = tx;
         h.z = tz;
         this.resolveStatic(h);
-        this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color });
+        this.emit({ e: 'blink', id: h.id, a: [r1(fx0), r1(fz0)], b: [r1(h.x), r1(h.z)], c: color, fl: ab.flash ? 1 : 0 });
         break;
       }
       case 'target':
@@ -1533,7 +1553,7 @@ export class Sim {
       }
       case 'cast': {
         const t = o.target;
-        const ab = abilityOf(h.heroId, o.slot);
+        const ab = abilityOf(h.heroId, o.slot, h.spells);
         if (!this.abilityTargetable(h, t, ab) || h.cds[o.slot] > 0) {
           h.order = { type: 'idle' };
           break;
@@ -1945,6 +1965,9 @@ export class Sim {
         break;
       case 'rr':
         this.pickRandom(h);
+        break;
+      case 'spell':
+        this.setSpell(h, String(msg.s), String(msg.v));
         break;
       case 'go':
         this.ready(h);

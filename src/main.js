@@ -1,7 +1,7 @@
 import { initAudio, playSound, setVolume } from './audio.js';
-import { HERO_ORDER, HEROES, TEAMS } from './config.js';
+import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS } from './config.js';
 import { Game } from './game.js';
-import { esc, heroCard } from './hud.js';
+import { esc, heroCard, spellPicker } from './hud.js';
 import { LocalTransport, SocketTransport, serverUrl } from './net.js';
 
 const $ = (id) => document.getElementById(id);
@@ -32,6 +32,8 @@ const settings = {
   mouse: [0, 1, 2].includes(stored.mouse) ? stored.mouse : 0,
   // último herói escolhido: já vem marcado na próxima partida
   hero: HEROES[stored.hero] ? stored.hero : '',
+  // feitiços do D e do F: também voltam marcados
+  spells: SPELL_POOL[stored.spells?.d] && SPELL_POOL[stored.spells?.f] && stored.spells.d !== stored.spells.f ? { d: stored.spells.d, f: stored.spells.f } : null,
 };
 setVolume(settings.volume);
 
@@ -133,6 +135,7 @@ function playOnline() {
 // ---------- escolha de herói ----------
 
 let draftKey = '';
+let draftSlot = 'd';
 function renderDraft() {
   if (game.phase !== 'draft' || game.spectator) return;
   const me = game.me;
@@ -142,7 +145,8 @@ function renderDraft() {
   const allies = [...game.roster.entries()].filter(([id, r]) => r.team === game.myTeam && id !== game.myId);
   const myHero = HERO_ORDER[game.roster.get(game.myId)?.heroIdx] || me.heroId;
   const locked = !!st?.rd;
-  const key = myHero + '|' + allies.map(([, r]) => r.heroIdx + r.name + (r.isBot ? 1 : 0)).join(',') + '|' + (locked ? 1 : 0);
+  const spells = game.mySpells || DEFAULT_SPELLS;
+  const key = myHero + '|' + allies.map(([, r]) => r.heroIdx + r.name + (r.isBot ? 1 : 0)).join(',') + '|' + (locked ? 1 : 0) + '|' + spells.d + spells.f + draftSlot;
   if (key === draftKey) return;
   draftKey = key;
   $('draft-grid').innerHTML = HERO_ORDER.map((id, idx) => {
@@ -155,6 +159,7 @@ function renderDraft() {
     return `<button class="pick${mine ? ' on' : ''}${taken ? ' taken' : ''}" data-hero="${id}" style="--c:${h.color}" title="${tip}"${taken || locked ? ' disabled' : ''}><span class="pick-badge">${h.name[0]}</span><b>${h.name}</b><small>${note}</small></button>`;
   }).join('');
   $('draft-me').innerHTML = heroCard(myHero, true);
+  $('draft-spells').innerHTML = spellPicker(spells, draftSlot);
   $('draft-allies').innerHTML = allies
     .map(([, r]) => {
       const h = HEROES[HERO_ORDER[r.heroIdx]];
@@ -176,6 +181,7 @@ game.onPhase = (ph) => {
     show('draft', true);
     game.hud.show(false);
     if (settings.hero) game.pick(settings.hero, true);
+    if (settings.spells) for (const s of ['d', 'f']) game.setSpell(s, settings.spells[s], true);
     renderDraft();
   } else if (ph === 'playing') {
     show('draft', false);
@@ -279,6 +285,24 @@ $('draft-grid').addEventListener('click', (e) => {
   settings.hero = b.dataset.hero;
   save(settings);
   game.pick(b.dataset.hero);
+});
+$('draft-spells').addEventListener('click', (e) => {
+  const slot = e.target.closest('button[data-slot]');
+  const opt = e.target.closest('button[data-spell]');
+  if (slot) {
+    draftSlot = slot.dataset.slot;
+    playSound('click');
+    renderDraft();
+  } else if (opt) {
+    // já calcula a troca aqui (escolher o da outra tecla inverte os dois) pra salvar a preferência
+    const cur = { ...(game.mySpells || DEFAULT_SPELLS) };
+    const other = draftSlot === 'd' ? 'f' : 'd';
+    if (cur[other] === opt.dataset.spell) cur[other] = cur[draftSlot];
+    cur[draftSlot] = opt.dataset.spell;
+    settings.spells = cur;
+    save(settings);
+    game.setSpell(draftSlot, opt.dataset.spell);
+  }
 });
 $('reroll').addEventListener('click', () => {
   settings.hero = '';

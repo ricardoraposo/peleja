@@ -300,7 +300,7 @@ export class BotBrain {
     const ex = h.x - ctx.dir * 8;
     for (const slot of ['e', 'w', 'f', 'd']) {
       if (h.cds[slot] > 0) continue;
-      const ab = abilityOf(h.heroId, slot);
+      const ab = abilityOf(h.heroId, slot, h.spells);
       if (slot === 'd' && ctx.life < 0.35) {
         sim.cast(h, 'd', h.x, h.z);
         return true;
@@ -323,7 +323,7 @@ export class BotBrain {
     const slots = ['r', 'q', 'w', 'e', 'd'];
     for (const slot of slots) {
       if (h.cds[slot] > 0 || !(h.ranks?.[slot] > 0)) continue;
-      const ab = abilityOf(h.heroId, slot);
+      const ab = abilityOf(h.heroId, slot, h.spells);
       const plan = this.plan(slot, ab, ctx);
       if (!plan) continue;
       if (sim.cast(h, slot, plan[0], plan[1], plan[2])) return true;

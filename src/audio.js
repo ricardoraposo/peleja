@@ -150,6 +150,13 @@ export function playSound(name, pos = null, gain = 1) {
     case 'dash':
       noiseBurst(d, t, 0.3, 1500, 0.7, 'bandpass', 0.6, 0.02).frequency.exponentialRampToValueAtTime(400, t + 0.3);
       break;
+    case 'flash':
+      // estalo seco e brilhante, com um rabo descendo
+      noiseBurst(d, t, 0.07, 5200, 0.8, 'highpass', 0.5, 0.001);
+      tone(d, t, 0.07, 1400, 4200, 'triangle', 0.3);
+      tone(d, t + 0.05, 0.3, 3000, 700, 'sine', 0.2);
+      tone(d, t + 0.05, 0.22, 1500, 1500, 'sine', 0.08);
+      break;
     case 'blink':
       tone(d, t, 0.18, 2000, 400, 'sine', 0.25);
       tone(d, t + 0.05, 0.2, 400, 2400, 'sine', 0.15);

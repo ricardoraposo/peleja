@@ -665,6 +665,51 @@ export class Effects {
     this.ripple(b[0], b[1], 1.1, color, 0.3);
   }
 
+  // Salto: some num ponto e estoura em luz no outro, sem rastro ligando os dois
+  flash(a, b, color) {
+    // origem: a luz se fecha e sobe, como se o herói fosse sugado
+    const inRing = flat(new THREE.Mesh(RING, basic(color, 0.9, true)), 0.1);
+    inRing.position.set(a[0], 0.1, a[1]);
+    this.temp(inRing, 0.22, (k) => {
+      inRing.scale.setScalar(0.2 + k * 1.5);
+      inRing.material.opacity = k * 0.9;
+    });
+    const ghost = new THREE.Mesh(BOX, basic('#ffffff', 0.8, true));
+    ghost.position.set(a[0], 1.1, a[1]);
+    this.temp(ghost, 0.2, (k) => {
+      ghost.scale.set(0.9 * k, 2.2 + (1 - k) * 2.5, 0.9 * k);
+      ghost.position.y = 1.1 + (1 - k) * 1.6;
+      ghost.material.opacity = k * 0.8;
+    });
+    for (let i = 0; i < 10; i++) {
+      const an = Math.random() * Math.PI * 2;
+      this.spawn(a[0] + Math.cos(an) * 0.6, 0.3 + Math.random() * 1.6, a[1] + Math.sin(an) * 0.6, -Math.cos(an) * 1.5, 5 + Math.random() * 3, -Math.sin(an) * 1.5, i % 2 ? color : '#ffffff', 0.35, 0.11, 0);
+    }
+    // destino: clarão branco, coluna de luz, dois anéis e faíscas pra todo lado
+    const core = new THREE.Mesh(SPHERE, basic('#ffffff', 1, true));
+    core.position.set(b[0], 1.1, b[1]);
+    this.temp(core, 0.2, (k) => {
+      core.scale.setScalar(0.5 + (1 - k) * 2.6);
+      core.material.opacity = k * k;
+    });
+    const halo = new THREE.Mesh(SPHERE, basic(color, 0.7, true));
+    halo.position.set(b[0], 1.1, b[1]);
+    this.temp(halo, 0.34, (k) => {
+      halo.scale.setScalar(0.8 + (1 - k) * 3.4);
+      halo.material.opacity = k * 0.55;
+    });
+    const pillar = new THREE.Mesh(BOX, basic('#fffbe6', 0.9, true));
+    pillar.position.set(b[0], 4, b[1]);
+    this.temp(pillar, 0.3, (k) => {
+      pillar.scale.set(0.15 + k * 0.75, 8, 0.15 + k * 0.75);
+      pillar.material.opacity = k * 0.85;
+    });
+    this.ripple(b[0], b[1], 2.6, '#ffffff', 0.28);
+    this.ripple(b[0], b[1], 3.6, color, 0.45);
+    this.burst(b[0], 1.1, b[1], '#ffffff', 14, 9, 0.12, 0.3);
+    this.burst(b[0], 1.1, b[1], color, 18, 6, 0.16, 0.5);
+  }
+
   levelUp(x, z) {
     const ring = flat(new THREE.Mesh(RING, basic('#f4c430', 0.9, true)), 0.1);
     ring.position.set(x, 0.1, z);

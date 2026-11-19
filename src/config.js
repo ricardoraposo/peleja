@@ -90,11 +90,19 @@ export const MINIONS = {
   growAtk: 0.06,
 };
 
-// Feitiços de todo mundo
-export const SPELLS = {
-  d: { name: 'Fôlego', icon: 'leaf', kind: 'self', cd: 110, cast: 0, heal: { b: 90, l: 16 }, buff: { t: 1.6, ms: 0.35 }, desc: 'Cura um pouco e acelera por um instante.' },
-  f: { name: 'Salto', icon: 'blink', kind: 'blink', cd: 55, cast: 0, range: 6.5, desc: 'Teleporte curto pra onde o mouse aponta.' },
+// Feitiços: cada jogador escolhe dois na tela de escolha, um pro D e outro pro F.
+// Não evoluem com pontos; o que cresce (l) acompanha o nível do herói.
+export const SPELL_POOL = {
+  folego: { name: 'Fôlego', icon: 'leaf', kind: 'self', cd: 110, cast: 0, heal: { b: 90, l: 16 }, buff: { t: 1.6, ms: 0.35 }, color: '#5ee67a', desc: 'Cura um pouco e acelera por um instante.' },
+  salto: { name: 'Salto', icon: 'blink', kind: 'blink', cd: 110, cast: 0, range: 6.5, flash: true, color: '#facc15', desc: 'Some num clarão e reaparece na mesma hora onde o mouse aponta.' },
+  carapaca: { name: 'Carapaça', icon: 'shield', kind: 'self', cd: 90, cast: 0, shield: { b: 110, l: 22, t: 2.5 }, color: '#94a3b8', desc: 'Um escudo forte por 2,5 segundos.' },
+  disparada: { name: 'Disparada', icon: 'wind', kind: 'self', cd: 80, cast: 0, buff: { t: 6, ms: 0.3 }, color: '#38bdf8', desc: 'Corre bem mais rápido por 6 segundos.' },
+  brasa: { name: 'Brasa', icon: 'fire', kind: 'target', cd: 90, cast: 0, range: 6, heroesOnly: true, dmg: { b: 70, l: 16, type: 'true' }, color: '#fb923c', desc: 'Queima um herói inimigo com dano que ignora defesas.' },
+  laco: { name: 'Laço', icon: 'net', kind: 'target', cd: 80, cast: 0, range: 6.5, heroesOnly: true, dmg: { b: 20, l: 4, type: 'magic' }, fx: { slow: [0.5, 2.5] }, color: '#c084fc', desc: 'Laça um herói inimigo e deixa ele bem lento.' },
 };
+export const SPELL_ORDER = Object.keys(SPELL_POOL);
+export const DEFAULT_SPELLS = { d: 'folego', f: 'salto' };
+export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_SPELLS.f] };
 
 // dmg/heal/shield: b = base, l = por nível, ad = × ataque, ap = × poder, hp = × vida máxima
 // fx: slow [porcentagem, segundos], stun, root, knockup (segundos), knockback (distância)
@@ -444,8 +452,9 @@ export const BOT_NAMES = [
 
 export const SLOTS = ['q', 'w', 'e', 'r', 'd', 'f'];
 
-export function abilityOf(heroId, slot) {
-  if (slot === 'd' || slot === 'f') return SPELLS[slot];
+// `spells` = { d, f } com os feitiços escolhidos; sem ele valem os padrões
+export function abilityOf(heroId, slot, spells = null) {
+  if (slot === 'd' || slot === 'f') return SPELL_POOL[spells?.[slot]] || SPELLS[slot];
   return HEROES[heroId].abilities[slot];
 }
 
