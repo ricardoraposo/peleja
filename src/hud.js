@@ -167,7 +167,7 @@ export function abilityTip(ab, slot, ctx = null) {
   if (ab.hover) notes.push(`se não acertar, para no ar por ${ab.hover.t} s e dá pra rebater até ${ab.hover.reach} de alcance de onde você estiver`);
   if (ab.trap) notes.push(`se errar, vira armadilha no chão por ${ab.trap.dur} s`);
   if (ab.steal) notes.push(`copia o feitiço que um herói inimigo usou nos últimos ${ab.steal.window} s; o ícone mostra qual`);
-  if (ab.ret) notes.push(`volta pro ponto de partida depois de ${ab.ret} s`);
+  if (ab.ret) notes.push(`fica plantado no ponto de chegada e volta pro de partida depois de ${ab.ret} s`);
   if (ab.charges) notes.push(`${ab.charges.n} usos em ${ab.charges.t} s; a recarga começa depois do último`);
   if (ab.heroesOnly) notes.push('só acerta heróis');
   if (ab.pierce) notes.push('atravessa os inimigos');
