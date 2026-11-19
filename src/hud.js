@@ -511,7 +511,8 @@ export class Hud {
     const build = BUILDS[h.role] || BUILDS.lutador;
     const alt = BUILDS_ALT[h.role];
     this.shopBuild = build;
-    const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id)))];
+    // as peças dos dois primeiros itens e, pra qualquer classe, a garrafada pra aguentar o começo
+    const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id))), 'garrafada'];
     const aff = affinityOf(heroId);
     const row = (ids) => `<div class="tiles">${ids.map((id, i) => this.shopTile(id).replace('<span class="tile-icon">', `<span class="tile-n">${i + 1}</span><span class="tile-icon">`)).join('')}</div>`;
     $('shop-rec').innerHTML =
