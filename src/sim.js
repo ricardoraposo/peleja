@@ -1055,8 +1055,8 @@ queueBolts(h, ab, slot, color) {
           dz = (tz - pz) / ld;
         }
         leg = Math.max(1, ld);
-        // mouse além do alcance: o limite é em volta do herói, então anda junto com ele enquanto o projétil voa
-        if (hd > ab.hover.reach) lead = [tx - h.x, tz - h.z, ab.hover.reach * 3];
+        // o destino é medido a partir do herói, então anda junto com ele (a pé ou de teleporte) enquanto o projétil voa
+        lead = [tx - h.x, tz - h.z, ab.hover.reach * 3];
       }
     }
     switch (ab.kind) {
@@ -2387,7 +2387,7 @@ queueBolts(h, ab, slot, color) {
         continue;
       }
       if (p.lead && p.owner.alive) {
-        // o fim do voo acompanha o dono: quanto falta até a borda do alcance dele, medido agora
+        // o fim do voo acompanha o dono: quanto falta até o destino, medido de onde ele está agora
         const rem = (p.owner.x + p.lead[0] - p.x) * p.dx + (p.owner.z + p.lead[1] - p.z) * p.dz;
         p.range = Math.min(p.lead[2], p.traveled + Math.max(0, rem));
       }
