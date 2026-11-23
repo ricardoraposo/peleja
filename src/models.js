@@ -1431,7 +1431,7 @@ export class HeroModel {
       const Fl = this.flyS;
       Fl.t += dt;
       const p = (Fl.t - Fl.load) / Fl.dur;
-      if (p >= 1 || (Fl.t > Fl.load + 0.4 && !(f & F.fly))) {
+      if (p >= 1 || (Fl.t > 0.4 && !(f & F.fly))) {
         this.flyS = null;
         this.body.rotation.x = 0;
       } else if (p < 0) r.visible = false;

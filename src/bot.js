@@ -31,7 +31,12 @@ export class BotBrain {
     this.t = this.diff.think * (0.8 + Math.random() * 0.4);
     const { h, sim } = this;
     if (sim.canShop(h)) this.shop();
-    if (!h.alive || sim.phase !== 'playing' || h.dash || h.fly || h.castT > 0) return;
+    if (h.fly) {
+      // bot não escolhe: cai no ponto padrão, atrás da torre
+      sim.aimCannon(h, h.fly.cx, h.fly.cz);
+      return;
+    }
+    if (!h.alive || sim.phase !== 'playing' || h.dash || h.castT > 0) return;
     this.think();
   }
 

@@ -17,9 +17,10 @@ export const MAP = {
   fountainHealR: 6,
   fountainHeal: 0.12, // fração da vida máxima por segundo, pra quem está fora de combate há 3 s
   // canhão da base (posição do lado azul; o vermelho é espelhado): atira o herói pra `back` passos atrás da
-  // torre mais avançada do time que ainda está de pé, na ordem de `to`. `load` = segundos dentro do cano,
+  // torre mais avançada do time que ainda está de pé, na ordem de `to`. Dentro do cano o jogador tem `aim` segundos
+  // pra escolher onde cair, até `range` passos desse ponto (se não escolher, cai nele). `load` = segundos de pavio,
   // `flight` = segundos no ar (intocável); na queda, inimigos no `radius` sobem por `knockup` segundos
-  cannon: { x: -90, z: -8, r: 1.6, load: 0.7, flight: 1.5, to: ['t1', 't2'], back: 5, radius: 3, knockup: 0.6 },
+  cannon: { x: -90, z: -8, r: 1.6, aim: 5, range: 8, load: 0.7, flight: 1.5, to: ['t1', 't2'], back: 5, radius: 3, knockup: 0.6 },
   // obstáculos do lado azul (x < 0); o lado vermelho é espelhado
   obstacles: [
     [-15, 5.8, 1.6],

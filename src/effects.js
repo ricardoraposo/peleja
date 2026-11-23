@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MAP } from './config.js';
 import { ELEMENTS } from './fxstyle.js';
 
 const MAX_PARTICLES = 900;
@@ -1361,6 +1362,29 @@ export class Effects {
 
   hideIndicator() {
     this.ind.visible = false;
+  }
+
+  // mira do canhão: o alcance em volta do ponto padrão e o círculo de onde o herói vai cair
+  showCannonAim(a, time) {
+    if (!this.aimG) {
+      this.aimG = new THREE.Group();
+      this.aimRange = flat(new THREE.Mesh(THIN, basic('#ffe08a', 0.9)), 0.11);
+      this.aimFill = flat(new THREE.Mesh(DISC, basic('#ffe08a', 0.08)), 0.09);
+      this.aimSpot = flat(new THREE.Mesh(DISC, basic('#ffb347', 0.35)), 0.12);
+      this.aimEdge = flat(new THREE.Mesh(RING, basic('#fff1c2', 0.95)), 0.13);
+      this.aimG.add(this.aimRange, this.aimFill, this.aimSpot, this.aimEdge);
+      this.scene.add(this.aimG);
+    }
+    this.aimG.visible = !!a;
+    if (!a) return;
+    for (const m of [this.aimRange, this.aimFill]) {
+      m.position.set(a.cx, m.position.y, a.cz);
+      m.scale.setScalar(MAP.cannon.range + MAP.cannon.radius);
+    }
+    for (const m of [this.aimSpot, this.aimEdge]) {
+      m.position.set(a.x, m.position.y, a.z);
+      m.scale.setScalar(MAP.cannon.radius * (1 + Math.sin(time * 8) * 0.04));
+    }
   }
 
   showIndicator(hero, ab, mx, mz) {

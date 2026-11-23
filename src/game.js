@@ -13,6 +13,8 @@ import { Overlay } from './overlay.js';
 import { F, KIND_NAMES } from './sim.js';
 
 const STEP = 1 / 30;
+// altura da câmera enquanto o herói está no canhão (a roda do mouse vai de 18 a 40)
+const CANNON_ZOOM = 62;
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _ray = new THREE.Raycaster();
 const _v = new THREE.Vector3();
@@ -193,6 +195,7 @@ export class Game {
     this.aiming = null;
     this.amove = false;
     this.shots = [];
+    this.cannonAim = null;
     this.paused = false;
     this.toggleShop(false);
     this.hud.show(false);
@@ -389,6 +392,20 @@ export class Game {
         break;
       }
       case 'cannon': {
+        // entrou no cano: some lá dentro; se for eu, a câmera abre pra escolher onde cair
+        const u = this.units.get(m.id);
+        if (!u) break;
+        u.model?.startFly?.(m.a + MAP.cannon.load, MAP.cannon.flight);
+        if (m.id === this.myId) {
+          this.cannonAim = { cx: m.x, cz: m.z, x: m.x, z: m.z, t: m.a, age: 0 };
+          this.aiming = null;
+          this.amove = false;
+          this.toggleShop(false);
+          playSound('click');
+        }
+        break;
+      }
+      case 'shot': {
         const u = this.units.get(m.id);
         if (!u) break;
         const c = this.cannons[u.team];
@@ -396,7 +413,8 @@ export class Game {
         u.model?.startFly?.(m.l, m.d);
         this.shots.push({ t: m.l, c, id: m.id, x: m.x, z: m.z });
         this.effects.telegraph(m.x, m.z, MAP.cannon.radius, m.l + m.d, TEAMS[u.team].color, u.team !== this.myTeam);
-        if (this.near(c.x, c.z)) playSound('sizzle', c);
+        if (m.id === this.myId) this.cannonAim = null;
+        if (m.id === this.myId || this.near(c.x, c.z)) playSound('sizzle', c);
         break;
       }
       case 'land': {
@@ -868,8 +886,16 @@ export class Game {
     this.castSlot(slot);
   }
 
+  // dentro do canhão, qualquer clique confirma a queda onde a mira está
+  fireCannon() {
+    const a = this.cannonAim;
+    this.send({ t: 'cn', x: Math.round(a.x * 10) / 10, z: Math.round(a.z * 10) / 10 });
+    this.rightTarget = true;
+  }
+
   rightClick() {
     if (!this.playing) return;
+    if (this.cannonAim) return this.fireCannon();
     if (this.aiming) {
       this.aiming = null;
       return;
@@ -903,6 +929,7 @@ export class Game {
 
   leftClick() {
     if (!this.playing) return;
+    if (this.cannonAim) return this.fireCannon();
     if (this.aiming) {
       const s = this.aiming;
       this.aiming = null;
@@ -961,8 +988,29 @@ export class Game {
     }
     const over = this.overCannon();
     const hover = over && !(this.units.get(this.hoverId)?.team !== this.myTeam && this.hoverId) ? over : null;
-    this.cannonHint = hover ? { x: hover.x, z: hover.z, on: !!hover.to, text: hover.to ? 'Canhão · botão direito pra voar até a torre' : 'Canhão sem torre pra mirar' } : null;
-    for (const c of this.cannons) c.model.update(dt, this.time, !!c.to, c === hover);
+    this.cannonHint = hover ? { x: hover.x, z: hover.z, on: !!hover.to, text: hover.to ? 'Canhão · botão direito pra entrar e escolher onde cair' : 'Canhão sem torre pra mirar' } : null;
+    const a = this.cannonAim;
+    const me = this.me;
+    if (a) {
+      a.age += dt;
+      a.t -= dt;
+      // saí do cano sem atirar (desisti ou a partida acabou): fecha a mira
+      if (!me?.alive || this.phase !== 'playing' || (a.age > 0.4 && !(me.flags & F.fly))) this.cannonAim = null;
+    }
+    if (this.cannonAim) {
+      // a mira segue o mouse, presa ao alcance; o cano acompanha
+      let dx = this.mouse.wx - a.cx;
+      let dz = this.mouse.wz - a.cz;
+      const d = Math.hypot(dx, dz);
+      const k = d > MAP.cannon.range ? MAP.cannon.range / d : 1;
+      a.x = a.cx + dx * k;
+      a.z = a.cz + dz * k;
+      const c = this.cannons[this.myTeam];
+      c.model.yaw = Math.atan2(a.z - c.z, a.x - c.x);
+      this.cannonHint = { x: a.cx, z: a.cz - this.flip * (MAP.cannon.range + MAP.cannon.radius + 1.5), on: true, text: `Clique onde quer cair · ${Math.max(0, a.t).toFixed(1)} s · ${this.keyLabel('stop')} desiste` };
+    }
+    this.effects.showCannonAim(this.cannonAim, this.time);
+    for (const c of this.cannons) c.model.update(dt, this.time, !!c.to, c === hover || (!!this.cannonAim && c.team === this.myTeam));
   }
 
   // Esc: fecha a loja, cancela a mira ou pausa (também chamado quando o Esc solta o mouse)
@@ -971,6 +1019,7 @@ export class Game {
     if (now - this.lastEsc < 200) return;
     this.lastEsc = now;
     if (!document.getElementById('shop').classList.contains('hidden')) this.toggleShop(false);
+    else if (this.cannonAim) this.send({ t: 'st' });
     else if (this.aiming || this.amove) {
       this.aiming = null;
       this.amove = false;
@@ -1211,7 +1260,18 @@ export class Game {
       this.camSnap = false;
       c.x = me.x;
       c.z = me.z;
-    } else if (me && (c.locked || this.spaceHeld || me.flags & F.fly)) {
+    } else if (me && this.cannonAim) {
+      // escolhendo a queda: a câmera vai pra perto do alcance, que é o que importa ver inteiro
+      const a = this.cannonAim;
+      const k = Math.min(1, dt * 5);
+      c.x += (me.x + (a.cx - me.x) * 0.85 - c.x) * k;
+      c.z += (0 - c.z) * k;
+    } else if (me && me.flags & F.fly) {
+      // voando: acompanha o herói sem pular, até a queda
+      const k = Math.min(1, dt * 10);
+      c.x += (me.x - c.x) * k;
+      c.z += (me.z - c.z) * k;
+    } else if (me && (c.locked || this.spaceHeld)) {
       const jump = Math.hypot(me.x - c.x, me.z - c.z) > 30;
       const k = jump ? 1 : Math.min(1, dt * 10);
       c.x += (me.x - c.x) * k;
@@ -1227,7 +1287,12 @@ export class Game {
     }
     c.x = Math.max(-100, Math.min(100, c.x));
     c.z = Math.max(-16, Math.min(16, c.z));
-    c.h += (c.zoom - c.h) * Math.min(1, dt * 8);
+    // no canhão a câmera sobe além do limite da roda do mouse e volta quando o herói cai
+    const far = me && (this.cannonAim || me.flags & F.fly) ? CANNON_ZOOM : c.zoom;
+    c.h += (far - c.h) * Math.min(1, dt * (far > c.h ? 4 : 5));
+    const haze = Math.max(0, c.h - 40) * 1.6;
+    this.scene.fog.near = 70 + haze;
+    this.scene.fog.far = 170 + haze;
     const flip = this.spectator ? 1 : this.flip;
     this.shake = Math.max(0, this.shake - dt * 2.2);
     const sk = this.shake * this.shake * 2.2;
@@ -1297,7 +1362,7 @@ export class Game {
     document.body.classList.toggle('cur-attack', !!hover && hover.team !== this.myTeam);
     document.body.classList.toggle('cur-amove', this.amove);
     const me = this.me;
-    if (this.rightHeld && this.playing && !this.aiming) {
+    if (this.rightHeld && this.playing && !this.aiming && !this.cannonAim) {
       this.rightT -= dt;
       if (this.rightT <= 0 && !this.rightTarget) {
         this.rightT = 0.12;

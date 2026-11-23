@@ -709,23 +709,45 @@ export class Sim {
     return true;
   }
 
-  // entrou no cano: fica `load` segundos lá dentro e sai voando até o ponto de queda
+  // entrou no cano: escolhe onde cair (em volta do ponto `to`), o pavio queima e ele sai voando
   enterCannon(h, to) {
     const c = cannonPos(h.team);
     h.x = c.x;
     h.z = c.z;
-    h.facing = Math.atan2(to[1] - c.z, to[0] - c.x);
-    h.fly = { t: 0, x0: c.x, z0: c.z, x1: to[0], z1: to[1] };
+    h.fly = { aim: MAP.cannon.aim, t: 0, cx: to[0], cz: to[1], x0: c.x, z0: c.z, x1: to[0], z1: to[1] };
     h.order = { type: 'idle' };
     h.target = null;
     h.windup = 0;
     h.recallT = 0;
-    this.emit({ e: 'cannon', id: h.id, x: r1(to[0]), z: r1(to[1]), l: MAP.cannon.load, d: MAP.cannon.flight });
+    this.emit({ e: 'cannon', id: h.id, x: r1(to[0]), z: r1(to[1]), a: MAP.cannon.aim });
+  }
+
+  // o ponto de queda escolhido, puxado pra dentro do alcance e do chão; acende o pavio
+  aimCannon(h, x, z) {
+    const f = h.fly;
+    if (!f || !(f.aim > 0) || !this.canAct(h)) return;
+    if (!Number.isFinite(x) || !Number.isFinite(z)) [x, z] = [f.cx, f.cz];
+    const d = Math.hypot(x - f.cx, z - f.cz);
+    if (d > MAP.cannon.range) {
+      x = f.cx + ((x - f.cx) / d) * MAP.cannon.range;
+      z = f.cz + ((z - f.cz) / d) * MAP.cannon.range;
+    }
+    [f.x1, f.z1] = clampWalk(r1(x), r1(z), 0.7);
+    f.aim = 0;
+    f.t = 0;
+    h.facing = Math.atan2(f.z1 - f.z0, f.x1 - f.x0);
+    this.emit({ e: 'shot', id: h.id, x: r1(f.x1), z: r1(f.z1), l: MAP.cannon.load, d: MAP.cannon.flight });
   }
 
   tickFly(u, dt) {
     const f = u.fly;
     const C = MAP.cannon;
+    if (f.aim > 0) {
+      // ainda escolhendo: acabou o tempo, vai no ponto padrão
+      if (f.aim - dt <= 0) this.aimCannon(u, f.cx, f.cz);
+      else f.aim -= dt;
+      return;
+    }
     f.t += dt;
     const k = Math.max(0, Math.min(1, (f.t - C.load) / C.flight));
     u.x = f.x0 + (f.x1 - f.x0) * k;
@@ -765,6 +787,8 @@ export class Sim {
 
   orderStop(h) {
     if (!this.canAct(h)) return;
+    // parar enquanto escolhe a queda é desistir do canhão
+    if (h.fly?.aim > 0) h.fly = null;
     h.recallT = 0;
     h.order = { type: 'idle' };
     h.target = null;
@@ -2597,6 +2621,9 @@ queueBolts(h, ab, slot, color) {
         break;
       case 'rc':
         this.recall(h);
+        break;
+      case 'cn':
+        this.aimCannon(h, x, z);
         break;
       case 'c':
         this.cast(h, String(msg.s), x, z, Number(msg.id));

@@ -380,6 +380,7 @@ function renderHelp() {
     `<kbd>Shift</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
     `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,
     `${k('amove')} + clique: atacar o que aparecer`,
+    '<kbd>Botão direito</kbd> no canhão da base: entra nele; depois clique onde quer cair',
     `${k('stop')} parar · ${k('shop')} loja · ${k('recall')} voltar pra base (${MAP.recall} s parado)`,
     `Mouse na borda move a câmera · ${k('center')} centraliza · ${k('cam')} prende no herói`,
     `${k('board')} placar · <kbd>Esc</kbd> pausa e solta o mouse`,
