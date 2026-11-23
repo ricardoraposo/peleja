@@ -1031,6 +1031,7 @@ queueBolts(h, ab, slot, color) {
     let grown = 0;
     let second = false;
     let leg = 0;
+    let lead = null;
     if (ab.kind === 'proj' && ab.hover) {
       // segundo lançamento: o projétil que estava parado no ar sai de onde está pra onde o mouse aponta
       const o = h.recasting ? h.orb : null;
@@ -1054,6 +1055,8 @@ queueBolts(h, ab, slot, color) {
           dz = (tz - pz) / ld;
         }
         leg = Math.max(1, ld);
+        // mouse além do alcance: o limite é em volta do herói, então anda junto com ele enquanto o projétil voa
+        if (hd > ab.hover.reach) lead = [tx - h.x, tz - h.z, ab.hover.reach * 3];
       }
     }
     switch (ab.kind) {
@@ -1068,6 +1071,7 @@ queueBolts(h, ab, slot, color) {
           speed: second ? ab.hover.speed || ab.speed : ab.speed,
           range: second ? leg : ab.range,
           hover: second ? 0 : ab.hover?.t || 0,
+          lead,
           grow: ab.grow || null,
           grown,
           trap: ab.trap || null,
@@ -2318,7 +2322,7 @@ queueBolts(h, ab, slot, color) {
       dz: p.dz !== undefined ? r2(p.dz) : 0,
       h: p.homing ? p.homing.id : 0,
       s: p.speed,
-      r: p.range || 0,
+      r: p.lead ? p.lead[2] : p.range || 0,
       w: r2(p.size || 0.3),
       c: p.color,
       k: p.kind,
@@ -2381,6 +2385,11 @@ queueBolts(h, ab, slot, color) {
           if (p.owner.orb === p) p.owner.orb = null;
         }
         continue;
+      }
+      if (p.lead && p.owner.alive) {
+        // o fim do voo acompanha o dono: quanto falta até a borda do alcance dele, medido agora
+        const rem = (p.owner.x + p.lead[0] - p.x) * p.dx + (p.owner.z + p.lead[1] - p.z) * p.dz;
+        p.range = Math.min(p.lead[2], p.traveled + Math.max(0, rem));
       }
       const step = Math.min(p.speed * dt, p.range - p.traveled);
       const nx = p.x + p.dx * step;

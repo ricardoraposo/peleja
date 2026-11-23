@@ -128,7 +128,8 @@ export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_S
 // charges: a habilidade pode ser usada n vezes em t segundos, com gap entre uma e outra; a recarga começa no fim
 // fx.pull: puxa o alvo até tantos passos pra perto de quem lançou · fetch (em ally): arrasta o aliado mais perto do ponto pro seu lado
 // grow: o projétil fere mais quanto mais longe voa (per = fração a mais por passo, até max)
-// hover: se não acertar ninguém, o projétil para no ar por t segundos e dá pra lançar de novo (no segundo voo vai até onde o mouse aponta, no máximo a reach do herói, com speed)
+// hover: se não acertar ninguém, o projétil para no ar por t segundos e dá pra lançar de novo (no segundo voo vai até onde o mouse aponta, no máximo a reach do herói, com speed;
+//        com o mouse além da reach, o limite acompanha o herói: se ele anda pra frente durante o voo, o projétil vai mais longe)
 // trap: se errar, o projétil vira uma armadilha no chão (raio r, dura dur segundos, dispara no primeiro que pisar)
 // fx.drowsy [segundos lento, segundos dormindo] · fx.wake: teto do dano extra de quem acordar o alvo
 // steal: copia o último feitiço (D/F) que um herói inimigo lançou nos últimos `window` segundos
