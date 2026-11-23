@@ -92,7 +92,7 @@ Todos os atalhos podem ser trocados em **Configurações**.
 | Botão direito no canhão da base | Entra no canhão; depois, clique onde quer cair |
 | `Q` `W` `E` `R` | Habilidades (por padrão, mira segurando e lança ao soltar) |
 | `Shift` + habilidade | Evolui a habilidade ao subir de nível |
-| `C` + habilidade | Mostra o alcance e lança ao soltar a habilidade, mesmo com o lançamento na hora ligado |
+| `C` + habilidade | Só mostra o alcance: o clique esquerdo lança e o direito cancela, seja qual for o modo de lançamento |
 | `D` `F` | Feitiços |
 | `1` a `6` | Usa os itens do inventário |
 | `A` + clique | Avança atacando o que aparecer (com `Shift`, só heróis) |
