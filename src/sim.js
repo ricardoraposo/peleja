@@ -1050,7 +1050,8 @@ queueBolts(h, ab, slot, color) {
           dx = (x - px) / ld;
           dz = (z - pz) / ld;
         }
-        lead = [ab.hover.reach, ab.hover.reach * 3];
+        // o teto é só uma trava de segurança: tem que sobrar pra atravessar o círculo vindo de bem longe
+        lead = [ab.hover.reach, ab.hover.reach * 10];
         leg = 1;
       }
     }
@@ -2375,6 +2376,8 @@ queueBolts(h, ab, slot, color) {
       if (p.hoverT > 0) {
         // parado no ar esperando o segundo lançamento
         p.hoverT -= dt;
+        // o dono já está no gesto da rebatida: o projétil espera ele terminar em vez de sumir no meio
+        if (p.owner.recasting && p.owner.castT > 0) p.hoverT = Math.max(p.hoverT, 0.02);
         if (p.hoverT <= 0 || !p.owner.alive) {
           done.push(p);
           if (p.owner.orb === p) p.owner.orb = null;
