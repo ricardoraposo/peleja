@@ -1044,19 +1044,14 @@ queueBolts(h, ab, slot, color) {
         grown = o.traveled;
         px = o.x;
         pz = o.z;
-        // o destino é onde o mouse aponta, limitado ao alcance medido de onde o herói está agora
-        const hd = Math.hypot(x - h.x, z - h.z);
-        const k = hd > ab.hover.reach ? ab.hover.reach / hd : 1;
-        const tx = h.x + (x - h.x) * k;
-        const tz = h.z + (z - h.z) * k;
-        const ld = Math.hypot(tx - px, tz - pz);
+        // sai na direção do mouse e voa enquanto estiver dentro do alcance, que é um círculo em volta do herói (ver `lead`)
+        const ld = Math.hypot(x - px, z - pz);
         if (ld > 0.05) {
-          dx = (tx - px) / ld;
-          dz = (tz - pz) / ld;
+          dx = (x - px) / ld;
+          dz = (z - pz) / ld;
         }
-        leg = Math.max(1, ld);
-        // o destino é medido a partir do herói, então anda junto com ele (a pé ou de teleporte) enquanto o projétil voa
-        lead = [tx - h.x, tz - h.z, ab.hover.reach * 3];
+        lead = [ab.hover.reach, ab.hover.reach * 3];
+        leg = 1;
       }
     }
     switch (ab.kind) {
@@ -2322,7 +2317,7 @@ queueBolts(h, ab, slot, color) {
       dz: p.dz !== undefined ? r2(p.dz) : 0,
       h: p.homing ? p.homing.id : 0,
       s: p.speed,
-      r: p.lead ? p.lead[2] : p.range || 0,
+      r: p.lead ? p.lead[1] : p.range || 0,
       w: r2(p.size || 0.3),
       c: p.color,
       k: p.kind,
@@ -2387,9 +2382,14 @@ queueBolts(h, ab, slot, color) {
         continue;
       }
       if (p.lead && p.owner.alive) {
-        // o fim do voo acompanha o dono: quanto falta até o destino, medido de onde ele está agora
-        const rem = (p.owner.x + p.lead[0] - p.x) * p.dx + (p.owner.z + p.lead[1] - p.z) * p.dz;
-        p.range = Math.min(p.lead[2], p.traveled + Math.max(0, rem));
+        // o voo só acaba na borda do alcance do dono, medida de onde ele está agora: quanto falta até sair do círculo
+        // (quem vem de fora atravessa o círculo inteiro; se nem passa por ele, para no ponto mais perto)
+        const vx = p.x - p.owner.x;
+        const vz = p.z - p.owner.z;
+        const b = vx * p.dx + vz * p.dz;
+        const disc = b * b - (vx * vx + vz * vz - p.lead[0] * p.lead[0]);
+        const rem = disc >= 0 ? Math.sqrt(disc) - b : -b;
+        p.range = Math.min(p.lead[1], Math.max(1, p.traveled + Math.max(0, rem)));
       }
       const step = Math.min(p.speed * dt, p.range - p.traveled);
       const nx = p.x + p.dx * step;

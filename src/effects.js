@@ -1423,13 +1423,19 @@ export class Effects {
         let orb = null;
         if (ab.hover) for (const p of this.projs.values()) if (p.o === hero.id && p.r === ab.range && p.traveled >= p.r - 0.05) orb = p;
         if (orb) {
-          const k = Math.min(d, ab.hover.reach);
-          const lx = hx + dx * k - orb.mesh.position.x;
-          const lz = hz + dz * k - orb.mesh.position.z;
+          // sai dele na direção do mouse e vai até a borda do alcance em volta do herói (mesma conta da simulação)
+          const ox = orb.mesh.position.x;
+          const oz = orb.mesh.position.z;
+          const ld = Math.hypot(mx - ox, mz - oz) || 1;
+          const lx = (mx - ox) / ld;
+          const lz = (mz - oz) / ld;
+          const b = (ox - hx) * lx + (oz - hz) * lz;
+          const disc = b * b - ((ox - hx) ** 2 + (oz - hz) ** 2 - ab.hover.reach ** 2);
+          const rem = disc >= 0 ? Math.sqrt(disc) - b : -b;
           this.indRange.scale.setScalar(ab.hover.reach);
           this.indRect.visible = true;
-          this.indRect.position.set(orb.mesh.position.x, 0.1, orb.mesh.position.z);
-          this.indRect.scale.set(ab.width, Math.max(1, Math.hypot(lx, lz)), 1);
+          this.indRect.position.set(ox, 0.1, oz);
+          this.indRect.scale.set(ab.width, Math.max(1, rem), 1);
           this.indRect.rotation.z = -Math.atan2(lz, lx) - Math.PI / 2;
           break;
         }
