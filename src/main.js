@@ -377,6 +377,7 @@ function renderHelp() {
     '<kbd>Botão direito</kbd> andar · atacar',
     '<kbd>Shift</kbd> + <kbd>Botão direito</kbd> ataca só heróis',
     `${k('q', 'w', 'e', 'r')} habilidades (${how})`,
+    `${k('aim')} + habilidade: mostra o alcance e lança ao soltar`,
     `<kbd>Shift</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
     `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,
     `${k('amove')} + clique: atacar o que aparecer`,

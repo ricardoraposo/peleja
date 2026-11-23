@@ -14,6 +14,7 @@ export const ACTIONS = [
   ['i4', 'Usar item 4', 'Digit4'],
   ['i5', 'Usar item 5', 'Digit5'],
   ['i6', 'Usar item 6', 'Digit6'],
+  ['aim', 'Mostrar o alcance antes de lançar (segurar + habilidade)', 'KeyC'],
   ['amove', 'Atacar o que aparecer (+ clique)', 'KeyA'],
   ['stop', 'Parar', 'KeyS'],
   ['shop', 'Abrir a loja', 'KeyP'],

@@ -115,6 +115,8 @@ export class Game {
     this.amove = false;
     this.hoverId = 0;
     this.spaceHeld = false;
+    this.aimHeld = false;
+    this.aimForced = false;
     this.paused = false;
     this.onPhase = null;
     this.onEnd = null;
@@ -871,17 +873,19 @@ export class Game {
     const ab = abilityOf(me.heroId, slot, this.mySpells);
     // 'instant': lança na hora onde o mouse está · 'release': mira segurando e lança ao soltar ·
     // 'click': a tecla só mostra a mira, o clique esquerdo lança e o direito cancela
-    if (ab.kind === 'self' || this.castMode === 'instant') {
+    // Com a tecla de mostrar o alcance segurada, vale sempre o 'release', seja qual for o modo escolhido
+    if (ab.kind === 'self' || (this.castMode === 'instant' && !this.aimHeld)) {
       this.aiming = null;
       this.castSlot(slot);
       return;
     }
     this.aiming = slot;
+    this.aimForced = this.aimHeld;
     this.amove = false;
   }
 
   releaseSlot(slot) {
-    if (this.aiming !== slot || this.castMode === 'click') return;
+    if (this.aiming !== slot || (this.castMode === 'click' && !this.aimForced)) return;
     this.aiming = null;
     this.castSlot(slot);
   }
@@ -1153,6 +1157,9 @@ export class Game {
         case 'center':
           this.spaceHeld = true;
           break;
+        case 'aim':
+          this.aimHeld = true;
+          break;
         default:
           break;
       }
@@ -1162,11 +1169,13 @@ export class Game {
       const act = this.codeAction[e.code];
       if (act === 'board') this.hud.el.board.classList.add('hidden');
       else if (act === 'center') this.spaceHeld = false;
+      else if (act === 'aim') this.aimHeld = false;
       else if (SLOTS.includes(act)) this.releaseSlot(act);
     });
     window.addEventListener('blur', () => {
       this.rightHeld = false;
       this.spaceHeld = false;
+      this.aimHeld = false;
       this.shiftHeld = false;
       this.aiming = null;
       this.hud.el.board.classList.add('hidden');
