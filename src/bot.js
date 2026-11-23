@@ -1,5 +1,5 @@
 import { BUILDS, ITEMS, TOWER, abilityOf, BUILDS_ALT, nextBuy } from './config.js';
-import { fountainX, pushDir } from './geo.js';
+import { cannonPos, fountainX, pushDir } from './geo.js';
 // bots voltando pra base curar alongavam demais as partidas (várias batendo no limite de 40 min); fica desligado
 const BOT_RECALL = false;
 
@@ -31,7 +31,7 @@ export class BotBrain {
     this.t = this.diff.think * (0.8 + Math.random() * 0.4);
     const { h, sim } = this;
     if (sim.canShop(h)) this.shop();
-    if (!h.alive || sim.phase !== 'playing' || h.dash || h.castT > 0) return;
+    if (!h.alive || sim.phase !== 'playing' || h.dash || h.fly || h.castT > 0) return;
     this.think();
   }
 
@@ -167,6 +167,16 @@ export class BotBrain {
       const backX = Math.abs(h.x - fx) < 6 ? fx : h.x - dir * 9;
       this.move(backX, this.zOff * 0.5);
       return;
+    }
+
+    // 1b) na base, de vida cheia e com a frente lá longe: pega o canhão (se a queda não for no meio dos inimigos)
+    if (near.length === 0 && life > 0.8 && !sim.sandbox) {
+      const to = sim.cannonTarget(h.team);
+      const c = cannonPos(h.team);
+      if (to && dist(c, h) < 16 && front * dir > to[0] * dir - 8 && !enemies.some((e) => Math.hypot(e.x - to[0], e.z - to[1]) < 9)) {
+        if (h.order.type !== 'cannon') sim.orderCannon(h);
+        return;
+      }
     }
 
     // 2) escolhe um herói pra brigar

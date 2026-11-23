@@ -22,6 +22,8 @@ export function structLayout(team) {
 
 export const baseX = (team) => (team === 0 ? -MAP.baseX : MAP.baseX);
 export const fountainX = (team) => (team === 0 ? -MAP.fountainX : MAP.fountainX);
+// onde fica o canhão da base de cada time
+export const cannonPos = (team) => (team === 0 ? { x: MAP.cannon.x, z: MAP.cannon.z } : { x: -MAP.cannon.x, z: -MAP.cannon.z });
 // direção em x pra onde o time avança
 export const pushDir = (team) => (team === 0 ? 1 : -1);
 

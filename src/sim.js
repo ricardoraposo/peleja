@@ -25,11 +25,11 @@ import {
   respawnTime,
   xpToNext,
 } from './config.js';
-import { OBSTACLES, PACKS, baseX, clampWalk, fountainX, inBase, pushDir, pushOut, segDist2, structLayout } from './geo.js';
+import { OBSTACLES, PACKS, baseX, cannonPos, clampWalk, fountainX, inBase, pushDir, pushOut, segDist2, structLayout } from './geo.js';
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576, fly: 2097152 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -83,6 +83,7 @@ class Unit {
     this.buffs = [];
     this.disp = null;
     this.dash = null;
+    this.fly = null;
     this.castT = 0;
     this.pending = null;
     this.vx = 0;
@@ -107,7 +108,7 @@ class Unit {
   }
 
   get cc() {
-    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0 || this.charmT > 0 || this.sleepT > 0;
+    return this.stunT > 0 || this.airT > 0 || !!this.disp || this.stasisT > 0 || this.fearT > 0 || this.charmT > 0 || this.sleepT > 0 || !!this.fly;
   }
 
   shieldTotal() {
@@ -263,6 +264,7 @@ export class Sim {
       u.hp = u.stats.maxHp;
       u.stunT = u.rootT = u.airT = u.charmT = u.sleepT = 0;
       u.drowsy = null;
+      u.fly = null;
       u.slows = [];
     };
     switch (m.c) {
@@ -451,6 +453,7 @@ export class Sim {
     h.drowsy = null;
     h.goBack = null;
     h.recallT = 0;
+    h.fly = null;
     h.orb = null;
     h.bolts = null;
     h.charge = null;
@@ -680,10 +683,62 @@ export class Sim {
 
   orderMove(h, x, z) {
     if (!this.canAct(h) || !Number.isFinite(x) || !Number.isFinite(z)) return;
+    // andar até o canhão da própria base é pedir pra ser atirado
+    const c = cannonPos(h.team);
+    if (Math.hypot(x - c.x, z - c.z) <= MAP.cannon.r && this.orderCannon(h)) return;
     const [cx, cz] = clampWalk(x, z, h.r);
     if (h.order.type !== 'move') h.windup = 0;
     h.order = { type: 'move', x: cx, z: cz };
     h.target = null;
+  }
+
+  // onde o canhão do time deixa o herói: atrás da torre mais avançada que ainda está de pé (sem torre, não atira)
+  cannonTarget(team) {
+    for (const key of MAP.cannon.to) {
+      const s = this.structs[team].find((t) => t.key === key);
+      if (s?.alive) return clampWalk(r1(s.x - pushDir(team) * MAP.cannon.back), 0, 0.7);
+    }
+    return null;
+  }
+
+  orderCannon(h) {
+    if (!this.canAct(h) || h.fly || !this.cannonTarget(h.team)) return false;
+    if (h.order.type !== 'cannon') h.windup = 0;
+    h.order = { type: 'cannon' };
+    h.target = null;
+    return true;
+  }
+
+  // entrou no cano: fica `load` segundos lá dentro e sai voando até o ponto de queda
+  enterCannon(h, to) {
+    const c = cannonPos(h.team);
+    h.x = c.x;
+    h.z = c.z;
+    h.facing = Math.atan2(to[1] - c.z, to[0] - c.x);
+    h.fly = { t: 0, x0: c.x, z0: c.z, x1: to[0], z1: to[1] };
+    h.order = { type: 'idle' };
+    h.target = null;
+    h.windup = 0;
+    h.recallT = 0;
+    this.emit({ e: 'cannon', id: h.id, x: r1(to[0]), z: r1(to[1]), l: MAP.cannon.load, d: MAP.cannon.flight });
+  }
+
+  tickFly(u, dt) {
+    const f = u.fly;
+    const C = MAP.cannon;
+    f.t += dt;
+    const k = Math.max(0, Math.min(1, (f.t - C.load) / C.flight));
+    u.x = f.x0 + (f.x1 - f.x0) * k;
+    u.z = f.z0 + (f.z1 - f.z0) * k;
+    if (k < 1) return;
+    u.fly = null;
+    this.resolveStatic(u);
+    // a queda joga pro alto os inimigos que estiverem embaixo
+    for (const o of this.units) {
+      if (!o.alive || o.team === u.team || o.isStructure || dist(o, u) > C.radius + o.r) continue;
+      this.applyFx(o, { knockup: C.knockup }, u);
+    }
+    this.emit({ e: 'land', id: u.id, x: r1(u.x), z: r1(u.z), r: C.radius });
   }
 
   orderAttack(h, t) {
@@ -717,11 +772,11 @@ export class Sim {
   }
 
   attackable(by, t) {
-    return !!t && t.alive && t.team !== by.team && !t.invuln && this.byId.get(t.id) === t;
+    return !!t && t.alive && t.team !== by.team && !t.invuln && !t.fly && this.byId.get(t.id) === t;
   }
 
   abilityTargetable(by, t, ab) {
-    if (!t || !t.alive || t.team === by.team || t.isStructure || this.byId.get(t.id) !== t) return false;
+    if (!t || !t.alive || t.team === by.team || t.isStructure || t.fly || this.byId.get(t.id) !== t) return false;
     if (ab.heroesOnly && !t.isHero) return false;
     return true;
   }
@@ -1261,7 +1316,7 @@ queueBolts(h, ab, slot, color) {
   }
 
   applyFx(t, fx, src, ox, oz) {
-    if (!fx || !t.alive || t.isStructure || t.stasisT > 0) return;
+    if (!fx || !t.alive || t.isStructure || t.stasisT > 0 || t.fly) return;
     if (fx.slow) t.slows.push({ p: fx.slow[0], t: fx.slow[1] });
     if (fx.stun) t.stunT = Math.max(t.stunT, fx.stun);
     if (fx.root) t.rootT = Math.max(t.rootT, fx.root);
@@ -1328,7 +1383,7 @@ queueBolts(h, ab, slot, color) {
   }
 
   damage(t, src, amount, type = 'phys', opts = {}) {
-    if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god || t.stasisT > 0) return 0;
+    if (!t.alive || amount <= 0 || this.phase !== 'playing' || t.god || t.stasisT > 0 || t.fly) return 0;
     t.recallT = 0;
     if (t.sleepT > 0) {
       // acordou com o golpe: leva o mesmo tanto de novo (até o teto) como dano verdadeiro
@@ -1487,6 +1542,7 @@ queueBolts(h, ab, slot, color) {
     t.stunT = t.rootT = t.airT = t.fearT = t.charmT = t.sleepT = 0;
     t.drowsy = null;
     t.goBack = null;
+    t.fly = null;
     t.bolts = null;
     if (t.charge) this.endCharges(t);
     this.endStasis(t);
@@ -1687,6 +1743,7 @@ queueBolts(h, ab, slot, color) {
       }
     }
     if (u.charmT > 0) u.charmT -= dt;
+    if (u.fly) this.tickFly(u, dt);
     if (u.recallT > 0) {
       if (u.cc || u.dash || u.disp) u.recallT = 0;
       else if ((u.recallT -= dt) <= 0) {
@@ -1898,7 +1955,8 @@ queueBolts(h, ab, slot, color) {
     const mobile = [];
     for (const u of this.units) {
       if (!u.alive || u.isStructure) continue;
-      if (u.dash) {
+      // quem está no ar (investida ou canhão) não esbarra em ninguém
+      if (u.dash || u.fly) {
         u.vx = u.vz = 0;
         continue;
       }
@@ -1985,6 +2043,14 @@ queueBolts(h, ab, slot, color) {
         if (!this.attackable(h, h.target) || edgeDist(h, h.target) > 9 || (o.heroes && !h.target.isHero)) h.target = this.nearestEnemy(h, 7.5, !o.heroes, o.heroes);
         if (h.target) this.engage(h, h.target, dt);
         else if (!this.moveToward(h, o.x, o.z, dt)) h.order = { type: 'idle' };
+        break;
+      }
+      case 'cannon': {
+        const to = this.cannonTarget(h.team);
+        const c = cannonPos(h.team);
+        if (!to) h.order = { type: 'idle' };
+        else if (Math.hypot(h.x - c.x, h.z - c.z) <= 0.5) this.enterCannon(h, to);
+        else this.moveToward(h, c.x, c.z, dt);
         break;
       }
       case 'cast': {
@@ -2170,7 +2236,7 @@ queueBolts(h, ab, slot, color) {
   updateTower(t, dt) {
     t.atkCd -= dt;
     const R = TOWER.range;
-    const valid = (u) => u && u.alive && u.team !== t.team && this.byId.get(u.id) === u && dist(t, u) <= R + u.r;
+    const valid = (u) => u && u.alive && u.team !== t.team && !u.fly && this.byId.get(u.id) === u && dist(t, u) <= R + u.r;
     if (t.forced && t.forcedT > this.time && valid(t.forced) && t.target !== t.forced) {
       t.target = t.forced;
       t.ramp = 0;
@@ -2297,7 +2363,7 @@ queueBolts(h, ab, slot, color) {
       const nz = p.z + p.dz * step;
       const hits = [];
       for (const u of this.units) {
-        if (!u.alive || u.team === p.team || u.isStructure || p.hit.has(u.id)) continue;
+        if (!u.alive || u.team === p.team || u.isStructure || u.fly || p.hit.has(u.id)) continue;
         if (p.heroesOnly && !u.isHero) continue;
         const [d2, tt] = segDist2(u.x, u.z, p.x, p.z, nx, nz);
         const w = p.width / 2 + u.r;
@@ -2577,6 +2643,7 @@ queueBolts(h, ab, slot, color) {
     if (u.charmT > 0) f |= F.charm;
     if (u.sleepT > 0) f |= F.sleep;
     if (u.recallT > 0) f |= F.recall;
+    if (u.fly) f |= F.fly;
     if (u.bolts) f |= F.orbs;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;

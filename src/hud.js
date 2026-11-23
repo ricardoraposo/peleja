@@ -752,6 +752,14 @@ export class Hud {
       c.fill();
     }
     const mine = g.myTeam;
+    for (const cn of g.cannons) {
+      if (!cn.to) continue;
+      c.strokeStyle = cn.team === mine ? '#5aaeff' : '#ff5470';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.arc(X(cn.x), Z(cn.z), 3, 0, Math.PI * 2);
+      c.stroke();
+    }
     for (const u of g.units.values()) {
       if (!u.alive || u.kind === 'hero') continue;
       const col = u.team === mine ? '#5aaeff' : '#ff5470';

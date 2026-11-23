@@ -5,10 +5,10 @@ import { initAudio, playSound, setListener, setMuted } from './audio.js';
 import { HERO_ORDER, HEROES, ITEMS, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
 import { Effects } from './effects.js';
 import { fxOf, projShape } from './fxstyle.js';
-import { PACKS } from './geo.js';
+import { PACKS, cannonPos, pushDir, structLayout } from './geo.js';
 import { Hud, esc } from './hud.js';
 import { buildMapView } from './mapview.js';
-import { HeroModel, MinionModel, StructModel, packModel } from './models.js';
+import { CannonModel, HeroModel, MinionModel, StructModel, packModel } from './models.js';
 import { Overlay } from './overlay.js';
 import { F, KIND_NAMES } from './sim.js';
 
@@ -67,6 +67,18 @@ export class Game {
       this.scene.add(m);
       return { x: p.x, z: p.z, up: true, model: m };
     });
+
+    // canhão de cada base; `to` = onde ele deixa o herói agora (null sem torre da ponte de pé)
+    this.cannons = [0, 1].map((team) => {
+      const p = cannonPos(team);
+      const model = new CannonModel(team);
+      model.root.position.set(p.x, 0, p.z);
+      this.scene.add(model.root);
+      const layout = structLayout(team);
+      return { team, x: p.x, z: p.z, model, to: null, towers: MAP.cannon.to.map((k) => layout.find((d) => d.key === k)) };
+    });
+    this.shots = [];
+    this.cannonHint = null;
 
     this.units = new Map();
     this.roster = new Map();
@@ -180,6 +192,7 @@ export class Game {
     this.kills = [0, 0];
     this.aiming = null;
     this.amove = false;
+    this.shots = [];
     this.paused = false;
     this.toggleShop(false);
     this.hud.show(false);
@@ -372,6 +385,27 @@ export class Game {
           const fx = m.tm === 0 ? -MAP.fountainX : MAP.fountainX;
           this.effects.laser(new THREE.Vector3(fx, 2.6, 0), new THREE.Vector3(v.x, 1.2, v.z), TEAMS[m.tm].color);
           playSound('laser', v);
+        }
+        break;
+      }
+      case 'cannon': {
+        const u = this.units.get(m.id);
+        if (!u) break;
+        const c = this.cannons[u.team];
+        c.model.charge(m.l, m.x - c.x, m.z - c.z);
+        u.model?.startFly?.(m.l, m.d);
+        this.shots.push({ t: m.l, c, id: m.id, x: m.x, z: m.z });
+        this.effects.telegraph(m.x, m.z, MAP.cannon.radius, m.l + m.d, TEAMS[u.team].color, u.team !== this.myTeam);
+        if (this.near(c.x, c.z)) playSound('sizzle', c);
+        break;
+      }
+      case 'land': {
+        const u = this.units.get(m.id);
+        this.effects.cannonLand(m.x, m.z, m.r, TEAMS[u?.team ?? 0].color);
+        if (m.id === this.myId || this.near(m.x, m.z)) {
+          playSound('boom', { x: m.x, z: m.z });
+          playSound('crash', { x: m.x, z: m.z }, 0.6);
+          this.shake = Math.max(this.shake, m.id === this.myId ? 0.6 : 0.3);
         }
         break;
       }
@@ -844,11 +878,19 @@ export class Game {
     this.refreshMouse();
     this.hoverId = this.pickUnit(this.shiftHeld);
     const t = this.hoverId ? this.units.get(this.hoverId) : null;
+    const cn = this.overCannon();
     if (t && t.team !== this.myTeam && t.alive && !(t.flags & F.invuln)) {
       this.send({ t: 'at', id: t.id });
       this.effects.clickMarker(t.x, t.z, true);
       this.rightTarget = true;
       this.targetId = t.id;
+      playSound('click');
+    } else if (cn?.to) {
+      // andar até o canhão é a ordem de entrar nele (a simulação resolve)
+      this.targetId = 0;
+      this.send({ t: 'mv', x: cn.x, z: cn.z });
+      this.effects.clickMarker(cn.x, cn.z, false);
+      this.rightTarget = true;
       playSound('click');
     } else {
       this.targetId = 0;
@@ -873,6 +915,54 @@ export class Game {
       this.send(this.shiftHeld ? { t: 'am', x: this.mouse.wx, z: this.mouse.wz, h: 1 } : { t: 'am', x: this.mouse.wx, z: this.mouse.wz });
       this.effects.clickMarker(this.mouse.wx, this.mouse.wz, true);
     }
+  }
+
+  // o canhão do meu time, se o mouse estiver em cima dele
+  overCannon() {
+    if (this.spectator || this.phase !== 'playing') return null;
+    const c = this.cannons[this.myTeam];
+    return Math.hypot(this.mouse.wx - c.x, this.mouse.wz - c.z) <= MAP.cannon.r ? c : null;
+  }
+
+  // mira dos canhões, pavio de quem está no cano e o disparo na hora certa
+  updateCannons(dt) {
+    for (const c of this.cannons) {
+      c.to = null;
+      for (const d of c.towers) {
+        let up = false;
+        for (const u of this.units.values()) if (u.kind === 'tower' && u.alive && u.team === c.team && Math.abs(u.x - d.x) < 0.5 && Math.abs(u.z - d.z) < 0.5) up = true;
+        if (!up) continue;
+        c.to = [d.x - pushDir(c.team) * MAP.cannon.back, 0];
+        break;
+      }
+    }
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const s = this.shots[i];
+      const m = s.c.model;
+      s.t -= dt;
+      if (s.t > 0) {
+        if (dt > 0) {
+          m.fuse.getWorldPosition(_v);
+          this.effects.fuseSparks(_v.x, _v.y, _v.z);
+        }
+        continue;
+      }
+      this.shots.splice(i, 1);
+      m.kick();
+      m.mouth.getWorldPosition(_v);
+      const d = Math.hypot(s.x - s.c.x, s.z - s.c.z) || 1;
+      this.effects.cannonShot(_v.x, _v.y, _v.z, (s.x - s.c.x) / d, (s.z - s.c.z) / d, s.c.x, s.c.z, TEAMS[s.c.team].color);
+      if (s.id === this.myId || this.near(s.c.x, s.c.z)) {
+        playSound('blast', s.c);
+        playSound('boom', s.c, 0.8);
+        playSound('whistle', s.c, 0.6);
+        this.shake = Math.max(this.shake, s.id === this.myId ? 0.55 : 0.3);
+      }
+    }
+    const over = this.overCannon();
+    const hover = over && !(this.units.get(this.hoverId)?.team !== this.myTeam && this.hoverId) ? over : null;
+    this.cannonHint = hover ? { x: hover.x, z: hover.z, on: !!hover.to, text: hover.to ? 'Canhão · botão direito pra voar até a torre' : 'Canhão sem torre pra mirar' } : null;
+    for (const c of this.cannons) c.model.update(dt, this.time, !!c.to, c === hover);
   }
 
   // Esc: fecha a loja, cancela a mira ou pausa (também chamado quando o Esc solta o mouse)
@@ -1064,7 +1154,7 @@ export class Game {
     const mx = this.mouse.x;
     const my = this.mouse.y;
     for (const u of this.units.values()) {
-      if (!u.alive || u.id === this.myId) continue;
+      if (!u.alive || u.id === this.myId || u.flags & F.fly) continue;
       const hero = u.kind === 'hero';
       if (heroesOnly && (!hero || u.team === this.myTeam)) continue;
       const struct = STRUCT.has(u.kind);
@@ -1121,7 +1211,7 @@ export class Game {
       this.camSnap = false;
       c.x = me.x;
       c.z = me.z;
-    } else if (me && (c.locked || this.spaceHeld)) {
+    } else if (me && (c.locked || this.spaceHeld || me.flags & F.fly)) {
       const jump = Math.hypot(me.x - c.x, me.z - c.z) > 30;
       const k = jump ? 1 : Math.min(1, dt * 10);
       c.x += (me.x - c.x) * k;
@@ -1175,8 +1265,10 @@ export class Game {
       }
       if (u.kind === 'hero' && !u.def) continue;
       this.ensureModel(u);
-      if (u.kind === 'hero' || STRUCT.has(u.kind)) u.model.update(visDt, u, this.time);
-      else {
+      if (u.kind === 'hero' || STRUCT.has(u.kind)) {
+        u.model.update(visDt, u, this.time);
+        if (visDt > 0 && u.model.flying) this.effects.flySmoke(u.x, u.model.body.position.y + 1, u.z, u.def.color);
+      } else {
         const keep = u.model.update(visDt, u);
         if (!keep && u.gone) {
           this.dropModel(u);
@@ -1201,6 +1293,7 @@ export class Game {
     }
     this.hoverId = this.phase === 'playing' && !this.spectator ? this.pickUnit(this.shiftHeld) : 0;
     const hover = this.units.get(this.hoverId);
+    this.updateCannons(visDt);
     document.body.classList.toggle('cur-attack', !!hover && hover.team !== this.myTeam);
     document.body.classList.toggle('cur-amove', this.amove);
     const me = this.me;

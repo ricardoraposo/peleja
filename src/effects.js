@@ -1223,6 +1223,79 @@ export class Effects {
     }
   }
 
+  // ---------- canhão da base ----------
+
+  // faíscas do pavio enquanto o herói está no cano
+  fuseSparks(x, y, z) {
+    for (let i = 0; i < 2; i++) this.spawn(x, y, z, (Math.random() - 0.5) * 3, 1.5 + Math.random() * 3, (Math.random() - 0.5) * 3, i ? '#ffd166' : '#ff7a1a', 0.2 + Math.random() * 0.15, 0.08, 9);
+  }
+
+  // o disparo: clarão na boca, fogo e fumaça pra frente e um anel de poeira em volta da carreta
+  cannonShot(x, y, z, dx, dz, bx, bz, color) {
+    const dir = Math.atan2(dz, dx);
+    const flare = new THREE.Mesh(CONE_X, basic('#ffd166', 0.95, true));
+    flare.rotation.y = -dir;
+    flare.position.set(x, y, z);
+    this.temp(flare, 0.18, (k) => {
+      flare.scale.set(-(1.2 + (1 - k) * 2.2), 0.9 * k + 0.2, 0.9 * k + 0.2);
+      flare.material.opacity = k;
+    });
+    const ball = new THREE.Mesh(SPHERE, basic('#fff1c2', 0.9, true));
+    ball.position.set(x, y, z);
+    this.temp(ball, 0.22, (k) => {
+      ball.scale.setScalar(0.5 + (1 - k) * 1.8);
+      ball.material.opacity = k * 0.9;
+    });
+    for (let i = 0; i < 26; i++) {
+      const a = dir + (Math.random() - 0.5) * 0.9;
+      const sp = 6 + Math.random() * 14;
+      this.spawn(x, y, z, Math.cos(a) * sp, 2 + Math.random() * 7, Math.sin(a) * sp, i % 3 === 0 ? color : i % 2 ? '#ffb347' : '#ff7a1a', 0.25 + Math.random() * 0.3, 0.14, 10);
+    }
+    for (let i = 0; i < 16; i++) {
+      const a = dir + (Math.random() - 0.5) * 1.6;
+      const sp = 1 + Math.random() * 4;
+      this.spawn(x, y, z, Math.cos(a) * sp, 0.6 + Math.random() * 1.6, Math.sin(a) * sp, i % 2 ? '#9ca3af' : '#6b7280', 0.8 + Math.random() * 0.6, 0.32, -1);
+    }
+    this.ripple(bx, bz, 3.4, '#e7d8b8', 0.45, false);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      this.spawn(bx + Math.cos(a) * 1.2, 0.2, bz + Math.sin(a) * 1.2, Math.cos(a) * 4, 0.8 + Math.random(), Math.sin(a) * 4, '#c9b79a', 0.5, 0.2, 2);
+    }
+  }
+
+  // rastro de quem voa: brasa e fumaça na altura do corpo
+  flySmoke(x, y, z, color) {
+    for (let i = 0; i < 2; i++) this.spawn(x + (Math.random() - 0.5) * 0.5, y + (Math.random() - 0.5) * 0.5, z + (Math.random() - 0.5) * 0.5, 0, 0.4, 0, i ? '#d1d5db' : '#9ca3af', 0.6, 0.26, -0.6);
+    this.spawn(x, y, z, (Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2, Math.random() < 0.5 ? '#ffb347' : color, 0.3, 0.1, 6);
+  }
+
+  // a queda: explosão, onda de choque, poeira rasteira e pedras pulando
+  cannonLand(x, z, r, color) {
+    this.boom(x, z, r, color);
+    this.ripple(x, z, r * 1.5, '#fff1c2', 0.5);
+    this.ripple(x, z, r * 1.1, '#e7d8b8', 0.7, false);
+    const crack = flat(new THREE.Mesh(DISC, basic('#2a2118', 0.5)), 0.05);
+    crack.position.set(x, 0.05, z);
+    crack.scale.setScalar(r * 0.55);
+    this.temp(crack, 1.6, (k) => (crack.material.opacity = Math.min(0.5, k)));
+    const col = new THREE.Mesh(CONE, basic('#ffd166', 0.8, true));
+    col.position.set(x, 0, z);
+    this.temp(col, 0.28, (k) => {
+      col.scale.set(r * 0.5 * k + 0.2, 1 + (1 - k) * 5, r * 0.5 * k + 0.2);
+      col.material.opacity = k * 0.8;
+    });
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + Math.random() * 0.2;
+      const sp = 5 + Math.random() * 5;
+      this.spawn(x + Math.cos(a) * 0.5, 0.25, z + Math.sin(a) * 0.5, Math.cos(a) * sp, 0.5 + Math.random() * 1.5, Math.sin(a) * sp, i % 2 ? '#c9b79a' : '#e7d8b8', 0.6 + Math.random() * 0.4, 0.3, 1.5);
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 5;
+      this.spawn(x, 0.3, z, Math.cos(a) * sp, 6 + Math.random() * 7, Math.sin(a) * sp, i % 4 === 0 ? color : '#78716c', 0.9 + Math.random() * 0.5, 0.17, 20);
+    }
+  }
+
   clickMarker(x, z, attack) {
     const ring = flat(new THREE.Mesh(RING, basic(attack ? '#ff4d6d' : '#7dffb0', 0.95)), 0.09);
     ring.position.set(x, 0.09, z);

@@ -79,6 +79,8 @@ export class Overlay {
       if (!u.alive || u.kind === 'pack') continue;
       const rel = u.id === game.myId ? 'me' : u.team === myTeam ? 'ally' : 'enemy';
       if (u.kind === 'hero') {
+        // no cano ou voando ninguém acerta: some a barra pra não parecer alvo
+        if (u.flags & F.fly) continue;
         const lift = u.flags & F.air ? 1.2 : 0;
         const p = this.project(u.x, 3.4 + lift + (u.def?.look.scale || 1) * 0.3, u.z, cam);
         if (!p) continue;
@@ -164,6 +166,18 @@ export class Overlay {
         if (!p) continue;
         const w = u.kind === 'siege' || u.kind === 'super' ? 46 : 34;
         this.bar(p[0] - w / 2, p[1], w, 4, u.hp / u.maxHp, rel === 'enemy' ? '#ff5470' : '#5aaeff', 0, 0, u, dt);
+      }
+    }
+    if (game.cannonHint) {
+      const h = game.cannonHint;
+      const p = this.project(h.x, 4.2, h.z, cam);
+      if (p) {
+        c.font = '700 13px Rubik, system-ui, sans-serif';
+        c.lineWidth = 3;
+        c.strokeStyle = 'rgba(0,0,0,0.75)';
+        c.strokeText(h.text, p[0], p[1]);
+        c.fillStyle = h.on ? '#fff3c4' : '#cbd5e1';
+        c.fillText(h.text, p[0], p[1]);
       }
     }
     for (let i = this.texts.length - 1; i >= 0; i--) {

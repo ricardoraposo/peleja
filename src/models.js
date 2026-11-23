@@ -1313,6 +1313,16 @@ export class HeroModel {
     this.hole = { t: 0, stay };
   }
 
+  // tiro de canhão: `load` segundos escondido no cano e depois `dur` segundos de voo em arco, dando cambalhota
+  startFly(load, dur) {
+    this.flyS = { t: 0, load, dur };
+    this.anim = null;
+  }
+
+  get flying() {
+    return !!this.flyS && this.flyS.t >= this.flyS.load;
+  }
+
   startDash(dur, arc) {
     this.dashT = dur;
     this.dashMax = dur;
@@ -1416,6 +1426,22 @@ export class HeroModel {
       // aterrissou: algumas armas terminam o salto com um golpe
       if (this.dashT <= 0 && this.dashArc && S.land) this.play(S.land, 0);
     } else this.lean *= Math.exp(-dt * 10);
+
+    if (this.flyS) {
+      const Fl = this.flyS;
+      Fl.t += dt;
+      const p = (Fl.t - Fl.load) / Fl.dur;
+      if (p >= 1 || (Fl.t > Fl.load + 0.4 && !(f & F.fly))) {
+        this.flyS = null;
+        this.body.rotation.x = 0;
+      } else if (p < 0) r.visible = false;
+      else {
+        lift = 2.6 * (1 - p) + Math.sin(p * Math.PI) * 7;
+        this.body.rotation.x = p * Math.PI * 4;
+        P.aRx = P.aLx = -2.6;
+        snap = 30;
+      }
+    }
 
     const ak = Math.min(1, dt * snap);
     const aLx = S.twoHand ? P.aRx : P.aLx;
@@ -1758,6 +1784,90 @@ export class StructModel {
     this.flash = Math.max(0, this.flash - dt);
     const invuln = !!(u.flags & F.invuln);
     this.crystalMat.emissiveIntensity = this.flash > 0 ? 3 : invuln ? 0.7 : 1.4 + Math.sin(time * 3) * 0.2;
+  }
+}
+
+// canhão da base: carreta de madeira, cano de ferro com a boca na cor do time e um anel no chão marcando onde entrar
+const iron = mat('#3f3f46', { metalness: 0.5, roughness: 0.45 });
+const ironDark = mat('#18181b');
+const wood = mat('#7c4a21');
+
+export class CannonModel {
+  constructor(team) {
+    const color = TEAMS[team].color;
+    this.root = new THREE.Group();
+    this.ring = groundRing(color, MAP.cannon.r, 0.6);
+    this.root.add(this.ring);
+    this.pivot = new THREE.Group();
+    this.root.add(this.pivot);
+    this.pivot.add(part(wood, 2.0, 0.35, 1.3, -0.1, 0.75, 0));
+    for (const z of [-0.85, 0.85]) {
+      const wheel = part(wood, 0.75, 0.2, 0.75, 0, 0.75, z, CYL);
+      wheel.rotation.x = Math.PI / 2;
+      const hub = part(iron, 0.2, 0.26, 0.2, 0, 0.75, z, CYL);
+      hub.rotation.x = Math.PI / 2;
+      this.pivot.add(wheel, hub);
+    }
+    // o cano aponta pra +x; `tilt` levanta a boca e `barrel` escorrega pra trás no coice
+    this.tilt = new THREE.Group();
+    this.tilt.position.set(0, 1.25, 0);
+    this.pivot.add(this.tilt);
+    this.barrel = new THREE.Group();
+    this.tilt.add(this.barrel);
+    const tube = (m, r, len, x) => {
+      const t = part(m, r, len, r, x, 0, 0, CYL);
+      t.rotation.z = -Math.PI / 2;
+      return t;
+    };
+    this.glowMat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.9, roughness: 0.4, flatShading: true });
+    this.barrel.add(tube(iron, 0.62, 3.0, 0.9), tube(this.glowMat, 0.72, 0.3, 2.3), tube(iron, 0.7, 0.3, 0.2), tube(ironDark, 0.48, 0.06, 2.44));
+    this.barrel.add(part(iron, 0.64, 0.64, 0.64, -0.6, 0, 0, SPHERE));
+    this.fuse = part(new THREE.MeshBasicMaterial({ color: '#ffd166', toneMapped: false }), 0.14, 0.14, 0.14, -0.9, 0.62, 0, SPHERE);
+    this.fuse.visible = false;
+    this.barrel.add(this.fuse);
+    this.mouth = new THREE.Object3D();
+    this.mouth.position.set(2.5, 0, 0);
+    this.barrel.add(this.mouth);
+    this.pivot.traverse((o) => {
+      if (o.isMesh) o.receiveShadow = true;
+    });
+    this.yaw = team === 0 ? 0 : Math.PI;
+    this.pivot.rotation.y = -this.yaw;
+    this.pitch = 0;
+    this.loadT = 0;
+    this.kickT = 0;
+  }
+
+  // alguém entrou no cano: mira no ponto de queda e acende o pavio por `t` segundos
+  charge(t, dx, dz) {
+    this.yaw = Math.atan2(dz, dx);
+    this.loadT = t;
+  }
+
+  kick() {
+    this.loadT = 0;
+    this.kickT = 0.45;
+  }
+
+  update(dt, time, active, hover) {
+    let dy = -this.yaw - this.pivot.rotation.y;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    this.pivot.rotation.y += dy * Math.min(1, dt * 14);
+    // sem torre pra mirar, o cano fica caído e o anel apaga
+    this.pitch += ((active ? 0.62 : -0.12) - this.pitch) * Math.min(1, dt * 6);
+    this.tilt.rotation.z = this.pitch;
+    this.loadT = Math.max(0, this.loadT - dt);
+    this.kickT = Math.max(0, this.kickT - dt);
+    const loading = this.loadT > 0;
+    this.fuse.visible = loading;
+    const k = this.kickT / 0.45;
+    this.barrel.position.x = -0.9 * k * k + (loading ? Math.sin(time * 70) * 0.03 : 0);
+    this.barrel.scale.setScalar(loading ? 1 + Math.sin(time * 40) * 0.025 : 1);
+    this.glowMat.emissiveIntensity = !active ? 0.1 : loading || k > 0 ? 3 : hover ? 2 : 0.9 + Math.sin(time * 3) * 0.2;
+    this.ring.visible = active;
+    this.ring.material.opacity = hover ? 1 : 0.45 + Math.sin(time * 3) * 0.15;
+    this.ring.scale.setScalar(MAP.cannon.r * (hover ? 1.08 + Math.sin(time * 8) * 0.04 : 1));
   }
 }
 

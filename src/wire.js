@@ -33,6 +33,8 @@ const EVENTS = {
   struct: { id: 'u', d: 'u' },
   pack: { i: 'u', u: 'u', id: 'u?' },
   laser: { tm: 'u', v: 'u' },
+  cannon: { id: 'u', x: 'd1', z: 'd1', l: 'd2', d: 'd2' },
+  land: { id: 'u', x: 'd1', z: 'd1', r: 'n' },
   spawn: { id: 'u' },
   bought: { i: 's' },
   use: { id: 'u', i: 's' },
