@@ -875,6 +875,7 @@ em.use {
 }
 
 .board-team {
+  pointer-events: auto;
   border-radius: 14px;
   background: rgba(13, 18, 32, 0.92);
   border: 1px solid var(--line);
@@ -955,6 +956,49 @@ em.use {
 .mini-item svg {
   width: 12px;
   height: 12px;
+}
+
+/* dicas do placar: abrem embaixo, porque o placar fica no alto da tela */
+.b-anchor,
+.mini-item {
+  position: relative;
+}
+
+.board-team .tip {
+  top: calc(100% + 8px);
+  bottom: auto;
+  white-space: normal;
+  color: var(--text);
+}
+
+.board-team .b-stats-tip {
+  left: 0;
+  transform: none;
+  width: 250px;
+}
+
+.b-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 10px;
+  margin-top: 4px;
+  font-family: var(--num);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.b-stats .st span {
+  flex: 1;
+  font-family: var(--ui);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.mini-item.b-tip:hover .tip,
+.mini-item.b-tip.hov .tip,
+.b-row:hover:not(:has(.mini-item:hover)) .b-stats-tip,
+.b-row.hov .b-stats-tip {
+  display: flex;
 }
 
 /* ---------- pausa, sorteio, menu e fim ---------- */

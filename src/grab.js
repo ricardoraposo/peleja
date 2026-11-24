@@ -137,7 +137,7 @@ export class MouseGrab {
     if (this.hover) this.fire(this.hover, 'mouseout', 0);
     this.hover = el;
     if (el) this.fire(el, 'mouseover', 0);
-    const tip = el?.closest?.('.skill, .item') || null;
+    const tip = el?.closest?.('.skill, .item, .b-tip') || null;
     if (tip !== this.tipEl) {
       this.tipEl?.classList.remove('hov');
       tip?.classList.add('hov');

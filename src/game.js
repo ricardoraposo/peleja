@@ -1121,6 +1121,8 @@ export class Game {
       if (act === 'board') {
         this.hud.el.board.classList.remove('hidden');
         this.hud.renderBoard();
+        // o mouse pode já estar em cima de alguém: confere o que está embaixo dele
+        this.grab.dirty = true;
         return;
       }
       if (e.repeat) return;
@@ -1167,7 +1169,10 @@ export class Game {
     window.addEventListener('keyup', (e) => {
       if (e.key === 'Shift') this.shiftHeld = false;
       const act = this.codeAction[e.code];
-      if (act === 'board') this.hud.el.board.classList.add('hidden');
+      if (act === 'board') {
+        this.hud.el.board.classList.add('hidden');
+        this.grab.dirty = true;
+      }
       else if (act === 'center') this.spaceHeld = false;
       else if (act === 'aim') this.aimHeld = false;
       else if (SLOTS.includes(act)) this.releaseSlot(act);
