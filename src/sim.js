@@ -89,6 +89,9 @@ class Unit {
     this.pending = null;
     this.vx = 0;
     this.vz = 0;
+    // velocidade com que andou no último passo (pra saber se está fugindo de alguém)
+    this.lvx = 0;
+    this.lvz = 0;
     this.attackAnim = 0;
   }
 
@@ -1985,12 +1988,14 @@ queueBolts(h, ab, slot, color) {
       if (!u.alive || u.isStructure) continue;
       // quem está no ar (investida ou canhão) não esbarra em ninguém
       if (u.dash || u.fly) {
-        u.vx = u.vz = 0;
+        u.vx = u.vz = u.lvx = u.lvz = 0;
         continue;
       }
       u.x += u.vx * dt;
       u.z += u.vz * dt;
       u.moving = Math.abs(u.vx) + Math.abs(u.vz) > 0.1;
+      u.lvx = u.vx;
+      u.lvz = u.vz;
       u.vx = u.vz = 0;
       mobile.push(u);
     }
@@ -2126,11 +2131,20 @@ queueBolts(h, ab, slot, color) {
   }
 
   engage(u, t, dt) {
-    if (this.inAttackRange(u, t, u.isHero && u.windup > 0 ? ATTACK_SLACK : 0)) this.attackStep(u, t, dt);
-    else {
+    const stop = u.r + t.r + u.stats.range * 0.85;
+    if (this.inAttackRange(u, t, u.isHero && u.windup > 0 ? ATTACK_SLACK : 0)) {
+      this.attackStep(u, t, dt);
+      // herói atrás de quem foge vai junto enquanto golpeia e recarrega: bater não deixa ninguém pra trás
+      if (u.isHero && this.fleeing(t, u)) this.moveToward(u, t.x, t.z, dt, stop, t);
+    } else {
       u.windup = 0;
-      this.moveToward(u, t.x, t.z, dt, u.r + t.r + u.stats.range * 0.85, t);
+      this.moveToward(u, t.x, t.z, dt, stop, t);
     }
+  }
+
+  // `t` andou se afastando de `from` no último passo
+  fleeing(t, from) {
+    return t.lvx * (t.x - from.x) + t.lvz * (t.z - from.z) > 0.01;
   }
 
   attackStep(u, t, dt) {
