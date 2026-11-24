@@ -375,7 +375,8 @@ export const HEROES = {
 export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'pilintra'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
-// Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).
+// Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, roubo de vida, armadura, resistência, vida (e passo nas botas).
+// Roubo de vida: o ataque básico em herói ou tropa cura essa fração do dano que entrou; não vale em estrutura nem em habilidade.
 // Preço: os básicos valem o que custam; intermediários rendem ~105-110% do preço e os grandes ~113-116%.
 // Exceções: os de poder rendem mais (~125%), porque poder escala menos que ataque; os de defesa rendem ~100%,
 // porque vida e resistência se multiplicam e um tanque cheio deles ficava quase imortal.
@@ -396,6 +397,7 @@ export const ITEMS = {
   vitoria: { name: 'Folha de Vitória-régia', cost: 750, stats: { mres: 30 } },
   beiju: { name: 'Beiju', cost: 400, stats: { hp: 150 } },
   mandioca: { name: 'Raiz de Mandioca', cost: 800, stats: { hp: 300 } },
+  morcego: { name: 'Dente de Morcego', cost: 450, stats: { ls: 0.08 } },
 
   // ----- botas -----
   pevento: { name: 'Pé-de-Vento', cost: 1100, from: ['alpercata'], stats: { ms: 1, as: 0.25 }, group: 'botas' },
@@ -414,6 +416,7 @@ export const ITEMS = {
   gibao: { name: 'Gibão de Vaqueiro', cost: 1300, from: ['tatu', 'beiju'], stats: { armor: 30, hp: 250 } },
   patua: { name: 'Patuá', cost: 1300, from: ['vitoria', 'beiju'], stats: { mres: 30, hp: 250 } },
   jacare: { name: 'Couro de Jacaré', cost: 1400, from: ['tatu', 'guarana'], stats: { armor: 35, haste: 10 } },
+  garramorcego: { name: 'Garra de Morcego', cost: 1200, from: ['morcego', 'dente'], stats: { ls: 0.1, atk: 15 } },
 
   // ----- grandes: ataque -----
   lobisomem: { name: 'Garra do Lobisomem', cost: 3100, from: ['peixeira', 'facao'], stats: { atk: 55, haste: 20 } },
@@ -425,6 +428,10 @@ export const ITEMS = {
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
   matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.55, pow: 70 } },
+  // ----- grandes: roubo de vida -----
+  chupacabra: { name: 'Presa do Chupa-cabra', cost: 2950, from: ['garramorcego', 'facao'], stats: { ls: 0.15, atk: 60 } },
+  corposeco: { name: 'Foice do Corpo-Seco', cost: 2800, from: ['garramorcego', 'borduna'], stats: { ls: 0.12, atk: 40, hp: 300 } },
+  labatut: { name: 'Lança do Labatut', cost: 2650, from: ['garramorcego', 'flecha'], stats: { ls: 0.1, atk: 35, as: 0.3 } },
   // ----- grandes: poder -----
   tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 150 } },
   cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
@@ -458,10 +465,11 @@ export const STAT_LABEL = {
   mres: 'resist. mágica',
   as: 'vel. de ataque',
   crit: 'chance de crítico',
+  ls: 'roubo de vida',
   haste: 'aceleração de habilidade',
   ms: 'passo',
 };
-export const STAT_PCT = ['as', 'crit'];
+export const STAT_PCT = ['as', 'crit', 'ls'];
 export const CRIT_MULT = 1.75;
 
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
@@ -545,11 +553,11 @@ export const BUILDS = {
   mago: ['andarilho', 'cocar', 'tupa', 'maedouro', 'benzedeira', 'maedagua'],
   suporte: ['andarilho', 'benzedeira', 'cocar', 'sumauma', 'xiquexique', 'jaci'],
   tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'boibumba', 'xiquexique'],
-  lutador: ['perneira', 'anhanga', 'icamiabas', 'cangaceiro', 'jaci', 'xiquexique'],
-  assassino: ['andarilho', 'lobisomem', 'agouro', 'cobra', 'anhanga', 'jaci'],
+  lutador: ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique'],
+  assassino: ['andarilho', 'lobisomem', 'agouro', 'chupacabra', 'anhanga', 'jaci'],
 };
 export const BUILDS_ALT = {
-  atirador: { name: 'Atirador que aguenta', items: ['perneira', 'caipora', 'icamiabas', 'agouro', 'jaci', 'jabuti'] },
+  atirador: { name: 'Atirador que aguenta', items: ['perneira', 'caipora', 'labatut', 'agouro', 'jaci', 'jabuti'] },
   mago: { name: 'Mago casca-grossa', items: ['boto', 'maedouro', 'benzedeira', 'carranca', 'jaci', 'cocar'] },
   suporte: { name: 'Suporte que machuca', items: ['andarilho', 'cocar', 'maedouro', 'tupa', 'benzedeira', 'jaci'] },
   tanque: { name: 'Tanque que bate', items: ['boto', 'cangaceiro', 'anhanga', 'xiquexique', 'sumauma', 'jabuti'] },

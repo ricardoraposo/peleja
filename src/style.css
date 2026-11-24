@@ -707,6 +707,9 @@ kbd {
 .st-crit i {
   background: #fde047;
 }
+.st-ls i {
+  background: #dc2626;
+}
 
 #items {
   display: grid;
