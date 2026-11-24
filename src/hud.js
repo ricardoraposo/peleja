@@ -216,6 +216,21 @@ export function itemStats(it, heroId = null, sep = ' · ') {
     .join(sep);
 }
 
+// dano recebido por tipo, como barra de 100% dividida (pra decidir entre armadura e resistência)
+const DMG_KINDS = [
+  ['Físico (AD)', '#fb923c'],
+  ['Mágico (AP)', '#818cf8'],
+  ['Verdadeiro', '#e5e7eb'],
+];
+const dmgBar = (by) => {
+  const total = (by || []).reduce((a, b) => a + b, 0);
+  if (!total) return '<p class="dmg-empty">Nenhum dano recebido ainda.</p>';
+  const pct = by.map((v) => (100 * v) / total);
+  const bar = pct.map((p, i) => (p > 0 ? `<i style="width:${p}%;background:${DMG_KINDS[i][1]}"></i>` : '')).join('');
+  const legend = pct.map((p, i) => `<span><i style="background:${DMG_KINDS[i][1]}"></i>${DMG_KINDS[i][0]} <b>${Math.round(p)}%</b></span>`).join('');
+  return `<div class="dmg-bar">${bar}</div><div class="dmg-legend">${legend}</div>`;
+};
+
 // build escolhida em cada herói, lembrada neste navegador (sem acesso ao armazenamento, fica na primeira)
 const buildPicks = (() => {
   try {
@@ -737,7 +752,7 @@ export class Hud {
       const h = HEROES[hid] || HEROES.faisca;
       // passando o mouse: no item, o nome e o que ele dá (com a afinidade de quem tem); no herói, os atributos dele
       const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item b-tip" style="--c:${itemColor(it)}">${itemIcon(it)}<span class="tip"><b>${esc(ITEMS[it].name)}</b><span>${itemStats(ITEMS[it], hid)}</span></span></span>`).join('')}</div></td>` : '';
-      const tip = withItems && b[10] ? `<span class="tip b-stats-tip"><b>${esc(r.name)}</b><small>${h.name} · ${h.title} · nv ${b[5]}</small><span class="b-stats">${statCells(b[10], true)}</span></span>` : '';
+      const tip = withItems && b[10] ? `<span class="tip b-stats-tip"><b>${esc(r.name)}</b><small>${h.name} · ${h.title} · nv ${b[5]}</small><span class="b-stats">${statCells(b[10], true)}</span><small class="dmg-title">Dano recebido · ${Math.round((b[11] || []).reduce((x, y) => x + y, 0) / 100) / 10}k</small>${dmgBar(b[11])}</span>` : '';
       rows.push(
         `<tr class="${id === g.myId ? 'me' : ''}${tip ? ' b-tip b-row' : ''}"><td class="b-anchor"><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span>${tip}</td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
       );
@@ -749,11 +764,15 @@ export class Hud {
     const g = this.game;
     const blue = this.boardRows(0);
     const red = this.boardRows(1);
+    const by = g.board.get(g.myId)?.[11];
+    const total = (by || []).reduce((a, b) => a + b, 0);
+    const mine = `<h3>Dano que você recebeu na partida <b>${Math.round(total / 100) / 10}k</b></h3>${dmgBar(by)}`;
     // só redesenha quando algo mudou: refazer a tabela a cada quadro apagava a dica que está aberta
-    if (blue + red !== this.boardKey) {
-      this.boardKey = blue + red;
+    if (blue + red + mine !== this.boardKey) {
+      this.boardKey = blue + red + mine;
       $('board-blue').innerHTML = blue;
       $('board-red').innerHTML = red;
+      $('board-dmg').innerHTML = mine;
       g.grab.dirty = true;
     }
     $('bk-blue').textContent = g.kills[0];

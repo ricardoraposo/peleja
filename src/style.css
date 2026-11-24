@@ -983,6 +983,81 @@ em.use {
   width: 250px;
 }
 
+.board-dmg {
+  grid-column: 1 / -1;
+  pointer-events: auto;
+  border-radius: 14px;
+  background: rgba(13, 18, 32, 0.92);
+  border: 1px solid var(--line);
+  padding: 10px 14px 12px;
+}
+
+.board-dmg h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.board-dmg h3 b {
+  color: var(--text);
+  font-family: var(--num);
+}
+
+.dmg-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dmg-bar i {
+  height: 100%;
+}
+
+.dmg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dmg-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dmg-legend span i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.dmg-legend b {
+  color: var(--text);
+  font-family: var(--num);
+}
+
+.dmg-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.b-stats-tip .dmg-title {
+  margin-top: 6px;
+}
+
+.b-stats-tip .dmg-bar {
+  height: 10px;
+}
+
 .b-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
