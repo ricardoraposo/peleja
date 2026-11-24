@@ -2172,7 +2172,7 @@ queueBolts(h, ab, slot, color) {
       // em estrutura o poder também conta, pra mago e suporte conseguirem derrubar torre
       const ap = u.stats.pow * TOWER.apRatio;
       const base = u.def.stats.atk + u.def.stats.atkL * (u.level - 1);
-      this.damage(t, u, dmg + ap, ap > u.stats.atk - base ? 'magic' : 'phys', { auto: true });
+      this.damage(t, u, dmg + ap + u.maxHp * TOWER.hpRatio, ap > u.stats.atk - base ? 'magic' : 'phys', { auto: true });
       return;
     }
     this.damage(t, u, crit ? dmg * CRIT_MULT : dmg, 'phys', { auto: true, crit });
