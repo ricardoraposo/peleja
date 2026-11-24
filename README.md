@@ -18,6 +18,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **A loja só abre na base ou quando você cai**, então voltar pra comprar custa tempo de rota.
 - **Canhão da base**: clique com o botão direito no canhão ao lado da fonte pra entrar nele. A câmera abre e você tem 5 segundos pra clicar onde quer cair, em volta da torre mais avançada do seu time que ainda está de pé (sem clicar, cai atrás dela; `S` desiste). No ar ninguém te acerta, e a queda joga pro alto os inimigos que estiverem embaixo. Sem as duas torres da ponte, o canhão para de atirar.
 - **Golpe começado sai**: depois que o herói ergue a arma, o ataque básico acerta mesmo que o alvo dê uns passos pra trás. Só escapa quem avança ou salta pra longe. E bater não deixa ninguém pra trás: atrás de quem foge, o herói vai andando enquanto golpeia.
+- **Moitas**: seis touceiras de capim nas bordas da ponte, três de cada lado. Herói dentro some pro time inimigo e o próprio time vê ele meio transparente. Quem entra na mesma moita (herói ou tropa) enxerga quem está lá. Atacar ou usar habilidade revela por 1 segundo. Ninguém clica em quem não vê, mas disparo e área acertam normal.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
 - **Em estruturas só o ataque básico fere**, e ele soma o ataque inteiro, 60% do poder e 1,5% da vida máxima: mago, suporte e tanque também derrubam torre.
 - **Habilidades em área também desgastam torres**, com 30% do dano. Disparos num alvo só passam direto por elas.

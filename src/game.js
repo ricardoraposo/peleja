@@ -5,7 +5,7 @@ import { initAudio, playSound, setListener, setMuted } from './audio.js';
 import { HERO_ORDER, HEROES, ITEMS, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
 import { Effects } from './effects.js';
 import { fxOf, projShape } from './fxstyle.js';
-import { PACKS, cannonPos, pushDir, structLayout } from './geo.js';
+import { PACKS, bushAt, cannonPos, pushDir, structLayout } from './geo.js';
 import { Hud, esc } from './hud.js';
 import { buildMapView } from './mapview.js';
 import { CannonModel, HeroModel, MinionModel, StructModel, packModel } from './models.js';
@@ -58,7 +58,7 @@ export class Game {
     this.sun.shadow.normalBias = 0.04;
     this.scene.add(this.sun, this.sun.target);
 
-    buildMapView(this.scene);
+    this.mapView = buildMapView(this.scene);
     this.effects = new Effects(this.scene);
     this.overlay = new Overlay(overlayCanvas);
     this.hud = new Hud(this);
@@ -1349,6 +1349,8 @@ export class Game {
       this.ensureModel(u);
       if (u.kind === 'hero' || STRUCT.has(u.kind)) {
         u.model.update(visDt, u, this.time);
+        // herói escondido na moita: só o próprio time recebe ele, e vê meio transparente
+        if (u.kind === 'hero') u.model.setGhost(!!(u.flags & F.hidden));
         if (visDt > 0 && u.model.flying) this.effects.flySmoke(u.x, u.model.body.position.y + 1, u.z, u.def.color);
       } else {
         const keep = u.model.update(visDt, u);
@@ -1358,6 +1360,13 @@ export class Game {
         }
       }
     }
+    // moita: a sua fica translúcida pra você ver lá dentro; o capim balança com o vento
+    const mine = this.units.get(this.myId);
+    const myBush = mine && mine.alive ? bushAt(mine.x, mine.z) : -1;
+    this.mapView.bushes.forEach((b, i) => {
+      b.setInside(i === myBush);
+      b.update(visDt, this.time);
+    });
     for (const p of this.packs) {
       p.model.visible = p.up;
       p.model.userData.spin.rotation.y = this.time * 2;

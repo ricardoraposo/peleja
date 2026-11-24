@@ -123,7 +123,8 @@ export class BotBrain {
     const enemies = [];
     const allies = [];
     for (const o of sim.heroes) {
-      if (!o.alive || o === h) continue;
+      // inimigo escondido na moita não existe pro bot, como não existe pra quem joga
+      if (!o.alive || o === h || !sim.visibleTo(h.team, o)) continue;
       if (o.team === h.team) allies.push(o);
       else enemies.push(o);
     }

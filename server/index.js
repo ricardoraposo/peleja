@@ -50,7 +50,8 @@ class Room {
     this.host = null;
     this.state = 'lobby';
     this.sim = null;
-    this.stream = new SnapDelta();
+    // um fluxo de retratos por time: cada um só recebe os heróis que enxerga (moita)
+    this.streams = [new SnapDelta(), new SnapDelta()];
     this.acc = 0;
     this.snapAcc = 0;
     this.boardAcc = 0;
@@ -120,7 +121,7 @@ class Room {
     c.queue.push({ e: 'roster', l: this.sim.roster() });
     c.queue.push({ e: 'phase', ph: this.sim.phase, m: this.sim.matchNo });
     c.queue.push(this.sim.board());
-    c.queue.push(this.sim.snapshot());
+    c.queue.push(this.sim.snapshot(c.hero.team));
     c.full = true;
   }
 
@@ -142,7 +143,7 @@ class Room {
     if (this.state !== 'lobby') return;
     this.sim = new Sim({ difficulty: this.diff, teamSize: this.size, teams: [0, 1].map((t) => this.count(t) + this.bots(t)), readyDelay: 3, emit: (msg, opts) => this.route(msg, opts) });
     this.state = 'match';
-    this.stream.reset();
+    for (const s of this.streams) s.reset();
     this.acc = this.snapAcc = this.boardAcc = this.backT = 0;
     for (const m of this.members) {
       m.hero = this.sim.addHuman(m.name, m.team);
@@ -212,15 +213,17 @@ class Room {
       // guarda a sobra: zerar aqui arredondava pra um retrato a cada dois passos (15 por segundo em vez de 20)
       this.snapAcc = Math.min(this.snapAcc - SNAP, SNAP);
       // quem está em dia recebe só o que mudou desde o retrato anterior; quem acabou de entrar ou perdeu
-      // um pacote recebe o retrato inteiro (os dois são montados uma vez só pra sala)
-      const snap = this.sim.snapshot();
-      const change = this.stream.next(snap);
-      const delta = change && pack(change);
-      let whole = null;
+      // um pacote recebe o retrato inteiro (os dois são montados uma vez só por time)
+      const byTeam = [0, 1].map((team) => {
+        const snap = this.sim.snapshot(team);
+        const change = this.streams[team].next(snap);
+        return { snap, delta: change && pack(change), whole: null };
+      });
       for (const m of this.members) {
         if (!m.hero) continue;
-        if (m.full || !delta) m.queue.push((whole ||= pack(snap)));
-        else m.queue.push(delta);
+        const v = byTeam[m.hero.team];
+        if (m.full || !v.delta) m.queue.push((v.whole ||= pack(v.snap)));
+        else m.queue.push(v.delta);
         m.full = false;
         m.queue.push(this.sim.meState(m.hero));
       }

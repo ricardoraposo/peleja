@@ -9,6 +9,24 @@ for (const [x, z, r] of MAP.obstacles) {
   else OBSTACLES.push({ x, z: -z, r });
 }
 
+// moitas: o lado vermelho é o espelho do azul
+export const BUSHES = [];
+for (const [x, z] of MAP.bushes) {
+  BUSHES.push({ x, z });
+  BUSHES.push({ x: -x, z: -z });
+}
+
+// índice da moita em que (x, z) está, ou -1
+export function bushAt(x, z) {
+  const { rx, rz } = MAP.bush;
+  for (let i = 0; i < BUSHES.length; i++) {
+    const dx = (x - BUSHES[i].x) / rx;
+    const dz = (z - BUSHES[i].z) / rz;
+    if (dx * dx + dz * dz <= 1) return i;
+  }
+  return -1;
+}
+
 export const PACKS = [];
 for (const [x, z] of MAP.packs) {
   PACKS.push({ x, z });

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MAP, TEAMS } from './config.js';
-import { OBSTACLES } from './geo.js';
+import { BUSHES, OBSTACLES } from './geo.js';
+import { Bush } from './bushes.js';
 
 function canvasTexture(w, h, draw, repeat = [1, 1]) {
   const c = document.createElement('canvas');
@@ -235,5 +236,11 @@ export function buildMapView(scene) {
     moss.scale.y = 0.4;
     g.add(moss);
   }
-  return { water };
+  // moitas de capim nas bordas da ponte
+  const bushes = BUSHES.map((b, i) => {
+    const bush = new Bush(b.x, b.z, MAP.bush.rx, MAP.bush.rz, i + 1);
+    g.add(bush.group);
+    return bush;
+  });
+  return { water, bushes };
 }

@@ -48,7 +48,7 @@ export class LocalTransport {
         this.acc -= STEP;
       }
     }
-    const snap = this.sim.snapshot();
+    const snap = this.sim.snapshot(this.me?.team);
     snap.lt = this.acc;
     this.queue.push(snap);
     if (this.me) this.queue.push(this.sim.meState(this.me));
