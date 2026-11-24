@@ -179,7 +179,7 @@ export const HEROES = {
       q: { name: 'Agulha', icon: 'needle', kind: 'proj', cd: 8, cast: 0.25, range: 16, speed: 44, width: 0.55, dmg: { b: 80, l: 21, ad: 1.2, type: 'phys' }, color: '#5eead4', desc: 'Tiro longo e fino, muito dano.' },
       w: { name: 'Rede', icon: 'net', kind: 'proj', cd: 13, cast: 0.15, range: 10, speed: 28, width: 1.1, dmg: { b: 40, l: 10, ap: 0.3, type: 'magic' }, fx: { root: 1.3 }, color: '#99f6e4', desc: 'Prende o primeiro inimigo no lugar.' },
       e: { name: 'Revoada', icon: 'feather', kind: 'blink', cd: 14, cast: 0, range: 6, desc: 'Some e reaparece mais adiante.' },
-      r: { name: 'Tiro Certeiro', icon: 'scope', kind: 'proj', cd: 55, cast: 1.0, range: 34, speed: 70, width: 0.9, heroesOnly: true, dmg: { b: 240, l: 44, ad: 1.4, type: 'phys' }, color: '#2dd4bf', desc: 'Mira por um segundo e dispara do outro lado da ponte.' },
+      r: { name: 'Tiro Certeiro', icon: 'scope', kind: 'proj', cd: 55, cast: 0.6, range: 34, speed: 70, width: 0.9, heroesOnly: true, dmg: { b: 240, l: 44, ad: 1.4, type: 'phys' }, color: '#2dd4bf', desc: 'Mira por um instante e dispara do outro lado da ponte.' },
     },
   },
   vespa: {
