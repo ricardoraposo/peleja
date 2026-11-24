@@ -464,7 +464,7 @@ export const ITEMS = {
   canastra: { name: 'Couraça do Tatu-Canastra', cost: 2450, from: ['gibao', 'beiju'], stats: { armor: 50, hp: 450 } },
   pirarucu: { name: 'Escama do Pirarucu', cost: 2850, from: ['jacare', 'vitoria'], stats: { armor: 55, mres: 30, haste: 15 } },
   tucum: { name: 'Rede de Tucum', cost: 2400, from: ['vitoria', 'vitoria', 'beiju'], stats: { mres: 60, hp: 200, armor: 15 } },
-  jequitiba: { name: 'Tronco do Jequitibá', cost: 2350, from: ['mandioca', 'patua'], stats: { hp: 600, mres: 30 } },
+  jequitiba: { name: 'Tronco do Jequitibá', cost: 2500, from: ['mandioca', 'patua'], stats: { hp: 600, mres: 30 } },
   divino: { name: 'Bandeira do Divino', cost: 2650, from: ['guarana', 'mandioca', 'guarana'], stats: { haste: 25, hp: 300, armor: 20 } },
   tacaca: { name: 'Cuia de Tacacá', cost: 2250, from: ['mandioca', 'guarana', 'beiju'], stats: { hp: 500, haste: 15 } },
 };
