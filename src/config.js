@@ -378,6 +378,7 @@ export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', '
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, roubo de vida, armadura, resistência, vida (e passo nas botas).
 // Roubo de vida: o ataque básico em herói ou tropa cura essa fração do dano que entrou; não vale em estrutura nem em habilidade.
 // Preço: os básicos valem o que custam; intermediários rendem ~105-110% do preço e os grandes ~113-116%.
+// Os de suporte (de usar) rendem ~100% só nos atributos: o efeito de usar é o resto do valor.
 // Exceções: os de poder rendem mais (~125%), porque poder escala menos que ataque; os de defesa rendem ~100%,
 // porque vida e resistência se multiplicam e um tanque cheio deles ficava quase imortal.
 // `group`: só um item do grupo por herói (as botas e suas melhorias).
@@ -448,6 +449,10 @@ export const ITEMS = {
   mula: { name: 'Fogo da Mula sem Cabeça', cost: 3000, from: ['maraca', 'raio'], stats: { pow: 130, haste: 10 } },
   rezadeira: { name: 'Rosário da Rezadeira', cost: 2700, from: ['maraca', 'vitoria'], stats: { pow: 70, haste: 15, mres: 30 } },
   cabaca: { name: 'Cabaça do Pajé', cost: 2600, from: ['maraca', 'guarana'], stats: { haste: 30, pow: 52 } },
+  // ----- grandes: suporte (de usar, em você e nos aliados em volta) -----
+  cheiro: { name: 'Água de Cheiro', cost: 2500, from: ['muiraquita', 'guarana'], stats: { pow: 40, haste: 15, hp: 250 }, active: { radius: 6, heal: { b: 70, l: 12, ap: 0.3 }, cd: 60, color: '#5ee67a', desc: 'Borrifa água de cheiro: cura você e os aliados em volta. Recarga de 60 s.' } },
+  figa: { name: 'Figa de Guiné', cost: 2500, from: ['tatu', 'vitoria', 'guarana'], stats: { armor: 30, mres: 30, haste: 10 }, active: { radius: 6, shield: { b: 60, l: 14, hp: 0.06, t: 2.5 }, cd: 60, color: '#fde68a', desc: 'Dá um escudo em você e nos aliados em volta por 2,5 s. Recarga de 60 s.' } },
+  berrante: { name: 'Berrante do Vaqueiro', cost: 2200, from: ['mandioca', 'guarana'], stats: { hp: 350, haste: 15 }, active: { radius: 7, buff: { t: 3, ms: 0.4 }, cd: 50, color: '#38bdf8', desc: 'Toca o berrante: você e os aliados em volta correm 40% mais rápido por 3 s. Recarga de 50 s.' } },
   benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
   jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
@@ -567,8 +572,8 @@ export function missingBasics(items, id) {
 export const BUILDS = {
   atirador: ['pevento', 'caipora', 'agouro', 'mortalha', 'cobra', 'jaci'],
   mago: ['andarilho', 'cocar', 'tupa', 'maedouro', 'benzedeira', 'maedagua'],
-  suporte: ['andarilho', 'benzedeira', 'cocar', 'sumauma', 'xiquexique', 'jaci'],
-  tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'boibumba', 'xiquexique'],
+  suporte: ['andarilho', 'benzedeira', 'cheiro', 'cocar', 'figa', 'jaci'],
+  tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'berrante', 'xiquexique'],
   lutador: ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique'],
   assassino: ['andarilho', 'lobisomem', 'agouro', 'chupacabra', 'anhanga', 'jaci'],
 };

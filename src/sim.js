@@ -2588,6 +2588,11 @@ queueBolts(h, ab, slot, color) {
       h.windup = 0;
       h.order = { type: 'idle' };
     }
+    if (act.radius) {
+      // item de suporte: cura, escudo ou bônus em você e nos aliados em volta, como uma habilidade de aliado
+      for (const a of this.heroes) if (a.alive && a.team === h.team && dist(a, h) <= act.radius + a.r) this.applySelf(a, h, act);
+      this.emit({ e: 'boom', x: r1(h.x), z: r1(h.z), r: act.radius, c: act.color, al: 1, o: h.id });
+    }
     if (act.cd) h.itemCd[id] = act.cd;
     this.emit({ e: 'use', id: h.id, i: id });
     return true;

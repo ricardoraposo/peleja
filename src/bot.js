@@ -156,6 +156,7 @@ export class BotBrain {
     }
     const tankers = threat ? allies.filter((a) => dist(a, threat) <= TOWER.range + 1).length : 0;
     const holdTower = targetedByTower && pushing && life > 0.45 && (hpf(threat) < 0.35 || tankers >= 2);
+    this.useItems(ctx);
 
     // 0) machucado e sem ninguém por perto: volta pra base pra curar na fonte
     if (h.recallT > 0) {
@@ -316,6 +317,23 @@ export class BotBrain {
       }
     }
     return best;
+  }
+
+  // itens de usar: a estátua quando está pra morrer; os de suporte quando o time está apanhando ou brigando junto
+  useItems(ctx) {
+    const { h, sim } = this;
+    h.items.forEach((id, i) => {
+      const act = ITEMS[id].active;
+      if (!act || h.itemCd[id] > 0) return;
+      const near = (a) => ctx.near.some((e) => dist(e, a) < 8);
+      const busy = act.radius ? [h, ...ctx.alliesNear].filter((a) => dist(a, h) <= act.radius && near(a)) : [];
+      let go = false;
+      if (act.stasis) go = ctx.life < 0.2 && ctx.near.some((e) => dist(e, h) < 6);
+      else if (act.heal) go = busy.some((a) => hpf(a) < 0.45);
+      else if (act.shield) go = busy.some((a) => hpf(a) < 0.5) || (ctx.fight && busy.length >= 2);
+      else if (act.buff) go = (ctx.fight && busy.length >= 2) || (ctx.life < 0.3 && busy.length > 0);
+      if (go) sim.useItem(h, i);
+    });
   }
 
   tryEscape(ctx) {

@@ -477,7 +477,7 @@ export class Game {
         const u = this.units.get(m.id);
         const act = ITEMS[m.i]?.active;
         if (u && act) {
-          this.effects.buffFx(u.x, u.z, '#e8c170', this.styleOf(m.id).el);
+          this.effects.buffFx(u.x, u.z, act.color || '#e8c170', this.styleOf(m.id).el);
           playSound('shield', u);
         }
         break;
@@ -834,7 +834,7 @@ export class Game {
     this.send({ t: 'c', s: slot, x: Math.round(this.mouse.wx * 10) / 10, z: Math.round(this.mouse.wz * 10) / 10, id: this.hoverId || 0 });
   }
 
-  // usa o item do espaço `n` do inventário (a estátua da Carranca)
+  // usa o item do espaço `n` do inventário (a estátua da Carranca e os itens de suporte)
   useItem(n) {
     const st = this.meState;
     if (!this.playing || !st) return;
