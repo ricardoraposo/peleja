@@ -80,7 +80,7 @@ São **71 itens** do folclore e do sertão, em três camadas (básicos, intermed
 | Suporte (de usar) | Água de Cheiro, Figa de Guiné, Berrante do Vaqueiro |
 | Defesa | Casco de Jabuti, Manto de Jaci, Couro do Mapinguari, Armadura de Xique-xique, Raiz de Sumaúma, Tambor do Boi-Bumbá, Couraça do Tatu-Canastra, Escama do Pirarucu, Rede de Tucum, Tronco do Jequitibá, Bandeira do Divino, Cuia de Tacacá |
 
-Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele) e a loja já sugere por onde começar, a build principal na ordem e um caminho alternativo.
+Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele). Em **Recomendados**, a loja mostra por onde começar e **três builds do herói**, montadas pelo que as habilidades dele usam (por exemplo, dano, sobrevivência ou ajudar o time). Clique no nome de uma pra loja seguir ela; a escolha fica lembrada. Os bots também usam essas builds.
 
 <p align="center">
   <img src="docs/loja.jpg" alt="Loja com itens recomendados e árvore de montagem" />

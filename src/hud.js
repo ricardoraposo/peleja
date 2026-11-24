@@ -1,4 +1,4 @@
-import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, BUILDS, BUILD_WHY, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, BUILDS_ALT, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
+import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
 import { OBSTACLES } from './geo.js';
 import { ITEM_ICONS } from './itemicons.js';
 
@@ -215,6 +215,24 @@ export function itemStats(it, heroId = null, sep = ' · ') {
     .concat(it.active ? [`<em class="use">Usar: ${esc(it.active.desc)}</em>`] : [])
     .join(sep);
 }
+
+// build escolhida em cada herói, lembrada neste navegador (sem acesso ao armazenamento, fica na primeira)
+const buildPicks = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('peleja.builds') || '{}');
+  } catch {
+    return {};
+  }
+})();
+const buildPick = (heroId) => buildPicks[heroId] | 0;
+const setBuildPick = (heroId, n) => {
+  buildPicks[heroId] = n;
+  try {
+    localStorage.setItem('peleja.builds', JSON.stringify(buildPicks));
+  } catch {
+    return;
+  }
+};
 
 // atributos de um herói (a lista que a simulação manda em `statLine`); `named` escreve o nome de cada um ao lado
 const statCells = (s, named = false) =>
@@ -553,6 +571,9 @@ export class Hud {
       } else if (slot) {
         this.sellSel = Number(slot.dataset.n);
         this.shopSel = slot.dataset.id;
+      } else if (pick(e, '[data-build]')) {
+        setBuildPick(this.shopHero, Number(pick(e, '[data-build]').dataset.build));
+        this.buildRecommended(this.shopHero);
       } else if (pick(e, '#shop-buy')) this.game.buy(this.shopSel);
       else if (pick(e, '#shop-sell') && this.sellSel >= 0) {
         this.game.sell(this.sellSel);
@@ -592,23 +613,28 @@ export class Hud {
     });
   }
 
-  // a ordem de compra indicada pro herói atual (a mesma que os bots seguem)
+  // as três builds do herói atual (as mesmas que os bots seguem); a escolhida guia o "próximo item" e fica lembrada
   buildRecommended(heroId) {
     this.shopHero = heroId;
     this.shopSel = null;
     const h = HEROES[heroId];
-    const build = BUILDS[h.role] || BUILDS.lutador;
-    const alt = BUILDS_ALT[h.role];
+    const builds = HERO_BUILDS[heroId];
+    const sel = Math.min(builds.length - 1, buildPick(heroId));
+    const build = builds[sel].items;
     this.shopBuild = build;
     const start = [...new Set(build.slice(0, 2).flatMap((id) => missingBasics([], id)))];
     const aff = affinityOf(heroId);
     const row = (ids) => `<div class="tiles">${ids.map((id, i) => this.shopTile(id).replace('<span class="tile-icon">', `<span class="tile-n">${i + 1}</span><span class="tile-icon">`)).join('')}</div>`;
     $('shop-rec').innerHTML =
-      `<p class="rec-why"><b style="color:${h.color}">${esc(h.name)}</b> · ${esc(BUILD_WHY[h.role] || '')}</p>` +
+      `<p class="rec-why"><b style="color:${h.color}">${esc(h.name)}</b> · Três jeitos de montar. Clique no nome de uma build pra loja seguir ela.</p>` +
       `<p class="rec-aff"><b>★ Afinidade:</b> itens rendem +${Math.round(AFFINITY_BONUS * 100)}% de ${aff.map((k) => esc(STAT_LABEL[k].split(' (')[0])).join(', ')} em você.</p>` +
       `<h3>Comece por</h3><div class="tiles">${start.map((id) => this.shopTile(id)).join('')}</div>` +
-      `<h3>Build principal, na ordem</h3>${row(build)}` +
-      (alt ? `<h3>Outro caminho · ${esc(alt.name)}</h3>${row(alt.items)}` : '');
+      builds
+        .map(
+          (b, i) =>
+            `<div class="rec-build${i === sel ? ' on' : ''}"><button class="rec-pick" data-build="${i}"><span class="rec-n">${i + 1}</span>${esc(b.name)}${i === sel ? '<em>seguindo</em>' : ''}</button><p>${esc(b.why)}</p>${row(b.items)}</div>`,
+        )
+        .join('');
     const tiers = ['Básicos', 'Intermediários', 'Grandes'];
     $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('');
     this.shopKey = '';
@@ -691,7 +717,8 @@ export class Hud {
       b.classList.toggle('afford', pr.ok);
       b.classList.toggle('owned', st.it.includes(id));
       b.classList.toggle('sel', id === this.shopSel);
-      b.classList.toggle('next', id === next && !!b.closest('#shop-rec'));
+      // o próximo item só acende na build que a loja está seguindo
+      b.classList.toggle('next', id === next && !!b.closest('#shop-rec') && !b.closest('.rec-build:not(.on)'));
       b.classList.toggle('off', !!b.closest('#shop-all') && (cat?.active ? !ITEMS[id].active : !!cat?.stats && !Object.keys(ITEMS[id].stats).some((k) => cat.stats.includes(k))));
     }
   }

@@ -570,32 +570,85 @@ export function missingBasics(items, id) {
   return out;
 }
 
-// build principal de cada classe e uma alternativa com outro estilo
-export const BUILDS = {
-  atirador: ['pevento', 'caipora', 'agouro', 'mortalha', 'cobra', 'jaci'],
-  mago: ['andarilho', 'cocar', 'tupa', 'maedouro', 'benzedeira', 'maedagua'],
-  suporte: ['andarilho', 'benzedeira', 'cheiro', 'cocar', 'figa', 'jaci'],
-  tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'berrante', 'xiquexique'],
-  lutador: ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique'],
-  assassino: ['andarilho', 'lobisomem', 'agouro', 'chupacabra', 'anhanga', 'jaci'],
-};
-export const BUILDS_ALT = {
-  atirador: { name: 'Atirador que aguenta', items: ['perneira', 'caipora', 'labatut', 'agouro', 'jaci', 'jabuti'] },
-  mago: { name: 'Mago casca-grossa', items: ['boto', 'maedouro', 'benzedeira', 'carranca', 'jaci', 'cocar'] },
-  suporte: { name: 'Suporte que machuca', items: ['andarilho', 'cocar', 'maedouro', 'tupa', 'benzedeira', 'jaci'] },
-  tanque: { name: 'Tanque que bate', items: ['boto', 'cangaceiro', 'anhanga', 'xiquexique', 'sumauma', 'jabuti'] },
-  lutador: { name: 'Só dano', items: ['pevento', 'lobisomem', 'agouro', 'cobra', 'anhanga', 'jabuti'] },
-  assassino: { name: 'Briga longa', items: ['perneira', 'anhanga', 'lobisomem', 'cangaceiro', 'icamiabas', 'jaci'] },
-};
-
-// por que cada classe compra o que compra (aparece na loja, em "Recomendados")
-export const BUILD_WHY = {
-  atirador: 'Atirador: velocidade de ataque e crítico pra bater de longe sem parar. Defesa só no fim.',
-  mago: 'Mago: poder deixa as habilidades mais fortes e aceleração faz elas voltarem mais rápido.',
-  suporte: 'Suporte: aceleração e vida pra usar as habilidades o tempo todo e aguentar a briga.',
-  tanque: 'Tanque: vida, armadura e resistência pra entrar na frente e aguentar o tranco.',
-  lutador: 'Lutador: ataque com vida, pra bater forte e sobreviver no meio da briga.',
-  assassino: 'Assassino: muito ataque, crítico e aceleração pra derrubar um alvo rápido.',
+// Três builds por herói, na ordem de compra, montadas pelo que as habilidades dele usam (ataque, poder ou vida).
+// A loja mostra as três em "Recomendados"; cada bot segue uma delas, pra variar as partidas.
+const B = (name, why, items) => ({ name, why, items });
+export const HERO_BUILDS = {
+  faisca: [
+    B('Crítico', 'Velocidade de ataque e crítico: o básico vira a maior fonte de dano.', ['pevento', 'caipora', 'agouro', 'paimato', 'mortalha', 'jaci']),
+    B('Rajada', 'Ataque com aceleração: a Rajada e o Estalo voltam rápido e batem forte.', ['andarilho', 'lampiao', 'lobisomem', 'agouro', 'maracatu', 'jaci']),
+    B('Sobrevivente', 'Roubo de vida e defesa pra bater no meio da briga sem cair.', ['perneira', 'labatut', 'agouro', 'cascavel', 'chupacabra', 'jabuti']),
+  ],
+  trovao: [
+    B('Brigão', 'Ataque com vida e roubo de vida: entra na frente e fica de pé.', ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique']),
+    B('Dano', 'Muito ataque e aceleração: cada habilidade derruba um pedaço do alvo.', ['pevento', 'lobisomem', 'chupacabra', 'onca', 'anhanga', 'jabuti']),
+    B('Paredão', 'Ataque com armadura e vida: o escudo do Trovão cresce com a vida.', ['perneira', 'cangaceiro', 'bradador', 'jequitiba', 'jaci', 'canastra']),
+  ],
+  coruja: [
+    B('Tiro certeiro', 'Ataque e crítico com aceleração: o Disparo e o Tiro Certeiro escalam muito com ataque.', ['andarilho', 'agouro', 'lampiao', 'caipora', 'cobra', 'jaci']),
+    B('Crítico', 'Crítico e velocidade de ataque pra bater de longe sem parar.', ['pevento', 'paimato', 'agouro', 'caipora', 'mortalha', 'jaci']),
+    B('Segura', 'Roubo de vida e defesas pra sobreviver a quem chega perto.', ['perneira', 'labatut', 'agouro', 'cascavel', 'jaci', 'jabuti']),
+  ],
+  vespa: [
+    B('Assassina', 'Ataque, crítico e aceleração: entra, mata e sai antes da resposta.', ['andarilho', 'lobisomem', 'lampiao', 'agouro', 'chupacabra', 'jaci']),
+    B('Ferroada rápida', 'Crítico e velocidade de ataque pra derreter quem ficar parado.', ['pevento', 'paimato', 'agouro', 'onca', 'chupacabra', 'jaci']),
+    B('Briga longa', 'Vida e roubo de vida pra aguentar a briga inteira.', ['perneira', 'corposeco', 'anhanga', 'cangaceiro', 'lobisomem', 'jaci']),
+  ],
+  mandacaru: [
+    B('Muralha', 'Armadura, resistência e vida: aguenta o time inteiro e acelera os aliados.', ['perneira', 'jabuti', 'jaci', 'mapinguari', 'berrante', 'xiquexique']),
+    B('Espinhento', 'Muita vida: os Espinhos, as Raízes e a Florada ferem mais quanto mais vida você tem.', ['boto', 'boibumba', 'jequitiba', 'canastra', 'tacaca', 'mapinguari']),
+    B('Guardião do time', 'Itens de usar pra proteger e levar o time junto.', ['andarilho', 'figa', 'berrante', 'divino', 'pirarucu', 'sumauma']),
+  ],
+  iara: [
+    B('Curandeira', 'Aceleração e poder pra curar e proteger o tempo todo.', ['andarilho', 'cheiro', 'benzedeira', 'cabaca', 'figa', 'jaci']),
+    B('Maré', 'Poder: a Onda e a Maré Alta passam a doer de verdade.', ['andarilho', 'cocar', 'maedouro', 'mula', 'benzedeira', 'jaci']),
+    B('Protetora', 'Escudos e vida pra segurar quem está na frente.', ['boto', 'figa', 'cheiro', 'divino', 'sumauma', 'jaci']),
+  ],
+  boitata: [
+    B('Explosão', 'Muito poder: a Labareda e o Fogo-fátuo apagam um alvo de uma vez.', ['andarilho', 'cocar', 'mula', 'tupa', 'maedagua', 'jaci']),
+    B('Fogo contínuo', 'Aceleração: as habilidades voltam tão rápido que o fogo não para.', ['andarilho', 'cabaca', 'cocar', 'rezadeira', 'benzedeira', 'jaci']),
+    B('Casca-grossa', 'Poder com vida e defesa, e a Carranca pra escapar de mergulho.', ['boto', 'maedouro', 'carranca', 'rezadeira', 'jabuti', 'jaci']),
+  ],
+  saci: [
+    B('Redemoinho', 'Ataque com vida e roubo de vida: o Redemoinho cura a cada giro.', ['perneira', 'anhanga', 'corposeco', 'onca', 'jaci', 'xiquexique']),
+    B('Dano', 'Ataque e roubo de vida pra derrubar quem ficar no meio do giro.', ['pevento', 'corposeco', 'onca', 'icamiabas', 'chupacabra', 'jabuti']),
+    B('Aguenta', 'Vida e defesa pra ficar girando no meio do time inimigo.', ['perneira', 'anhanga', 'cangaceiro', 'corposeco', 'canastra', 'jaci']),
+  ],
+  cuca: [
+    B('Bruxa-jacaré', 'Ataque com vida: a Bocada cura mais e a Cuca fica de pé.', ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique']),
+    B('Mordida', 'Ataque e roubo de vida: a Mordida e o Bote acabam com a briga.', ['perneira', 'lobisomem', 'chupacabra', 'bradador', 'anhanga', 'jaci']),
+    B('Aguenta tudo', 'Ataque com muita defesa pra encarar time com mago.', ['boto', 'cangaceiro', 'jequitiba', 'canastra', 'bonfim', 'bradador']),
+  ],
+  curupira: [
+    B('Tocha sem parar', 'Aceleração e poder: a Tocha volta rápido e queima de longe.', ['andarilho', 'cocar', 'cabaca', 'mula', 'tupa', 'jaci']),
+    B('Explosão', 'Muito poder: a Fúria da Mata vira uma explosão que derruba o time.', ['andarilho', 'mula', 'tupa', 'cocar', 'maedouro', 'maedagua']),
+    B('Seguro', 'Poder com vida e a Carranca: o Curupira não aguenta ser pego.', ['boto', 'maedouro', 'carranca', 'benzedeira', 'rezadeira', 'jaci']),
+  ],
+  boto: [
+    B('Encantador', 'Poder com vida pra encantar e sobreviver depois.', ['andarilho', 'cocar', 'maedouro', 'mula', 'benzedeira', 'jaci']),
+    B('Cardume', 'Aceleração: Pérola, Cardume e Galanteio voltam a toda hora.', ['andarilho', 'cabaca', 'cocar', 'benzedeira', 'rezadeira', 'maedagua']),
+    B('Mergulhador', 'Poder com defesa pra mergulhar no meio deles sem morrer.', ['boto', 'maedouro', 'carranca', 'rezadeira', 'jabuti', 'jaci']),
+  ],
+  caipora: [
+    B('Traquina', 'Muito poder: o Coquinho de longe e a Fumaça do Sono doem muito.', ['andarilho', 'cocar', 'mula', 'tupa', 'benzedeira', 'jaci']),
+    B('Coco rápido', 'Aceleração: Coquinho, Traquinagem e Buraco de Tatu o tempo todo.', ['andarilho', 'cabaca', 'cocar', 'rezadeira', 'maedouro', 'jaci']),
+    B('Segura', 'Poder com vida e defesa, e a Carranca pra fugir.', ['boto', 'maedouro', 'carranca', 'maedagua', 'jabuti', 'jaci']),
+  ],
+  fulozinha: [
+    B('Pegadora', 'Vida, defesas e aceleração: puxa o inimigo e aguenta a resposta.', ['perneira', 'figa', 'divino', 'tacaca', 'sumauma', 'jaci']),
+    B('Laço que machuca', 'Poder com vida: o Laço, a Chicotada e o Redemoinho viram dano e ela aguenta puxar.', ['andarilho', 'maedouro', 'benzedeira', 'rezadeira', 'cocar', 'jaci']),
+    B('Escolta', 'Itens de usar pra curar, proteger e acelerar o time.', ['andarilho', 'cheiro', 'figa', 'berrante', 'divino', 'jaci']),
+  ],
+  uirapuru: [
+    B('Canto do time', 'Aceleração e itens de usar: canta, cura e acelera sem parar.', ['andarilho', 'cheiro', 'benzedeira', 'cabaca', 'berrante', 'jaci']),
+    B('Canto que fere', 'Poder: a cura, o Encanto e o Canto Final ficam mais fortes.', ['andarilho', 'cocar', 'maedouro', 'mula', 'benzedeira', 'jaci']),
+    B('Resistente', 'Vida e defesas pra cantar no meio da briga.', ['boto', 'figa', 'divino', 'tacaca', 'sumauma', 'jaci']),
+  ],
+  pilintra: [
+    B('Malandro', 'Aceleração e poder: escudo e cartas na mão o tempo todo.', ['andarilho', 'figa', 'benzedeira', 'cocar', 'cheiro', 'jaci']),
+    B('Cartada', 'Muito poder: Cartas na Mesa joga o time inimigo pro alto e fere.', ['andarilho', 'cocar', 'maedouro', 'mula', 'tupa', 'jaci']),
+    B('Resistente', 'Vida e defesas pra segurar a frente com o time.', ['boto', 'figa', 'divino', 'tacaca', 'sumauma', 'jaci']),
+  ],
 };
 
 export const DIFFICULTY = {
