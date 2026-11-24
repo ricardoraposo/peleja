@@ -216,6 +216,22 @@ export function itemStats(it, heroId = null, sep = ' · ') {
     .join(sep);
 }
 
+// atributos de um herói (a lista que a simulação manda em `statLine`); `named` escreve o nome de cada um ao lado
+const statCells = (s, named = false) =>
+  [
+    ['ataque', s[0], 'atk'],
+    ['poder', s[1], 'pow'],
+    ['armadura', s[2], 'arm'],
+    ['resist.', s[3], 'mr'],
+    ['vel. ataque', s[4].toFixed(2), 'as'],
+    ['passo', s[5].toFixed(1), 'ms'],
+    ['aceleração', s[7], 'ah'],
+    ['crítico', s[8] + '%', 'crit'],
+    ['roubo de vida', (s[9] ?? 0) + '%', 'ls'],
+  ]
+    .map(([l, v, k]) => `<div class="st st-${k}" title="${l}"><i></i>${named ? `<span>${l}</span>` : ''}${v}</div>`)
+    .join('');
+
 // desenho do item (cada um tem o seu) e a classe da moldura, que fica mais rica a cada nível do item
 // rótulo da tecla de cada ação (o jogo troca quando o jogador muda os atalhos)
 let keyLabel = (action) => action.toUpperCase();
@@ -447,20 +463,7 @@ export class Hud {
       s.cd.style.setProperty('--p', cd > 0 ? Math.min(1, cd / max) : 0);
       s.num.textContent = cd > 0 ? (cd >= 1 ? Math.ceil(cd) : cd.toFixed(1)) : locked && slot === 'r' && st.lv < ULT_LEVELS[0] ? String(ULT_LEVELS[0]) : '';
     });
-    const s = st.s;
-    const statsHtml = [
-      ['ataque', s[0], 'atk'],
-      ['poder', s[1], 'pow'],
-      ['armadura', s[2], 'arm'],
-      ['resist.', s[3], 'mr'],
-      ['vel. ataque', s[4].toFixed(2), 'as'],
-      ['passo', s[5].toFixed(1), 'ms'],
-      ['aceleração', s[7], 'ah'],
-      ['crítico', s[8] + '%', 'crit'],
-      ['roubo de vida', (s[9] ?? 0) + '%', 'ls'],
-    ]
-      .map(([l, v, k]) => `<div class="st st-${k}" title="${l}"><i></i>${v}</div>`)
-      .join('');
+    const statsHtml = statCells(st.s);
     if (statsHtml !== this.statsKey) {
       this.statsKey = statsHtml;
       this.el.stats.innerHTML = statsHtml;
@@ -701,10 +704,13 @@ export class Hud {
     for (const [id, r] of g.roster) {
       if (r.team !== team) continue;
       const b = g.board.get(id) || [id, 0, 0, 0, 0, 0, [], 0, 0, 0];
-      const h = HEROES[HERO_ORDER[r.heroIdx]] || HEROES.faisca;
-      const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item" style="--c:${itemColor(it)}">${itemIcon(it)}</span>`).join('')}</div></td>` : '';
+      const hid = HERO_ORDER[r.heroIdx];
+      const h = HEROES[hid] || HEROES.faisca;
+      // passando o mouse: no item, o nome e o que ele dá (com a afinidade de quem tem); no herói, os atributos dele
+      const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item b-tip" style="--c:${itemColor(it)}">${itemIcon(it)}<span class="tip"><b>${esc(ITEMS[it].name)}</b><span>${itemStats(ITEMS[it], hid)}</span></span></span>`).join('')}</div></td>` : '';
+      const tip = withItems && b[10] ? `<span class="tip b-stats-tip"><b>${esc(r.name)}</b><small>${h.name} · ${h.title} · nv ${b[5]}</small><span class="b-stats">${statCells(b[10], true)}</span></span>` : '';
       rows.push(
-        `<tr class="${id === g.myId ? 'me' : ''}"><td><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span></td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
+        `<tr class="${id === g.myId ? 'me' : ''}${tip ? ' b-tip b-row' : ''}"><td class="b-anchor"><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span>${tip}</td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
       );
     }
     return rows.join('');
@@ -712,8 +718,15 @@ export class Hud {
 
   renderBoard() {
     const g = this.game;
-    $('board-blue').innerHTML = this.boardRows(0);
-    $('board-red').innerHTML = this.boardRows(1);
+    const blue = this.boardRows(0);
+    const red = this.boardRows(1);
+    // só redesenha quando algo mudou: refazer a tabela a cada quadro apagava a dica que está aberta
+    if (blue + red !== this.boardKey) {
+      this.boardKey = blue + red;
+      $('board-blue').innerHTML = blue;
+      $('board-red').innerHTML = red;
+      g.grab.dirty = true;
+    }
     $('bk-blue').textContent = g.kills[0];
     $('bk-red').textContent = g.kills[1];
   }

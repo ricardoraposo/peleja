@@ -2735,7 +2735,6 @@ queueBolts(h, ab, slot, color) {
   }
 
   meState(h) {
-    const s = h.stats;
     return {
       e: 'me',
       id: h.id,
@@ -2750,7 +2749,7 @@ queueBolts(h, ab, slot, color) {
       xp: Math.floor(h.xp),
       xn: xpToNext(h.level),
       lv: h.level,
-      s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100)],
+      s: this.statLine(h),
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
       rr: this.phase === 'draft' ? this.rerollsLeft(h) : undefined,
@@ -2760,10 +2759,17 @@ queueBolts(h, ab, slot, color) {
     };
   }
 
+  // atributos do herói como o painel mostra: ataque, poder, armadura, resistência, vel. de ataque, passo, alcance, aceleração, crítico %, roubo de vida %
+  statLine(h) {
+    const s = h.stats;
+    return [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100)];
+  }
+
+  // placar (Tab): o último campo são os atributos, que aparecem ao passar o mouse no herói
   board() {
     return {
       e: 'board',
-      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone)]),
+      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h)]),
     };
   }
 }
