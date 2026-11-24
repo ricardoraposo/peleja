@@ -28,13 +28,14 @@ Mudança visual se confere no **Treino livre** (`npm run dev`, botão no menu): 
 | `src/bot.js` | Decisões dos bots. Chama os mesmos métodos da simulação que um jogador. |
 | `src/wire.js` | Protocolo binário: uma tabela de campos por mensagem. |
 | `src/game.js` | Cliente: entrada, câmera, interpolação, despacho dos eventos da simulação. |
-| `src/models.js`, `src/effects.js`, `src/fxstyle.js` | Modelos 3D, efeitos e o estilo visual e sonoro de cada herói. |
+| `src/models.js`, `src/effects.js`, `src/fxstyle.js` | Modelos 3D (animação), efeitos e o estilo visual e sonoro de cada herói. |
+| `src/herobuild.js`, `src/heroart.js` | Corpo, rosto, roupa e arma de cada herói, e as formas orgânicas que eles usam (membros, mechas, folhas, rosto pintado). |
 | `src/hud.js`, `src/overlay.js`, `src/main.js` | Interface da partida, barras e avisos sobre os heróis, menus e tela de escolha. |
 | `server/index.js` | Salas e partidas online. |
 
 Regras que não se quebram:
 
-- **Regra de jogo mora em `sim.js`; número mora em `config.js`.** O cliente só desenha o que a simulação manda. Nada em `fxstyle.js`, `effects.js` ou `models.js` pode mudar o resultado de uma partida.
+- **Regra de jogo mora em `sim.js`; número mora em `config.js`.** O cliente só desenha o que a simulação manda. Nada em `fxstyle.js`, `effects.js`, `models.js` ou `herobuild.js` pode mudar o resultado de uma partida.
 - **A simulação não conhece o navegador.** Ela roda no Node: nada de `window`, `document` ou Three.js em `sim.js`, `bot.js`, `config.js`, `geo.js` e `wire.js`.
 - **Mensagem nova entra na tabela do `wire.js`** (eventos em `EVENTS`, comandos em `COMMANDS`). Fora da tabela ela ainda chega, como JSON, mas o `npm run wire` acusa. Campo opcional leva `?`.
 - **Estado do herói que o cliente precisa ver vai nas flags** (`F` em `sim.js`, um bit por estado) ou no `meState`, não em evento solto.
@@ -57,7 +58,7 @@ Uma habilidade é um objeto em `config.js` com um `kind` (`proj`, `aoe`, `nova`,
 2. `sim.js`: só se precisar de mecânica nova.
 3. `fxstyle.js`: entrada em `HERO_FX` (elemento, forma do tiro básico e dos projéteis, sons).
 4. `effects.js`: formas novas de projétil em `buildProj` (e, se quiser, rastro e fim em `projTrail` e `endProj`).
-5. `models.js`: chapéu, arma e acessório novos, se o `look` pedir. O jogo é visto de cima: o que identifica o herói é o topo da cabeça, então ponha cor ali (cabelo ou chapéu escuro vira um borrão).
+5. `herobuild.js`: uma entrada em `OUTFIT` (chave = `look.hat`) com o corpo, a roupa e o chapéu, e a arma em `weapon` se for nova. `look.fem` usa o corpo e o rosto de mulher. O jogo é visto de cima: o que identifica o herói é o topo da cabeça, então ponha cor ali (cabelo ou chapéu escuro vira um borrão).
 6. `hud.js`: ícones novos em `ICONS` e linhas de tooltip pras mecânicas novas.
 7. `bot.js`: regra de uso, se o `kind` e os campos não forem cobertos.
 8. `README.md`: contagem de heróis e a linha na tabela (coluna de papel só com o papel: Mago, Suporte, Tanque...).
