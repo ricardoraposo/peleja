@@ -1,4 +1,4 @@
-import { BUILDS, ITEMS, TOWER, abilityOf, BUILDS_ALT, nextBuy } from './config.js';
+import { HERO_BUILDS, ITEMS, TOWER, abilityOf, nextBuy } from './config.js';
 import { cannonPos, fountainX, pushDir } from './geo.js';
 // bots voltando pra base curar alongavam demais as partidas (várias batendo no limite de 40 min); fica desligado
 const BOT_RECALL = false;
@@ -42,9 +42,9 @@ export class BotBrain {
 
   shop() {
     const { h, sim } = this;
-    // metade dos bots segue a build alternativa da classe, pra variar as partidas
-    const alt = BUILDS_ALT[h.def.role];
-    const build = (h.id % 2 === 1 && alt ? alt.items : BUILDS[h.def.role]) || BUILDS.lutador;
+    // cada bot segue uma das três builds do herói, pra variar as partidas
+    const builds = HERO_BUILDS[h.heroId];
+    const build = builds[h.id % builds.length].items;
     for (let n = 0; n < 5; n++) {
       const next = build.find((id) => !h.items.includes(id));
       if (!next) return;
