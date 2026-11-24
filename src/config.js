@@ -492,6 +492,8 @@ export const STAT_LABEL = {
 };
 export const STAT_PCT = ['as', 'crit', 'ls'];
 export const CRIT_MULT = 1.75;
+// Golpe básico de herói já começado ainda sai com o alvo até esta distância além do alcance: andando pra trás ninguém escapa, só com investida ou salto
+export const ATTACK_SLACK = 1.4;
 
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
 export const AFFINITY_BONUS = 0.2;

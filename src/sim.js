@@ -10,6 +10,7 @@ import {
   MINIONS,
   SLOTS,
   CRIT_MULT,
+  ATTACK_SLACK,
   itemPrice,
   itemStatsFor,
   RANK_MAX,
@@ -2092,8 +2093,13 @@ queueBolts(h, ab, slot, color) {
         break;
       }
       default: {
-        if (!this.attackable(h, h.target) || !this.inAttackRange(h, h.target, 0.3) || h.target.sleepT > 0 || h.target.drowsy) h.target = this.nearestEnemy(h, h.stats.range + 0.2, false);
-        if (h.target && this.inAttackRange(h, h.target, 0.3)) this.attackStep(h, h.target, dt);
+        const reach = () => (h.windup > 0 ? ATTACK_SLACK : 0.3);
+        if (!this.attackable(h, h.target) || !this.inAttackRange(h, h.target, reach()) || h.target.sleepT > 0 || h.target.drowsy) {
+          // o golpe era pra outro: troca de alvo começa do zero
+          h.target = this.nearestEnemy(h, h.stats.range + 0.2, false);
+          h.windup = 0;
+        }
+        if (h.target && this.inAttackRange(h, h.target, reach())) this.attackStep(h, h.target, dt);
         else h.windup = 0;
       }
     }
@@ -2120,7 +2126,7 @@ queueBolts(h, ab, slot, color) {
   }
 
   engage(u, t, dt) {
-    if (this.inAttackRange(u, t)) this.attackStep(u, t, dt);
+    if (this.inAttackRange(u, t, u.isHero && u.windup > 0 ? ATTACK_SLACK : 0)) this.attackStep(u, t, dt);
     else {
       u.windup = 0;
       this.moveToward(u, t.x, t.z, dt, u.r + t.r + u.stats.range * 0.85, t);
