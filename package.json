@@ -11,7 +11,8 @@
     "tunnel": "ngrok http 7788",
     "sim": "node scripts/simtest.js",
     "stress": "node scripts/stress.js",
-    "wire": "node scripts/wiretest.js"
+    "wire": "node scripts/wiretest.js",
+    "balance": "node scripts/balance.js"
   },
   "dependencies": {
     "three": "^0.170.0",

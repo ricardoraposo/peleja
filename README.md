@@ -165,4 +165,4 @@ server/
 scripts/       testes de simulação, estresse e protocolo
 ```
 
-Scripts de teste: `npm run sim`, `npm run stress` e `npm run wire`.
+Scripts de teste: `npm run sim`, `npm run stress` e `npm run wire`. Pra medir o balanceamento, `npm run balance -- 200 5` roda 200 partidas 5x5 de bots em paralelo e mostra vitória, dano, mortes, dano em torre e uso das habilidades de cada herói (troque o 5 por 3 pro 3x3).
