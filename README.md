@@ -66,17 +66,17 @@ Antes da partida você escolhe dois **feitiços** pras teclas D e F:
 
 ## Loja
 
-São **52 itens** do folclore e do sertão, em três camadas (básicos, intermediários e grandes), montados a partir das peças. Itens só dão atributos: ataque, poder, aceleração de habilidade, velocidade de ataque, crítico, roubo de vida, armadura, resistência mágica e vida (e passo nas botas).
+São **68 itens** do folclore e do sertão, em três camadas (básicos, intermediários e grandes), montados a partir das peças. Itens só dão atributos: ataque, poder, aceleração de habilidade, velocidade de ataque, crítico, roubo de vida, armadura, resistência mágica e vida (e passo nas botas).
 
 **Roubo de vida**: o ataque básico em herói ou tropa cura uma parte do dano que entrou (com 15%, um golpe de 200 cura 30). Não vale em torre nem em habilidade. A única exceção é a **Carranca**, que vira estátua por 2,5 s.
 
 | Linha | Itens grandes |
 | --- | --- |
-| Ataque | Garra do Lobisomem, Presa da Cobra-Grande, Borduna de Anhangá, Gume do Cangaceiro, Lança das Icamiabas |
-| Atirador | Arco da Caipora, Agouro da Acauã, Rasga-Mortalha, Assobio da Matinta |
+| Ataque | Garra do Lobisomem, Presa da Cobra-Grande, Borduna de Anhangá, Gume do Cangaceiro, Lança das Icamiabas, Garra da Onça-Pintada, Tacape do Bradador, Fita do Bonfim |
+| Atirador | Arco da Caipora, Agouro da Acauã, Rasga-Mortalha, Assobio da Matinta, Chocalho da Cascavel, Tambor de Maracatu, Olho do Pai-do-Mato, Peixeira de Lampião |
 | Roubo de vida | Presa do Chupa-cabra, Foice do Corpo-Seco, Lança do Labatut |
-| Poder | Cajado de Tupã, Cocar do Pajé, Coração da Mãe-do-Ouro, Véu da Mãe-d'Água, Carranca, Cuia da Benzedeira |
-| Defesa | Casco de Jabuti, Manto de Jaci, Couro do Mapinguari, Armadura de Xique-xique, Raiz de Sumaúma, Tambor do Boi-Bumbá |
+| Poder | Cajado de Tupã, Cocar do Pajé, Coração da Mãe-do-Ouro, Véu da Mãe-d'Água, Carranca, Cuia da Benzedeira, Fogo da Mula sem Cabeça, Rosário da Rezadeira, Cabaça do Pajé |
+| Defesa | Casco de Jabuti, Manto de Jaci, Couro do Mapinguari, Armadura de Xique-xique, Raiz de Sumaúma, Tambor do Boi-Bumbá, Couraça do Tatu-Canastra, Escama do Pirarucu, Rede de Tucum, Tronco do Jequitibá, Bandeira do Divino, Cuia de Tacacá |
 
 Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele) e a loja já sugere por onde começar, a build principal na ordem e um caminho alternativo.
 

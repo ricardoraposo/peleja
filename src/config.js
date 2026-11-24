@@ -424,10 +424,17 @@ export const ITEMS = {
   anhanga: { name: 'Borduna de Anhangá', cost: 3200, from: ['borduna', 'peixeira'], stats: { atk: 40, hp: 400, haste: 15 } },
   cangaceiro: { name: 'Gume do Cangaceiro', cost: 2700, from: ['borduna', 'gibao'], stats: { atk: 30, armor: 40, hp: 300 } },
   icamiabas: { name: 'Lança das Icamiabas', cost: 2600, from: ['flecha', 'borduna'], stats: { atk: 35, as: 0.3, hp: 200 } },
+  onca: { name: 'Garra da Onça-Pintada', cost: 3050, from: ['flecha', 'peixeira'], stats: { atk: 50, as: 0.25, haste: 10 } },
+  bradador: { name: 'Tacape do Bradador', cost: 2850, from: ['facao', 'facao', 'tatu'], stats: { atk: 60, armor: 30 } },
+  bonfim: { name: 'Fita do Bonfim', cost: 2250, from: ['facao', 'vitoria'], stats: { atk: 30, mres: 45 } },
   caipora: { name: 'Arco da Caipora', cost: 2650, from: ['flecha', 'zarabatana'], stats: { as: 0.55, atk: 30 } },
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
   matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.55, pow: 70 } },
+  cascavel: { name: 'Chocalho da Cascavel', cost: 2550, from: ['flecha', 'vitoria'], stats: { as: 0.4, atk: 20, mres: 30 } },
+  maracatu: { name: 'Tambor de Maracatu', cost: 2450, from: ['flecha', 'guarana'], stats: { as: 0.4, atk: 15, haste: 15 } },
+  paimato: { name: 'Olho do Pai-do-Mato', cost: 2850, from: ['arraia', 'flecha'], stats: { crit: 0.25, atk: 30, as: 0.25 } },
+  lampiao: { name: 'Peixeira de Lampião', cost: 3000, from: ['arraia', 'peixeira'], stats: { crit: 0.2, atk: 45, haste: 10 } },
   // ----- grandes: roubo de vida -----
   chupacabra: { name: 'Presa do Chupa-cabra', cost: 2950, from: ['garramorcego', 'facao'], stats: { ls: 0.15, atk: 60 } },
   corposeco: { name: 'Foice do Corpo-Seco', cost: 2800, from: ['garramorcego', 'borduna'], stats: { ls: 0.12, atk: 40, hp: 300 } },
@@ -438,6 +445,9 @@ export const ITEMS = {
   maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 92, hp: 350 } },
   maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 80, mres: 45 } },
   carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 90, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+  mula: { name: 'Fogo da Mula sem Cabeça', cost: 3000, from: ['maraca', 'raio'], stats: { pow: 130, haste: 10 } },
+  rezadeira: { name: 'Rosário da Rezadeira', cost: 2700, from: ['maraca', 'vitoria'], stats: { pow: 70, haste: 15, mres: 30 } },
+  cabaca: { name: 'Cabaça do Pajé', cost: 2600, from: ['maraca', 'guarana'], stats: { haste: 30, pow: 52 } },
   benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
   jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
@@ -446,6 +456,12 @@ export const ITEMS = {
   xiquexique: { name: 'Armadura de Xique-xique', cost: 2800, from: ['jacare', 'mandioca'], stats: { armor: 50, haste: 20, hp: 200 } },
   sumauma: { name: 'Raiz de Sumaúma', cost: 2800, from: ['patua', 'guarana', 'vitoria'], stats: { mres: 45, haste: 20, hp: 250 } },
   boibumba: { name: 'Tambor do Boi-Bumbá', cost: 2400, from: ['mandioca', 'mandioca'], stats: { hp: 800 } },
+  canastra: { name: 'Couraça do Tatu-Canastra', cost: 2450, from: ['gibao', 'beiju'], stats: { armor: 50, hp: 450 } },
+  pirarucu: { name: 'Escama do Pirarucu', cost: 2850, from: ['jacare', 'vitoria'], stats: { armor: 55, mres: 30, haste: 15 } },
+  tucum: { name: 'Rede de Tucum', cost: 2400, from: ['vitoria', 'vitoria', 'beiju'], stats: { mres: 60, hp: 200, armor: 15 } },
+  jequitiba: { name: 'Tronco do Jequitibá', cost: 2350, from: ['mandioca', 'patua'], stats: { hp: 600, mres: 30 } },
+  divino: { name: 'Bandeira do Divino', cost: 2650, from: ['guarana', 'mandioca', 'guarana'], stats: { haste: 25, hp: 300, armor: 20 } },
+  tacaca: { name: 'Cuia de Tacacá', cost: 2250, from: ['mandioca', 'guarana', 'beiju'], stats: { hp: 500, haste: 15 } },
 };
 
 export const ITEM_ORDER = Object.keys(ITEMS);
