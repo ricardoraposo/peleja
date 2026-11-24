@@ -430,6 +430,8 @@ export class Sim {
     h.cdMax = { q: 1, w: 1, e: 1, r: 1, d: 1, f: 1 };
     h.kills = h.deaths = h.assists = h.cs = h.streak = 0;
     h.dmgDealt = h.dmgTaken = h.healDone = 0;
+    // dano recebido na partida por tipo (físico, mágico, verdadeiro), pro gráfico do placar
+    h.dmgTakenBy = [0, 0, 0];
     h.multi = 0;
     h.multiT = -99;
     h.damagers = new Map();
@@ -1457,6 +1459,7 @@ queueBolts(h, ab, slot, color) {
     if (src?.isHero && (t.isHero || t.isStructure)) src.dmgDealt += amount;
     if (t.isHero) {
       t.dmgTaken += amount;
+      if (t.dmgTakenBy) t.dmgTakenBy[DMG_TYPE[type] ?? 0] += amount;
       t.combatT = this.time;
       if (src?.isHero) t.damagers.set(src.id, this.time);
     }
@@ -2807,11 +2810,11 @@ queueBolts(h, ab, slot, color) {
     return [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100), Math.round(s.apen * 100), Math.round(s.mpen * 100)];
   }
 
-  // placar (Tab): o último campo são os atributos, que aparecem ao passar o mouse no herói
+  // placar (Tab): depois dos números vêm os atributos e o dano recebido por tipo, que aparecem ao passar o mouse no herói
   board() {
     return {
       e: 'board',
-      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h)]),
+      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h), (h.dmgTakenBy || [0, 0, 0]).map(Math.round)]),
     };
   }
 }
