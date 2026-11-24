@@ -358,7 +358,8 @@ export class BotBrain {
   reachOf(ab) {
     switch (ab.kind) {
       case 'proj':
-        return ab.range * 0.9;
+        // o que para no ar (hover) pode ser jogado no limite: se errar, ainda dá pra rebater
+        return ab.hover ? ab.range + 1 : ab.range * 0.9;
       case 'aoe':
       case 'zone':
         return ab.range + ab.radius * 0.5;
@@ -392,7 +393,9 @@ export class BotBrain {
     const { target, near, life } = ctx;
     const offensive = ab.dmg || ab.end || ab.path || ab.kind === 'zone' || (ab.kind === 'dash' && ab.bolts) || (ab.kind === 'blink' && (ab.bolts || ab.origin));
     if (offensive) {
-      const reach = this.reachOf(ab);
+      // projétil parado no ar esperando a rebatida: alcança qualquer um dentro do círculo em volta do herói
+      const orb = ab.hover && h.recast?.slot === slot ? h.orb : null;
+      const reach = orb ? ab.hover.reach : this.reachOf(ab);
       let e = target && dist(target, h) <= reach + target.r ? target : null;
       if (!e) {
         let bd = Infinity;
@@ -428,7 +431,7 @@ export class BotBrain {
           if (d <= keep) return [h.x - (e.z - h.z) / d * 3, h.z + (e.x - h.x) / d * 3, 0];
           return [e.x - ((e.x - h.x) / d) * keep, e.z - ((e.z - h.z) / d) * keep, 0];
         }
-        const [x, z] = this.aimAt(e, this.delayOf(ab, dist(e, h)));
+        const [x, z] = this.aimAt(e, orb ? dist(e, orb) / ab.hover.speed : this.delayOf(ab, dist(e, h)));
         return [x, z, e.id];
       }
       if (slot === 'r' || ab.kind === 'target' || ab.kind === 'dash' || ab.kind === 'zone') return null;
