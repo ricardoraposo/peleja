@@ -1289,6 +1289,12 @@ export class HeroModel {
     this.combo = (this.combo + 1) % 3;
   }
 
+  // golpe (ou também a habilidade) interrompido antes de sair: larga a pose; o que já saiu termina o movimento
+  interrupt(attackOnly = false) {
+    if (this.attackT > 0 && 1 - this.attackT / this.attackDur < this.attackHit) this.attackT = 0;
+    if (!attackOnly && this.anim && this.anim.t < this.anim.w) this.anim = null;
+  }
+
   // pose de habilidade: prepara durante `windup` segundos e solta em seguida
   play(name, windup = 0) {
     const spec = this.style[name] || GENERIC[name];

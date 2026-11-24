@@ -63,6 +63,7 @@ class Unit {
     this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, ls: 0, regen: 0 };
     this.atkCd = 0;
     this.windup = 0;
+    this.swinging = false;
     this.target = null;
     this.order = { type: 'idle' };
     this.stunT = 0;
@@ -567,6 +568,7 @@ export class Sim {
     h.burn = null;
     h.shredT = 0;
     h.shredP = 0;
+    h.swinging = false;
   }
 
   addFury(h, n) {
@@ -1701,6 +1703,12 @@ queueBolts(h, ab, slot, color) {
       if (h.isBot) this.brains.get(h.id)?.update(dt);
       if (this.phase !== 'playing') return;
       if (h.alive) this.updateHero(h, dt);
+      // golpe começado que não saiu (ordem nova, controle, troca de alvo): o cliente desfaz a pose do ataque
+      if (h.swinging && h.windup <= 0) {
+        h.swinging = false;
+        h.attackAnim = 0;
+        this.emit({ e: 'cancel', id: h.id, a: 1 });
+      }
     }
     for (const u of units) {
       if (!u.alive) continue;
@@ -2156,6 +2164,7 @@ queueBolts(h, ab, slot, color) {
         // herói: a recarga só começa quando o golpe sai, então cancelar o preparo não custa um ataque.
         // A sobra do passo (até dois ticks) vai pro próximo golpe, senão o arredondamento come até 9% da vel. de ataque
         if (u.isHero) u.atkCd = Math.max(u.atkCd + u.windupMax, -2 * dt) + 1 / u.stats.as - u.windupMax;
+        u.swinging = false;
         this.releaseAttack(u, t);
       }
       return;
@@ -2166,6 +2175,7 @@ queueBolts(h, ab, slot, color) {
         // preparo curto: o golpe sai quase junto com o clique
         u.windup = u.ranged ? Math.min(0.1, period * 0.08) : Math.min(0.14, period * 0.11);
         u.windupMax = u.windup;
+        u.swinging = true;
         u.attackAnim = Math.min(0.3, period * 0.5);
         this.emit({ e: 'swing', id: u.id, v: t.id, r: u.ranged ? 1 : 0, w: Math.round(u.windup * 1000) });
       } else {

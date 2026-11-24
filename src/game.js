@@ -466,6 +466,9 @@ export class Game {
         if (!m.r && this.near(u.x, u.z)) playSound(this.styleOf(m.id).snd.swing || 'swing', u);
         break;
       }
+      case 'cancel':
+        this.units.get(m.id)?.model?.interrupt?.(!!m.a);
+        break;
       case 'spawn':
         if (m.id === this.myId) this.camSnap = true;
         if (m.id === this.myId) playSound('heal');

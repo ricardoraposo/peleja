@@ -24,7 +24,7 @@ const EVENTS = {
   blink: { id: 'u', a: 'd1*', b: 'd1*', c: 's', fl: 'u' },
   dash: { id: 'u', d: 'd2', a: 'u', c: 's' },
   buff: { id: 'u', s: 's', c: 's' },
-  cancel: { id: 'u' },
+  cancel: { id: 'u', a: 'u?' },
   gold: { d: 'i', x: 'd1', z: 'd1' },
   xp: { v: 'i', x: 'd1', z: 'd1' },
   rank: { s: 's', r: 'u' },
