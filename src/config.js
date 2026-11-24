@@ -375,8 +375,10 @@ export const HEROES = {
 export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', 'iara', 'boitata', 'saci', 'cuca', 'curupira', 'boto', 'caipora', 'fulozinha', 'uirapuru', 'pilintra'];
 
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
-// Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, armadura, resistência, vida (e passo nas botas).
+// Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, roubo de vida, armadura, resistência, vida (e passo nas botas).
+// Roubo de vida: o ataque básico em herói ou tropa cura essa fração do dano que entrou; não vale em estrutura nem em habilidade.
 // Preço: os básicos valem o que custam; intermediários rendem ~105-110% do preço e os grandes ~113-116%.
+// Os de suporte (de usar) rendem ~100% só nos atributos: o efeito de usar é o resto do valor.
 // Exceções: os de poder rendem mais (~125%), porque poder escala menos que ataque; os de defesa rendem ~100%,
 // porque vida e resistência se multiplicam e um tanque cheio deles ficava quase imortal.
 // `group`: só um item do grupo por herói (as botas e suas melhorias).
@@ -396,6 +398,7 @@ export const ITEMS = {
   vitoria: { name: 'Folha de Vitória-régia', cost: 750, stats: { mres: 30 } },
   beiju: { name: 'Beiju', cost: 400, stats: { hp: 150 } },
   mandioca: { name: 'Raiz de Mandioca', cost: 800, stats: { hp: 300 } },
+  morcego: { name: 'Dente de Morcego', cost: 450, stats: { ls: 0.08 } },
 
   // ----- botas -----
   pevento: { name: 'Pé-de-Vento', cost: 1100, from: ['alpercata'], stats: { ms: 1, as: 0.25 }, group: 'botas' },
@@ -414,6 +417,7 @@ export const ITEMS = {
   gibao: { name: 'Gibão de Vaqueiro', cost: 1300, from: ['tatu', 'beiju'], stats: { armor: 30, hp: 250 } },
   patua: { name: 'Patuá', cost: 1300, from: ['vitoria', 'beiju'], stats: { mres: 30, hp: 250 } },
   jacare: { name: 'Couro de Jacaré', cost: 1400, from: ['tatu', 'guarana'], stats: { armor: 35, haste: 10 } },
+  garramorcego: { name: 'Garra de Morcego', cost: 1200, from: ['morcego', 'dente'], stats: { ls: 0.1, atk: 15 } },
 
   // ----- grandes: ataque -----
   lobisomem: { name: 'Garra do Lobisomem', cost: 3100, from: ['peixeira', 'facao'], stats: { atk: 55, haste: 20 } },
@@ -421,16 +425,34 @@ export const ITEMS = {
   anhanga: { name: 'Borduna de Anhangá', cost: 3200, from: ['borduna', 'peixeira'], stats: { atk: 40, hp: 400, haste: 15 } },
   cangaceiro: { name: 'Gume do Cangaceiro', cost: 2700, from: ['borduna', 'gibao'], stats: { atk: 30, armor: 40, hp: 300 } },
   icamiabas: { name: 'Lança das Icamiabas', cost: 2600, from: ['flecha', 'borduna'], stats: { atk: 35, as: 0.3, hp: 200 } },
+  onca: { name: 'Garra da Onça-Pintada', cost: 3050, from: ['flecha', 'peixeira'], stats: { atk: 50, as: 0.25, haste: 10 } },
+  bradador: { name: 'Tacape do Bradador', cost: 2850, from: ['facao', 'facao', 'tatu'], stats: { atk: 60, armor: 30 } },
+  bonfim: { name: 'Fita do Bonfim', cost: 2250, from: ['facao', 'vitoria'], stats: { atk: 30, mres: 45 } },
   caipora: { name: 'Arco da Caipora', cost: 2650, from: ['flecha', 'zarabatana'], stats: { as: 0.55, atk: 30 } },
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
   matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.55, pow: 70 } },
+  cascavel: { name: 'Chocalho da Cascavel', cost: 2550, from: ['flecha', 'vitoria'], stats: { as: 0.4, atk: 20, mres: 30 } },
+  maracatu: { name: 'Tambor de Maracatu', cost: 2450, from: ['flecha', 'guarana'], stats: { as: 0.4, atk: 15, haste: 15 } },
+  paimato: { name: 'Olho do Pai-do-Mato', cost: 2850, from: ['arraia', 'flecha'], stats: { crit: 0.25, atk: 30, as: 0.25 } },
+  lampiao: { name: 'Peixeira de Lampião', cost: 3000, from: ['arraia', 'peixeira'], stats: { crit: 0.2, atk: 45, haste: 10 } },
+  // ----- grandes: roubo de vida -----
+  chupacabra: { name: 'Presa do Chupa-cabra', cost: 2950, from: ['garramorcego', 'facao'], stats: { ls: 0.15, atk: 60 } },
+  corposeco: { name: 'Foice do Corpo-Seco', cost: 2800, from: ['garramorcego', 'borduna'], stats: { ls: 0.12, atk: 40, hp: 300 } },
+  labatut: { name: 'Lança do Labatut', cost: 2650, from: ['garramorcego', 'flecha'], stats: { ls: 0.1, atk: 35, as: 0.3 } },
   // ----- grandes: poder -----
   tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 150 } },
   cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
   maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 92, hp: 350 } },
   maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 80, mres: 45 } },
   carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 90, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+  mula: { name: 'Fogo da Mula sem Cabeça', cost: 3000, from: ['maraca', 'raio'], stats: { pow: 130, haste: 10 } },
+  rezadeira: { name: 'Rosário da Rezadeira', cost: 2700, from: ['maraca', 'vitoria'], stats: { pow: 70, haste: 15, mres: 30 } },
+  cabaca: { name: 'Cabaça do Pajé', cost: 2600, from: ['maraca', 'guarana'], stats: { haste: 30, pow: 52 } },
+  // ----- grandes: suporte (de usar, em você e nos aliados em volta) -----
+  cheiro: { name: 'Água de Cheiro', cost: 2500, from: ['muiraquita', 'guarana'], stats: { pow: 40, haste: 15, hp: 250 }, active: { radius: 6, heal: { b: 70, l: 12, ap: 0.3 }, cd: 60, color: '#5ee67a', desc: 'Borrifa água de cheiro: cura você e os aliados em volta. Recarga de 60 s.' } },
+  figa: { name: 'Figa de Guiné', cost: 2500, from: ['tatu', 'vitoria', 'guarana'], stats: { armor: 30, mres: 30, haste: 10 }, active: { radius: 6, shield: { b: 60, l: 14, hp: 0.06, t: 2.5 }, cd: 60, color: '#fde68a', desc: 'Dá um escudo em você e nos aliados em volta por 2,5 s. Recarga de 60 s.' } },
+  berrante: { name: 'Berrante do Vaqueiro', cost: 2200, from: ['mandioca', 'guarana'], stats: { hp: 350, haste: 15 }, active: { radius: 7, buff: { t: 3, ms: 0.4 }, cd: 50, color: '#38bdf8', desc: 'Toca o berrante: você e os aliados em volta correm 40% mais rápido por 3 s. Recarga de 50 s.' } },
   benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
   jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
@@ -439,6 +461,12 @@ export const ITEMS = {
   xiquexique: { name: 'Armadura de Xique-xique', cost: 2800, from: ['jacare', 'mandioca'], stats: { armor: 50, haste: 20, hp: 200 } },
   sumauma: { name: 'Raiz de Sumaúma', cost: 2800, from: ['patua', 'guarana', 'vitoria'], stats: { mres: 45, haste: 20, hp: 250 } },
   boibumba: { name: 'Tambor do Boi-Bumbá', cost: 2400, from: ['mandioca', 'mandioca'], stats: { hp: 800 } },
+  canastra: { name: 'Couraça do Tatu-Canastra', cost: 2450, from: ['gibao', 'beiju'], stats: { armor: 50, hp: 450 } },
+  pirarucu: { name: 'Escama do Pirarucu', cost: 2850, from: ['jacare', 'vitoria'], stats: { armor: 55, mres: 30, haste: 15 } },
+  tucum: { name: 'Rede de Tucum', cost: 2400, from: ['vitoria', 'vitoria', 'beiju'], stats: { mres: 60, hp: 200, armor: 15 } },
+  jequitiba: { name: 'Tronco do Jequitibá', cost: 2500, from: ['mandioca', 'patua'], stats: { hp: 600, mres: 30 } },
+  divino: { name: 'Bandeira do Divino', cost: 2650, from: ['guarana', 'mandioca', 'guarana'], stats: { haste: 25, hp: 300, armor: 20 } },
+  tacaca: { name: 'Cuia de Tacacá', cost: 2250, from: ['mandioca', 'guarana', 'beiju'], stats: { hp: 500, haste: 15 } },
 };
 
 export const ITEM_ORDER = Object.keys(ITEMS);
@@ -458,10 +486,11 @@ export const STAT_LABEL = {
   mres: 'resist. mágica',
   as: 'vel. de ataque',
   crit: 'chance de crítico',
+  ls: 'roubo de vida',
   haste: 'aceleração de habilidade',
   ms: 'passo',
 };
-export const STAT_PCT = ['as', 'crit'];
+export const STAT_PCT = ['as', 'crit', 'ls'];
 export const CRIT_MULT = 1.75;
 
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
@@ -543,13 +572,13 @@ export function missingBasics(items, id) {
 export const BUILDS = {
   atirador: ['pevento', 'caipora', 'agouro', 'mortalha', 'cobra', 'jaci'],
   mago: ['andarilho', 'cocar', 'tupa', 'maedouro', 'benzedeira', 'maedagua'],
-  suporte: ['andarilho', 'benzedeira', 'cocar', 'sumauma', 'xiquexique', 'jaci'],
-  tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'boibumba', 'xiquexique'],
-  lutador: ['perneira', 'anhanga', 'icamiabas', 'cangaceiro', 'jaci', 'xiquexique'],
-  assassino: ['andarilho', 'lobisomem', 'agouro', 'cobra', 'anhanga', 'jaci'],
+  suporte: ['andarilho', 'benzedeira', 'cheiro', 'cocar', 'figa', 'jaci'],
+  tanque: ['perneira', 'jabuti', 'jaci', 'mapinguari', 'berrante', 'xiquexique'],
+  lutador: ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique'],
+  assassino: ['andarilho', 'lobisomem', 'agouro', 'chupacabra', 'anhanga', 'jaci'],
 };
 export const BUILDS_ALT = {
-  atirador: { name: 'Atirador que aguenta', items: ['perneira', 'caipora', 'icamiabas', 'agouro', 'jaci', 'jabuti'] },
+  atirador: { name: 'Atirador que aguenta', items: ['perneira', 'caipora', 'labatut', 'agouro', 'jaci', 'jabuti'] },
   mago: { name: 'Mago casca-grossa', items: ['boto', 'maedouro', 'benzedeira', 'carranca', 'jaci', 'cocar'] },
   suporte: { name: 'Suporte que machuca', items: ['andarilho', 'cocar', 'maedouro', 'tupa', 'benzedeira', 'jaci'] },
   tanque: { name: 'Tanque que bate', items: ['boto', 'cangaceiro', 'anhanga', 'xiquexique', 'sumauma', 'jabuti'] },

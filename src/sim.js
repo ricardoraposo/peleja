@@ -59,7 +59,7 @@ class Unit {
     this.facing = team === 0 ? 0 : Math.PI;
     this.alive = true;
     this.hp = 1;
-    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, regen: 0 };
+    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, ls: 0, regen: 0 };
     this.atkCd = 0;
     this.windup = 0;
     this.target = null;
@@ -379,7 +379,7 @@ export class Sim {
       for (const d of structLayout(team)) {
         const s = new Unit(this.nextId++, d.kind, team, d.x, d.z, d.r);
         s.key = d.key;
-        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, crit: 0, regen: 0 };
+        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, crit: 0, ls: 0, regen: 0 };
         s.hp = d.hp;
         s.reqKeys = d.req;
         s.ramp = 0;
@@ -593,6 +593,7 @@ export class Sim {
       range: d.range,
       haste: 0,
       crit: 0,
+      ls: 0,
       regen: d.regen + d.regenL * L,
     };
     let asBonus = 0;
@@ -607,6 +608,7 @@ export class Sim {
       if (it.ms) s.ms += it.ms;
       if (it.haste) s.haste += it.haste;
       if (it.crit) s.crit += it.crit;
+      if (it.ls) s.ls += it.ls;
     }
     s.crit = Math.min(1, s.crit);
     let msBonus = 0;
@@ -645,6 +647,7 @@ export class Sim {
       range: d.range,
       haste: 0,
       crit: 0,
+      ls: 0,
       regen: 0,
     };
   }
@@ -2175,7 +2178,9 @@ queueBolts(h, ab, slot, color) {
       this.damage(t, u, dmg + ap + u.maxHp * TOWER.hpRatio, ap > u.stats.atk - base ? 'magic' : 'phys', { auto: true });
       return;
     }
-    this.damage(t, u, crit ? dmg * CRIT_MULT : dmg, 'phys', { auto: true, crit });
+    const dealt = this.damage(t, u, crit ? dmg * CRIT_MULT : dmg, 'phys', { auto: true, crit });
+    // roubo de vida: o ataque básico em herói ou tropa cura uma parte do dano que entrou (em estrutura não vale)
+    if (u.isHero && u.stats.ls > 0 && dealt > 0) this.heal(u, dealt * u.stats.ls, u, true);
     if (u.isHero && u.def.fury) this.addFury(u, u.def.fury.auto * (u.hp < u.maxHp * 0.5 ? u.def.fury.lowHp : 1));
   }
 
@@ -2583,6 +2588,11 @@ queueBolts(h, ab, slot, color) {
       h.windup = 0;
       h.order = { type: 'idle' };
     }
+    if (act.radius) {
+      // item de suporte: cura, escudo ou bônus em você e nos aliados em volta, como uma habilidade de aliado
+      for (const a of this.heroes) if (a.alive && a.team === h.team && dist(a, h) <= act.radius + a.r) this.applySelf(a, h, act);
+      this.emit({ e: 'boom', x: r1(h.x), z: r1(h.z), r: act.radius, c: act.color, al: 1, o: h.id });
+    }
     if (act.cd) h.itemCd[id] = act.cd;
     this.emit({ e: 'use', id: h.id, i: id });
     return true;
@@ -2739,7 +2749,7 @@ queueBolts(h, ab, slot, color) {
       xp: Math.floor(h.xp),
       xn: xpToNext(h.level),
       lv: h.level,
-      s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100)],
+      s: [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100)],
       sh: this.canShop(h) ? 1 : 0,
       rd: h.ready ? 1 : 0,
       rr: this.phase === 'draft' ? this.rerollsLeft(h) : undefined,
