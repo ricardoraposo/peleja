@@ -34,6 +34,15 @@ export const MAP = {
     [-9, -5.5],
     [-38, -1],
   ],
+  // moitas do lado azul (centro x, z), espelhadas no vermelho: elipses de raio rx × rz. Herói dentro some pro outro
+  // time, a menos que alguém desse time esteja na mesma moita ou que ele tenha atacado ou usado habilidade há
+  // menos de `reveal` segundos. Ninguém escolhe como alvo quem não vê; disparo e área acertam normal.
+  bushes: [
+    [-6, 7.3],
+    [-14, -7.3],
+    [-39, -7.3],
+  ],
+  bush: { rx: 2.7, rz: 1.55, reveal: 1 },
 };
 
 export const MATCH = {

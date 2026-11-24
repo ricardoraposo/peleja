@@ -38,6 +38,7 @@ Regras que não se quebram:
 - **Regra de jogo mora em `sim.js`; número mora em `config.js`.** O cliente só desenha o que a simulação manda. Nada em `fxstyle.js`, `effects.js`, `models.js` ou `herobuild.js` pode mudar o resultado de uma partida.
 - **A simulação não conhece o navegador.** Ela roda no Node: nada de `window`, `document` ou Three.js em `sim.js`, `bot.js`, `config.js`, `geo.js` e `wire.js`.
 - **Mensagem nova entra na tabela do `wire.js`** (eventos em `EVENTS`, comandos em `COMMANDS`). Fora da tabela ela ainda chega, como JSON, mas o `npm run wire` acusa. Campo opcional leva `?`.
+- **Visão é por time.** O servidor manda a cada time o próprio retrato (`snapshot(team)`), sem os heróis que ele não enxerga (moita). Alvo escolhido por clique ou automático passa por `attackable`/`abilityTargetable`, que já recusam quem está escondido; bot só considera inimigo com `sim.visibleTo`.
 - **Estado do herói que o cliente precisa ver vai nas flags** (`F` em `sim.js`, um bit por estado) ou no `meState`, não em evento solto.
 - **Estado novo no herói precisa ser zerado** nos mesmos lugares em que os outros são (procure por `charmT =` em `sim.js` e acrescente o seu em cada ponto que zera os estados, incluindo morte e renascimento).
 - **Sem dependência nova e sem arquivo de arte ou som.** Só Three.js, Vite e ws; modelos, ícones, efeitos e sons são gerados em código.

@@ -1191,8 +1191,39 @@ export class HeroModel {
     }
   }
 
+  // meio transparente (escondido na moita, visto pelo próprio time). Na primeira vez copia os materiais deste
+  // herói, porque muitos são compartilhados entre heróis e não podem ficar transparentes pra todos.
+  setGhost(on) {
+    if (on === !!this.ghost) return;
+    this.ghost = on;
+    if (!this.ghostMats) {
+      this.ghostMats = [];
+      const copies = new Map();
+      this.body.traverse((o) => {
+        if (!o.isMesh) return;
+        let c = copies.get(o.material);
+        if (!c) {
+          c = o.material.clone();
+          copies.set(o.material, c);
+          this.ghostMats.push({ m: c, opacity: c.opacity, transparent: c.transparent, depthWrite: c.depthWrite });
+        }
+        o.material = c;
+      });
+      this.baseMats = this.flashMats;
+      this.flashMats = this.flashMats.map((m) => copies.get(m) || m);
+    }
+    for (const g of this.ghostMats) {
+      g.m.transparent = on || g.transparent;
+      g.m.opacity = on ? g.opacity * 0.45 : g.opacity;
+      g.m.depthWrite = on ? false : g.depthWrite;
+      g.m.needsUpdate = true;
+    }
+  }
+
   dispose() {
     for (const m of this.flashMats) m.dispose();
+    if (this.ghostMats) for (const g of this.ghostMats) g.m.dispose();
+    if (this.baseMats) for (const m of this.baseMats) m.dispose();
   }
 }
 

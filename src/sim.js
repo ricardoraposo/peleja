@@ -26,11 +26,11 @@ import {
   respawnTime,
   xpToNext,
 } from './config.js';
-import { OBSTACLES, PACKS, baseX, cannonPos, clampWalk, fountainX, inBase, pushDir, pushOut, segDist2, structLayout } from './geo.js';
+import { OBSTACLES, PACKS, baseX, bushAt, cannonPos, clampWalk, fountainX, inBase, pushDir, pushOut, segDist2, structLayout } from './geo.js';
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576, fly: 2097152 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576, fly: 2097152, hidden: 4194304 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -77,6 +77,10 @@ class Unit {
     this.shredT = 0;
     this.airT = 0;
     this.charmT = 0;
+    // moita: índice da moita em que está (-1 fora), se o outro time deixou de ver e quanto falta pra sumir de novo
+    this.bush = -1;
+    this.hidden = false;
+    this.revealT = 0;
     this.sleepT = 0;
     this.drowsy = null;
     this.charmBy = null;
@@ -454,7 +458,8 @@ export class Sim {
     h.z = z;
     h.alive = true;
     h.facing = h.team === 0 ? 0 : Math.PI;
-    h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = h.sleepT = 0;
+    h.stunT = h.rootT = h.airT = h.castT = h.fearT = h.charmT = h.sleepT = h.revealT = 0;
+    h.hidden = false;
     h.drowsy = null;
     h.goBack = null;
     h.recallT = 0;
@@ -805,11 +810,11 @@ export class Sim {
   }
 
   attackable(by, t) {
-    return !!t && t.alive && t.team !== by.team && !t.invuln && !t.fly && this.byId.get(t.id) === t;
+    return !!t && t.alive && t.team !== by.team && !t.invuln && !t.fly && !t.hidden && this.byId.get(t.id) === t;
   }
 
   abilityTargetable(by, t, ab) {
-    if (!t || !t.alive || t.team === by.team || t.isStructure || t.fly || this.byId.get(t.id) !== t) return false;
+    if (!t || !t.alive || t.team === by.team || t.isStructure || t.fly || t.hidden || this.byId.get(t.id) !== t) return false;
     if (ab.heroesOnly && !t.isHero) return false;
     return true;
   }
@@ -879,6 +884,7 @@ export class Sim {
     h.windup = 0;
     if (Math.hypot(x - h.x, z - h.z) > 0.05) h.facing = Math.atan2(z - h.z, x - h.x);
     if (h.order.type === 'cast') h.order = h.order.prev && h.order.prev.type !== 'cast' ? h.order.prev : { type: 'idle' };
+    h.revealT = MAP.bush.reveal;
     this.emit({ e: 'cast', id: h.id, s: slot, x: r1(x), z: r1(z), ct: ab.cast || 0 });
     if (ab.cast > 0) {
       h.castT = ab.cast;
@@ -1021,6 +1027,7 @@ queueBolts(h, ab, slot, color) {
   }
 
   execute(h, slot, ab, x, z, t) {
+    h.revealT = MAP.bush.reveal;
     let dx = x - h.x;
     let dz = z - h.z;
     let d = Math.hypot(dx, dz);
@@ -1572,7 +1579,8 @@ queueBolts(h, ab, slot, color) {
     t.buffs = [];
     t.shields = [];
     t.slows = [];
-    t.stunT = t.rootT = t.airT = t.fearT = t.charmT = t.sleepT = 0;
+    t.stunT = t.rootT = t.airT = t.fearT = t.charmT = t.sleepT = t.revealT = 0;
+    t.hidden = false;
     t.drowsy = null;
     t.goBack = null;
     t.fly = null;
@@ -1716,6 +1724,7 @@ queueBolts(h, ab, slot, color) {
       else if (u.kind === 'tower' && this.dbg.towers) this.updateTower(u, dt);
     }
     this.integrate(dt);
+    this.updateVision(dt);
     this.updateProjectiles(dt);
     this.updateDelayed(dt);
     this.updateZones(dt);
@@ -1730,6 +1739,25 @@ queueBolts(h, ab, slot, color) {
         return false;
       });
     }
+  }
+
+  // Moitas: herói dentro de uma some pro outro time, a menos que qualquer unidade desse time esteja na mesma
+  // moita ou que ele tenha atacado ou usado habilidade há pouco. Só herói se esconde; tropa dentro dá visão.
+  updateVision(dt) {
+    const seen = [new Set(), new Set()];
+    for (const u of this.units) {
+      u.bush = u.alive && !u.isStructure ? bushAt(u.x, u.z) : -1;
+      if (u.bush >= 0) seen[u.team].add(u.bush);
+    }
+    for (const h of this.heroes) {
+      if (h.revealT > 0) h.revealT -= dt;
+      h.hidden = h.alive && h.bush >= 0 && h.revealT <= 0 && !seen[1 - h.team].has(h.bush);
+    }
+  }
+
+  // o time `team` enxerga a unidade `u`?
+  visibleTo(team, u) {
+    return u.team === team || !u.hidden;
   }
 
   tickStatus(u, dt) {
@@ -2177,6 +2205,7 @@ queueBolts(h, ab, slot, color) {
         u.windupMax = u.windup;
         u.swinging = true;
         u.attackAnim = Math.min(0.3, period * 0.5);
+        u.revealT = MAP.bush.reveal;
         this.emit({ e: 'swing', id: u.id, v: t.id, r: u.ranged ? 1 : 0, w: Math.round(u.windup * 1000) });
       } else {
         u.windup = Math.min(0.32, period * 0.28);
@@ -2296,7 +2325,7 @@ queueBolts(h, ab, slot, color) {
   updateTower(t, dt) {
     t.atkCd -= dt;
     const R = TOWER.range;
-    const valid = (u) => u && u.alive && u.team !== t.team && !u.fly && this.byId.get(u.id) === u && dist(t, u) <= R + u.r;
+    const valid = (u) => u && u.alive && u.team !== t.team && !u.fly && !u.hidden && this.byId.get(u.id) === u && dist(t, u) <= R + u.r;
     if (t.forced && t.forcedT > this.time && valid(t.forced) && t.target !== t.forced) {
       t.target = t.forced;
       t.ramp = 0;
@@ -2724,6 +2753,7 @@ queueBolts(h, ab, slot, color) {
     if (u.sleepT > 0) f |= F.sleep;
     if (u.recallT > 0) f |= F.recall;
     if (u.fly) f |= F.fly;
+    if (u.hidden) f |= F.hidden;
     if (u.bolts) f |= F.orbs;
     if (u.moving || u.dash) f |= F.move;
     if (u.castT > 0) f |= F.cast;
@@ -2736,7 +2766,9 @@ queueBolts(h, ab, slot, color) {
     return f;
   }
 
-  snapshot() {
+  // `team`: retrato visto por esse time, sem os heróis inimigos que ele não enxerga (sem time: tudo)
+  snapshot(team) {
+    const units = team === 0 || team === 1 ? this.units.filter((u) => this.visibleTo(team, u)) : this.units;
     return {
       e: 'snap',
       t: r2(this.time),
@@ -2745,7 +2777,7 @@ queueBolts(h, ab, slot, color) {
       gt: r1(this.gameTime),
       k: this.kills,
       wv: r1(this.waveT),
-      u: this.units.map((u) => [
+      u: units.map((u) => [
         u.id,
         KIND[u.kind],
         u.team,
