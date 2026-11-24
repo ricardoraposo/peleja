@@ -422,7 +422,7 @@ export const ITEMS = {
   caipora: { name: 'Arco da Caipora', cost: 2650, from: ['flecha', 'zarabatana'], stats: { as: 0.55, atk: 30 } },
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
-  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.5, pow: 64 } },
+  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.55, pow: 70 } },
   // ----- grandes: poder -----
   tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 150 } },
   cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
