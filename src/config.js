@@ -234,7 +234,7 @@ export const HEROES = {
     ranged: true,
     stats: { hp: 545, hpL: 88, atk: 52, atkL: 2.8, armor: 24, armorL: 2.5, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 5.95, range: 8.3, regen: 1.6, regenL: 0.15 },
     abilities: {
-      q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 80, l: 22, ap: 0.6, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
+      q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 70, l: 22, ap: 0.6, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
       w: { name: 'Fogo-fátuo', icon: 'wisp', kind: 'aoe', cd: 12, cast: 0.15, range: 10, radius: 2.6, delay: 0.75, dmg: { b: 70, l: 19, ap: 0.6, type: 'magic' }, fx: { stun: 1.1 }, color: '#f9a8d4', desc: 'Depois de um instante, atordoa quem estiver na área.' },
       e: { name: 'Serpentear', icon: 'snake', kind: 'dash', cd: 13, cast: 0, range: 6, speed: 30, buff: { t: 2, ms: 0.25 }, desc: 'Desliza rápido e ganha velocidade.' },
       r: { name: 'Incêndio', icon: 'blaze', kind: 'zone', cd: 70, cast: 0.25, range: 11, radius: 4.6, dur: 4, tick: 0.5, dmg: { b: 50, l: 10, ap: 0.18, type: 'magic' }, fx: { slow: [0.3, 0.6] }, color: '#ec4899', desc: 'Incendeia o chão: queima e deixa lento por 4 s.' },
