@@ -710,6 +710,12 @@ kbd {
 .st-ls i {
   background: #dc2626;
 }
+.st-apen i {
+  background: #94a3b8;
+}
+.st-mpen i {
+  background: #c084fc;
+}
 
 #items {
   display: grid;
