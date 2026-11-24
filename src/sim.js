@@ -10,6 +10,7 @@ import {
   MINIONS,
   SLOTS,
   CRIT_MULT,
+  PEN_MAX,
   ATTACK_SLACK,
   itemPrice,
   itemStatsFor,
@@ -60,7 +61,7 @@ class Unit {
     this.facing = team === 0 ? 0 : Math.PI;
     this.alive = true;
     this.hp = 1;
-    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, ls: 0, regen: 0 };
+    this.stats = { maxHp: 1, atk: 0, pow: 0, armor: 0, mres: 0, as: 1, ms: 0, range: 0, haste: 0, crit: 0, ls: 0, apen: 0, mpen: 0, regen: 0 };
     this.atkCd = 0;
     this.windup = 0;
     this.swinging = false;
@@ -384,7 +385,7 @@ export class Sim {
       for (const d of structLayout(team)) {
         const s = new Unit(this.nextId++, d.kind, team, d.x, d.z, d.r);
         s.key = d.key;
-        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, crit: 0, ls: 0, regen: 0 };
+        s.stats = { maxHp: d.hp, atk: 0, pow: 0, armor: TOWER.armor, mres: TOWER.mres, as: TOWER.attackSpeed, ms: 0, range: TOWER.range, haste: 0, crit: 0, ls: 0, apen: 0, mpen: 0, regen: 0 };
         s.hp = d.hp;
         s.reqKeys = d.req;
         s.ramp = 0;
@@ -600,6 +601,8 @@ export class Sim {
       haste: 0,
       crit: 0,
       ls: 0,
+      apen: 0,
+      mpen: 0,
       regen: d.regen + d.regenL * L,
     };
     let asBonus = 0;
@@ -615,8 +618,12 @@ export class Sim {
       if (it.haste) s.haste += it.haste;
       if (it.crit) s.crit += it.crit;
       if (it.ls) s.ls += it.ls;
+      if (it.apen) s.apen += it.apen;
+      if (it.mpen) s.mpen += it.mpen;
     }
     s.crit = Math.min(1, s.crit);
+    s.apen = Math.min(PEN_MAX, s.apen);
+    s.mpen = Math.min(PEN_MAX, s.mpen);
     let msBonus = 0;
     for (const b of h.buffs) {
       if (b.ms) msBonus += b.ms;
@@ -654,6 +661,8 @@ export class Sim {
       haste: 0,
       crit: 0,
       ls: 0,
+      apen: 0,
+      mpen: 0,
       regen: 0,
     };
   }
@@ -1432,6 +1441,9 @@ queueBolts(h, ab, slot, color) {
     }
     let res = type === 'phys' ? t.stats.armor : type === 'magic' ? t.stats.mres : 0;
     if (type === 'phys' && t.shredT > 0) res *= 1 - t.shredP;
+    // penetração de quem bate: ignora parte da armadura (dano físico) ou da resistência (dano mágico)
+    const pen = type === 'phys' ? src?.stats?.apen : type === 'magic' ? src?.stats?.mpen : 0;
+    if (pen > 0) res *= 1 - pen;
     amount *= 100 / (100 + Math.max(0, res));
     let left = amount;
     for (const sh of t.shields) {
@@ -2789,10 +2801,10 @@ queueBolts(h, ab, slot, color) {
     };
   }
 
-  // atributos do herói como o painel mostra: ataque, poder, armadura, resistência, vel. de ataque, passo, alcance, aceleração, crítico %, roubo de vida %
+  // atributos do herói como o painel mostra: ataque, poder, armadura, resistência, vel. de ataque, passo, alcance, aceleração, crítico %, roubo de vida %, penetração de armadura %, penetração mágica %
   statLine(h) {
     const s = h.stats;
-    return [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100)];
+    return [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100), Math.round(s.apen * 100), Math.round(s.mpen * 100)];
   }
 
   // placar (Tab): o último campo são os atributos, que aparecem ao passar o mouse no herói

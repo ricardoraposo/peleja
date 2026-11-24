@@ -88,8 +88,8 @@ const $ = (id) => document.getElementById(id);
 // filtros da aba "todos": cada categoria junta os atributos que ela cobre
 const SHOP_CATS = [
   { id: 'all', name: 'Tudo', icon: S('<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>') },
-  { id: 'atk', name: 'Ataque', stats: ['atk', 'as', 'crit', 'ls'], icon: ICONS.sword },
-  { id: 'pow', name: 'Poder', stats: ['pow', 'haste'], icon: ICONS.gem },
+  { id: 'atk', name: 'Ataque', stats: ['atk', 'as', 'crit', 'ls', 'apen'], icon: ICONS.sword },
+  { id: 'pow', name: 'Poder', stats: ['pow', 'haste', 'mpen'], icon: ICONS.gem },
   { id: 'def', name: 'Defesa', stats: ['hp', 'armor', 'mres'], icon: ICONS.vest },
   { id: 'mov', name: 'Passo', stats: ['ms'], icon: ICONS.boots },
   { id: 'use', name: 'De usar', active: true, icon: ICONS.drop },
@@ -246,6 +246,8 @@ const statCells = (s, named = false) =>
     ['aceleração', s[7], 'ah'],
     ['crítico', s[8] + '%', 'crit'],
     ['roubo de vida', (s[9] ?? 0) + '%', 'ls'],
+    ['pen. de armadura', (s[10] ?? 0) + '%', 'apen'],
+    ['pen. mágica', (s[11] ?? 0) + '%', 'mpen'],
   ]
     .map(([l, v, k]) => `<div class="st st-${k}" title="${l}"><i></i>${named ? `<span>${l}</span>` : ''}${v}</div>`)
     .join('');
@@ -861,7 +863,7 @@ const ITEM_COLORS = {
   jaci: '#60a5fa',
   boibumba: '#f43f5e',
 };
-const STAT_COLOR = { atk: '#fb923c', as: '#facc15', crit: '#fde047', ls: '#dc2626', pow: '#818cf8', haste: '#38bdf8', hp: '#f87171', armor: '#84cc16', mres: '#60a5fa', ms: '#a3a3a3' };
+const STAT_COLOR = { atk: '#fb923c', as: '#facc15', crit: '#fde047', ls: '#dc2626', apen: '#94a3b8', mpen: '#c084fc', pow: '#818cf8', haste: '#38bdf8', hp: '#f87171', armor: '#84cc16', mres: '#60a5fa', ms: '#a3a3a3' };
 // a cor vem do primeiro atributo; nas botas melhoradas o passo é comum a todas, então vale o atributo que cada uma acrescenta
 export const itemColor = (id) => {
   if (ITEM_COLORS[id]) return ITEM_COLORS[id];

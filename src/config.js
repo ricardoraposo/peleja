@@ -377,6 +377,7 @@ export const HERO_ORDER = ['faisca', 'trovao', 'coruja', 'vespa', 'mandacaru', '
 // Três camadas: básico -> intermediário -> grande. `from` lista as peças; quem já tem peça paga só a diferença.
 // Só atributos: ataque, poder, aceleração, vel. de ataque, crítico, roubo de vida, armadura, resistência, vida (e passo nas botas).
 // Roubo de vida: o ataque básico em herói ou tropa cura essa fração do dano que entrou; não vale em estrutura nem em habilidade.
+// Penetração (de armadura no dano físico, mágica no mágico): ignora essa fração da defesa do alvo, até PEN_MAX.
 // Preço: os básicos valem o que custam; intermediários rendem ~105-110% do preço e os grandes ~113-116%.
 // Os de suporte (de usar) rendem ~100% só nos atributos: o efeito de usar é o resto do valor.
 // Exceções: os de poder rendem mais (~125%), porque poder escala menos que ataque; os de defesa rendem ~100%,
@@ -399,6 +400,8 @@ export const ITEMS = {
   beiju: { name: 'Beiju', cost: 400, stats: { hp: 150 } },
   mandioca: { name: 'Raiz de Mandioca', cost: 800, stats: { hp: 300 } },
   morcego: { name: 'Dente de Morcego', cost: 450, stats: { ls: 0.08 } },
+  silex: { name: 'Ponta de Flecha de Sílex', cost: 350, stats: { apen: 0.1 } },
+  pemba: { name: 'Pó de Pemba', cost: 350, stats: { mpen: 0.1 } },
 
   // ----- botas -----
   pevento: { name: 'Pé-de-Vento', cost: 1100, from: ['alpercata'], stats: { ms: 1, as: 0.25 }, group: 'botas' },
@@ -417,6 +420,8 @@ export const ITEMS = {
   gibao: { name: 'Gibão de Vaqueiro', cost: 1300, from: ['tatu', 'beiju'], stats: { armor: 30, hp: 250 } },
   patua: { name: 'Patuá', cost: 1300, from: ['vitoria', 'beiju'], stats: { mres: 30, hp: 250 } },
   jacare: { name: 'Couro de Jacaré', cost: 1400, from: ['tatu', 'guarana'], stats: { armor: 35, haste: 10 } },
+  obsidiana: { name: 'Lâmina de Obsidiana', cost: 1100, from: ['silex', 'dente'], stats: { apen: 0.12, atk: 15 } },
+  jurema: { name: 'Cabaça de Jurema', cost: 1100, from: ['pemba', 'pena'], stats: { mpen: 0.12, pow: 30 } },
   garramorcego: { name: 'Garra de Morcego', cost: 1200, from: ['morcego', 'dente'], stats: { ls: 0.1, atk: 15 } },
 
   // ----- grandes: ataque -----
@@ -436,6 +441,9 @@ export const ITEMS = {
   maracatu: { name: 'Tambor de Maracatu', cost: 2450, from: ['flecha', 'guarana'], stats: { as: 0.4, atk: 15, haste: 15 } },
   paimato: { name: 'Olho do Pai-do-Mato', cost: 2850, from: ['arraia', 'flecha'], stats: { crit: 0.25, atk: 30, as: 0.25 } },
   lampiao: { name: 'Peixeira de Lampião', cost: 3000, from: ['arraia', 'peixeira'], stats: { crit: 0.2, atk: 45, haste: 10 } },
+  // ----- grandes: penetração de armadura -----
+  arpao: { name: 'Arpão do Caboclo-d\'Água', cost: 2600, from: ['obsidiana', 'facao'], stats: { apen: 0.3, atk: 45 } },
+  curupaco: { name: 'Lança do Curupaco', cost: 2600, from: ['obsidiana', 'zarabatana'], stats: { apen: 0.2, atk: 35, as: 0.25 } },
   // ----- grandes: roubo de vida -----
   chupacabra: { name: 'Presa do Chupa-cabra', cost: 2950, from: ['garramorcego', 'facao'], stats: { ls: 0.15, atk: 60 } },
   corposeco: { name: 'Foice do Corpo-Seco', cost: 2800, from: ['garramorcego', 'borduna'], stats: { ls: 0.12, atk: 40, hp: 300 } },
@@ -449,6 +457,9 @@ export const ITEMS = {
   mula: { name: 'Fogo da Mula sem Cabeça', cost: 3000, from: ['maraca', 'raio'], stats: { pow: 130, haste: 10 } },
   rezadeira: { name: 'Rosário da Rezadeira', cost: 2700, from: ['maraca', 'vitoria'], stats: { pow: 70, haste: 15, mres: 30 } },
   cabaca: { name: 'Cabaça do Pajé', cost: 2600, from: ['maraca', 'guarana'], stats: { haste: 30, pow: 52 } },
+  // ----- grandes: penetração mágica -----
+  fogocorredor: { name: 'Fogo-corredor', cost: 2450, from: ['jurema', 'raio'], stats: { mpen: 0.3, pow: 80 } },
+  olhoanhanga: { name: 'Olho de Anhangá', cost: 2450, from: ['jurema', 'guarana'], stats: { mpen: 0.2, pow: 60, haste: 15 } },
   // ----- grandes: suporte (de usar, em você e nos aliados em volta) -----
   cheiro: { name: 'Água de Cheiro', cost: 2500, from: ['muiraquita', 'guarana'], stats: { pow: 40, haste: 15, hp: 250 }, active: { radius: 6, heal: { b: 70, l: 12, ap: 0.3 }, cd: 60, color: '#5ee67a', desc: 'Borrifa água de cheiro: cura você e os aliados em volta. Recarga de 60 s.' } },
   figa: { name: 'Figa de Guiné', cost: 2500, from: ['tatu', 'vitoria', 'guarana'], stats: { armor: 30, mres: 30, haste: 10 }, active: { radius: 6, shield: { b: 60, l: 14, hp: 0.06, t: 2.5 }, cd: 60, color: '#fde68a', desc: 'Dá um escudo em você e nos aliados em volta por 2,5 s. Recarga de 60 s.' } },
@@ -487,11 +498,15 @@ export const STAT_LABEL = {
   as: 'vel. de ataque',
   crit: 'chance de crítico',
   ls: 'roubo de vida',
+  apen: 'pen. de armadura',
+  mpen: 'pen. mágica',
   haste: 'aceleração de habilidade',
   ms: 'passo',
 };
-export const STAT_PCT = ['as', 'crit', 'ls'];
+export const STAT_PCT = ['as', 'crit', 'ls', 'apen', 'mpen'];
 export const CRIT_MULT = 1.75;
+// teto de cada penetração: empilhando itens ninguém ignora mais que isso da defesa do alvo
+export const PEN_MAX = 0.4;
 // Golpe básico de herói já começado ainda sai com o alvo até esta distância além do alcance: andando pra trás ninguém escapa, só com investida ou salto
 export const ATTACK_SLACK = 1.4;
 
@@ -576,21 +591,21 @@ const B = (name, why, items) => ({ name, why, items });
 export const HERO_BUILDS = {
   faisca: [
     B('Crítico', 'Velocidade de ataque e crítico: o básico vira a maior fonte de dano.', ['pevento', 'caipora', 'agouro', 'paimato', 'mortalha', 'jaci']),
-    B('Rajada', 'Ataque com aceleração: a Rajada e o Estalo voltam rápido e batem forte.', ['andarilho', 'lampiao', 'lobisomem', 'agouro', 'maracatu', 'jaci']),
+    B('Rajada', 'Ataque com aceleração: a Rajada e o Estalo voltam rápido e batem forte.', ['andarilho', 'lampiao', 'lobisomem', 'arpao', 'maracatu', 'jaci']),
     B('Sobrevivente', 'Roubo de vida e defesa pra bater no meio da briga sem cair.', ['perneira', 'labatut', 'agouro', 'cascavel', 'chupacabra', 'jabuti']),
   ],
   trovao: [
     B('Brigão', 'Ataque com vida e roubo de vida: entra na frente e fica de pé.', ['perneira', 'anhanga', 'corposeco', 'cangaceiro', 'jaci', 'xiquexique']),
-    B('Dano', 'Muito ataque e aceleração: cada habilidade derruba um pedaço do alvo.', ['pevento', 'lobisomem', 'chupacabra', 'onca', 'anhanga', 'jabuti']),
+    B('Dano', 'Muito ataque e aceleração: cada habilidade derruba um pedaço do alvo.', ['pevento', 'lobisomem', 'chupacabra', 'curupaco', 'anhanga', 'jabuti']),
     B('Paredão', 'Ataque com armadura e vida: o escudo do Trovão cresce com a vida.', ['perneira', 'cangaceiro', 'bradador', 'jequitiba', 'jaci', 'canastra']),
   ],
   coruja: [
-    B('Tiro certeiro', 'Ataque e crítico com aceleração: o Disparo e o Tiro Certeiro escalam muito com ataque.', ['andarilho', 'agouro', 'lampiao', 'caipora', 'cobra', 'jaci']),
+    B('Tiro certeiro', 'Ataque e crítico com aceleração: o Disparo e o Tiro Certeiro escalam muito com ataque.', ['andarilho', 'agouro', 'lampiao', 'caipora', 'arpao', 'jaci']),
     B('Crítico', 'Crítico e velocidade de ataque pra bater de longe sem parar.', ['pevento', 'paimato', 'agouro', 'caipora', 'mortalha', 'jaci']),
     B('Segura', 'Roubo de vida e defesas pra sobreviver a quem chega perto.', ['perneira', 'labatut', 'agouro', 'cascavel', 'jaci', 'jabuti']),
   ],
   vespa: [
-    B('Assassina', 'Ataque, crítico e aceleração: entra, mata e sai antes da resposta.', ['andarilho', 'lobisomem', 'lampiao', 'agouro', 'chupacabra', 'jaci']),
+    B('Assassina', 'Ataque, crítico e aceleração: entra, mata e sai antes da resposta.', ['andarilho', 'lobisomem', 'lampiao', 'arpao', 'chupacabra', 'jaci']),
     B('Ferroada rápida', 'Crítico e velocidade de ataque pra derreter quem ficar parado.', ['pevento', 'paimato', 'agouro', 'onca', 'chupacabra', 'jaci']),
     B('Briga longa', 'Vida e roubo de vida pra aguentar a briga inteira.', ['perneira', 'corposeco', 'anhanga', 'cangaceiro', 'lobisomem', 'jaci']),
   ],
@@ -601,11 +616,11 @@ export const HERO_BUILDS = {
   ],
   iara: [
     B('Curandeira', 'Aceleração e poder pra curar e proteger o tempo todo.', ['andarilho', 'cheiro', 'benzedeira', 'cabaca', 'figa', 'jaci']),
-    B('Maré', 'Poder: a Onda e a Maré Alta passam a doer de verdade.', ['andarilho', 'cocar', 'maedouro', 'mula', 'benzedeira', 'jaci']),
+    B('Maré', 'Poder e penetração: a Onda e a Maré Alta passam a doer de verdade.', ['andarilho', 'cocar', 'maedouro', 'mula', 'olhoanhanga', 'jaci']),
     B('Protetora', 'Escudos e vida pra segurar quem está na frente.', ['boto', 'figa', 'cheiro', 'divino', 'sumauma', 'jaci']),
   ],
   boitata: [
-    B('Explosão', 'Muito poder: a Labareda e o Fogo-fátuo apagam um alvo de uma vez.', ['andarilho', 'cocar', 'mula', 'tupa', 'maedagua', 'jaci']),
+    B('Explosão', 'Muito poder: a Labareda e o Fogo-fátuo apagam um alvo de uma vez.', ['andarilho', 'cocar', 'mula', 'fogocorredor', 'tupa', 'jaci']),
     B('Fogo contínuo', 'Aceleração: as habilidades voltam tão rápido que o fogo não para.', ['andarilho', 'cabaca', 'cocar', 'rezadeira', 'benzedeira', 'jaci']),
     B('Casca-grossa', 'Poder com vida e defesa, e a Carranca pra escapar de mergulho.', ['boto', 'maedouro', 'carranca', 'rezadeira', 'jabuti', 'jaci']),
   ],
@@ -621,16 +636,16 @@ export const HERO_BUILDS = {
   ],
   curupira: [
     B('Tocha sem parar', 'Aceleração e poder: a Tocha volta rápido e queima de longe.', ['andarilho', 'cocar', 'cabaca', 'mula', 'tupa', 'jaci']),
-    B('Explosão', 'Muito poder: a Fúria da Mata vira uma explosão que derruba o time.', ['andarilho', 'mula', 'tupa', 'cocar', 'maedouro', 'maedagua']),
+    B('Explosão', 'Muito poder: a Fúria da Mata vira uma explosão que derruba o time.', ['andarilho', 'mula', 'tupa', 'cocar', 'fogocorredor', 'maedagua']),
     B('Seguro', 'Poder com vida e a Carranca: o Curupira não aguenta ser pego.', ['boto', 'maedouro', 'carranca', 'benzedeira', 'rezadeira', 'jaci']),
   ],
   boto: [
     B('Encantador', 'Poder com vida pra encantar e sobreviver depois.', ['andarilho', 'cocar', 'maedouro', 'mula', 'benzedeira', 'jaci']),
-    B('Cardume', 'Aceleração: Pérola, Cardume e Galanteio voltam a toda hora.', ['andarilho', 'cabaca', 'cocar', 'benzedeira', 'rezadeira', 'maedagua']),
+    B('Cardume', 'Aceleração: Pérola, Cardume e Galanteio voltam a toda hora.', ['andarilho', 'cabaca', 'cocar', 'olhoanhanga', 'rezadeira', 'maedagua']),
     B('Mergulhador', 'Poder com defesa pra mergulhar no meio deles sem morrer.', ['boto', 'maedouro', 'carranca', 'rezadeira', 'jabuti', 'jaci']),
   ],
   caipora: [
-    B('Traquina', 'Muito poder: o Coquinho de longe e a Fumaça do Sono doem muito.', ['andarilho', 'cocar', 'mula', 'tupa', 'benzedeira', 'jaci']),
+    B('Traquina', 'Muito poder: o Coquinho de longe e a Fumaça do Sono doem muito.', ['andarilho', 'cocar', 'mula', 'fogocorredor', 'benzedeira', 'jaci']),
     B('Coco rápido', 'Aceleração: Coquinho, Traquinagem e Buraco de Tatu o tempo todo.', ['andarilho', 'cabaca', 'cocar', 'rezadeira', 'maedouro', 'jaci']),
     B('Segura', 'Poder com vida e defesa, e a Carranca pra fugir.', ['boto', 'maedouro', 'carranca', 'maedagua', 'jabuti', 'jaci']),
   ],
@@ -646,7 +661,7 @@ export const HERO_BUILDS = {
   ],
   pilintra: [
     B('Malandro', 'Aceleração e poder: escudo e cartas na mão o tempo todo.', ['andarilho', 'figa', 'benzedeira', 'cocar', 'cheiro', 'jaci']),
-    B('Cartada', 'Muito poder: Cartas na Mesa joga o time inimigo pro alto e fere.', ['andarilho', 'cocar', 'maedouro', 'mula', 'tupa', 'jaci']),
+    B('Cartada', 'Muito poder e penetração: Cartas na Mesa joga o time inimigo pro alto e fere.', ['andarilho', 'cocar', 'maedouro', 'mula', 'olhoanhanga', 'jaci']),
     B('Resistente', 'Vida e defesas pra segurar a frente com o time.', ['boto', 'figa', 'divino', 'tacaca', 'sumauma', 'jaci']),
   ],
 };
