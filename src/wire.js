@@ -43,7 +43,7 @@ const EVENTS = {
   phase: { ph: 's', m: 'u' },
   welcome: { id: 'u' },
   roster: { l: ['u', 'u', 's', 'u', 'i', 's*'] },
-  board: { l: ['u', 'u', 'u', 'u', 'u', 'u', 's*', 'u', 'u', 'u', 'n*', 'u*'] },
+  board: { l: ['u', 'u', 'u', 'u', 'u', 'u', 's*', 'u', 'u', 'u', 'n*', 'u*', 'u*'] },
   end: { w: 'i', next: 'n', t: 'u', k: 'u*' },
   room: { code: 's', you: 'u', host: 'u', state: 's', size: 'u', diff: 's', bots: 'u*', members: ['u', 's', 'u'] },
   full: {},
