@@ -220,7 +220,7 @@ export const HEROES = {
     stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
     abilities: {
       q: { name: 'Onda', icon: 'wave', kind: 'proj', cd: 7, cast: 0.2, range: 12, speed: 22, width: 1.3, pierce: true, dmg: { b: 60, l: 16, ap: 0.55, type: 'magic' }, fx: { slow: [0.25, 1.5] }, color: '#60a5fa', desc: 'Onda que atravessa todo mundo e deixa lento.' },
-      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 55, l: 15, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
+      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 45, l: 12, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
       e: { name: 'Bolha', icon: 'bubble', kind: 'ally', cd: 14, cast: 0, range: 0, radius: 6, shield: { b: 45, l: 14, ap: 0.35, t: 2.5 }, color: '#bae6fd', desc: 'Escudo em você e nos aliados por perto.' },
       r: { name: 'Maré Alta', icon: 'tide', kind: 'proj', cd: 75, cast: 0.3, range: 18, speed: 17, width: 4.2, pierce: true, dmg: { b: 150, l: 28, ap: 0.6, type: 'magic' }, fx: { knockback: 4, slow: [0.4, 2] }, color: '#3b82f6', desc: 'Uma onda gigante que empurra e fere todos.' },
     },
