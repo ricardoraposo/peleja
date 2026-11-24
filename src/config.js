@@ -428,7 +428,7 @@ export const ITEMS = {
   cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
   maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 92, hp: 350 } },
   maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 80, mres: 45 } },
-  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 80, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 90, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
   benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
   jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
