@@ -2133,8 +2133,9 @@ queueBolts(h, ab, slot, color) {
       u.windup -= dt;
       if (u.windup <= 0) {
         u.windup = 0;
-        // herói: a recarga só começa quando o golpe sai, então cancelar o preparo não custa um ataque
-        if (u.isHero) u.atkCd = 1 / u.stats.as - u.windupMax;
+        // herói: a recarga só começa quando o golpe sai, então cancelar o preparo não custa um ataque.
+        // A sobra do passo (até dois ticks) vai pro próximo golpe, senão o arredondamento come até 9% da vel. de ataque
+        if (u.isHero) u.atkCd = Math.max(u.atkCd + u.windupMax, -2 * dt) + 1 / u.stats.as - u.windupMax;
         this.releaseAttack(u, t);
       }
       return;
