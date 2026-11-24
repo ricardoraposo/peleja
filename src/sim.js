@@ -436,6 +436,8 @@ export class Sim {
     h.dmgDealt = h.dmgTaken = h.healDone = 0;
     // dano recebido na partida por tipo (físico, mágico, verdadeiro), pro gráfico do placar
     h.dmgTakenBy = [0, 0, 0];
+    // e por quem bateu: id do herói inimigo (0 = torres e tropas)
+    h.dmgFrom = {};
     h.multi = 0;
     h.multiT = -99;
     h.damagers = new Map();
@@ -1467,6 +1469,10 @@ queueBolts(h, ab, slot, color) {
     if (t.isHero) {
       t.dmgTaken += amount;
       if (t.dmgTakenBy) t.dmgTakenBy[DMG_TYPE[type] ?? 0] += amount;
+      if (t.dmgFrom) {
+        const k = src?.isHero ? src.id : 0;
+        t.dmgFrom[k] = (t.dmgFrom[k] || 0) + amount;
+      }
       t.combatT = this.time;
       if (src?.isHero) t.damagers.set(src.id, this.time);
     }
@@ -2842,11 +2848,11 @@ queueBolts(h, ab, slot, color) {
     return [Math.round(s.atk), Math.round(s.pow), Math.round(s.armor), Math.round(s.mres), r2(s.as), r2(s.ms), r1(s.range), Math.round(s.haste), Math.round(s.crit * 100), Math.round(s.ls * 100), Math.round(s.apen * 100), Math.round(s.mpen * 100)];
   }
 
-  // placar (Tab): depois dos números vêm os atributos e o dano recebido por tipo, que aparecem ao passar o mouse no herói
+  // placar (Tab): depois dos números vêm os atributos, o dano recebido por tipo e o recebido de cada um (pares id, dano; id 0 = torres e tropas)
   board() {
     return {
       e: 'board',
-      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h), (h.dmgTakenBy || [0, 0, 0]).map(Math.round)]),
+      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h), (h.dmgTakenBy || [0, 0, 0]).map(Math.round), Object.entries(h.dmgFrom || {}).flatMap(([k, v]) => [Number(k), Math.round(v)])]),
     };
   }
 }

@@ -760,13 +760,39 @@ export class Hud {
     return rows.join('');
   }
 
+  // quanto do dano recebido veio de cada inimigo (e de torres e tropas), do maior pro menor
+  dmgFromRows(pairs) {
+    if (!pairs?.length) return '';
+    const g = this.game;
+    const rows = [];
+    for (let i = 0; i < pairs.length; i += 2) rows.push([pairs[i], pairs[i + 1]]);
+    const total = rows.reduce((a, r) => a + r[1], 0);
+    if (!total) return '';
+    return (
+      '<div class="dmg-from">' +
+      rows
+        .sort((a, b) => b[1] - a[1])
+        .map(([id, v]) => {
+          const r = id ? g.roster.get(id) : null;
+          const h = r ? HEROES[HERO_ORDER[r.heroIdx]] || HEROES.faisca : null;
+          const color = h ? h.color : '#a3a3a3';
+          const badge = h ? `<span class="b-hero" style="--c:${color}">${h.name[0]}</span>` : '<span class="b-hero df-env">T</span>';
+          const name = h ? `${esc(r.name)} <small>${h.name}</small>` : 'Torres e tropas';
+          const p = (100 * v) / total;
+          return `<div class="df-row">${badge}<span class="df-name">${name}</span><span class="df-bar"><i style="width:${p}%;background:${color}"></i></span><b>${Math.round(p)}%</b></div>`;
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
   renderBoard() {
     const g = this.game;
     const blue = this.boardRows(0);
     const red = this.boardRows(1);
     const by = g.board.get(g.myId)?.[11];
     const total = (by || []).reduce((a, b) => a + b, 0);
-    const mine = `<h3>Dano que você recebeu na partida <b>${Math.round(total / 100) / 10}k</b></h3>${dmgBar(by)}`;
+    const mine = `<h3>Dano que você recebeu na partida <b>${Math.round(total / 100) / 10}k</b></h3>${dmgBar(by)}${this.dmgFromRows(g.board.get(g.myId)?.[12])}`;
     // só redesenha quando algo mudou: refazer a tabela a cada quadro apagava a dica que está aberta
     if (blue + red + mine !== this.boardKey) {
       this.boardKey = blue + red + mine;
