@@ -18,7 +18,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **A loja só abre na base ou quando você cai**, então voltar pra comprar custa tempo de rota.
 - **Canhão da base**: clique com o botão direito no canhão ao lado da fonte pra entrar nele. A câmera abre e você tem 5 segundos pra clicar onde quer cair, em volta da torre mais avançada do seu time que ainda está de pé (sem clicar, cai atrás dela; `S` desiste). No ar ninguém te acerta, e a queda joga pro alto os inimigos que estiverem embaixo. Sem as duas torres da ponte, o canhão para de atirar.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
-- **Em estruturas só o ataque básico fere**, e ele soma o ataque inteiro mais 60% do poder: mago e suporte também derrubam torre.
+- **Em estruturas só o ataque básico fere**, e ele soma o ataque inteiro, 60% do poder e 1,5% da vida máxima: mago, suporte e tanque também derrubam torre.
 - **Habilidades em área também desgastam torres**, com 30% do dano. Disparos num alvo só passam direto por elas.
 
 <p align="center">
@@ -165,4 +165,4 @@ server/
 scripts/       testes de simulação, estresse e protocolo
 ```
 
-Scripts de teste: `npm run sim`, `npm run stress` e `npm run wire`.
+Scripts de teste: `npm run sim`, `npm run stress` e `npm run wire`. Pra medir o balanceamento, `npm run balance -- 200 5` roda 200 partidas 5x5 de bots em paralelo e mostra vitória, dano, mortes, dano em torre e uso das habilidades de cada herói (troque o 5 por 3 pro 3x3).

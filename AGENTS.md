@@ -10,6 +10,7 @@ npm run dev      # contra bots, com o Treino livre no menu
 npm run online   # build + servidor em http://localhost:7788
 npm run sim      # partidas só de bots, sem navegador (node scripts/simtest.js N normal)
 npm run wire     # confere que o protocolo binário entrega igual ao JSON
+npm run balance -- 200 5  # 200 partidas de bots 5x5 em paralelo e relatório de balanceamento por herói
 npm run stress   # carga no servidor
 npm run build    # tem que passar antes de subir
 ```

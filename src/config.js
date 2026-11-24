@@ -89,6 +89,8 @@ export const TOWER = {
   projSpeed: 24,
   // ataque básico de herói em estrutura: ataque inteiro + essa fração do poder; se o poder pesar mais que o ataque dos itens, o golpe vira mágico
   apRatio: 0.6,
+  // e essa fração da vida máxima, pra tanque e suporte de vida também derrubarem torre
+  hpRatio: 0.015,
   backdoorRange: 15,
   backdoorMult: 0.5,
   vsMinion: { melee: 0.45, ranged: 0.7, siege: 0.14, super: 0.08 },
@@ -220,7 +222,7 @@ export const HEROES = {
     stats: { hp: 560, hpL: 90, atk: 54, atkL: 2.8, armor: 26, armorL: 2.7, mres: 30, mresL: 1.3, as: 0.63, asL: 0.022, ms: 6.0, range: 8.2, regen: 1.8, regenL: 0.17 },
     abilities: {
       q: { name: 'Onda', icon: 'wave', kind: 'proj', cd: 7, cast: 0.2, range: 12, speed: 22, width: 1.3, pierce: true, dmg: { b: 60, l: 16, ap: 0.55, type: 'magic' }, fx: { slow: [0.25, 1.5] }, color: '#60a5fa', desc: 'Onda que atravessa todo mundo e deixa lento.' },
-      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 55, l: 15, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
+      w: { name: 'Água Viva', icon: 'drop', kind: 'ally', cd: 12, cast: 0.15, range: 10, radius: 3.4, heal: { b: 45, l: 12, ap: 0.35 }, color: '#7dd3fc', desc: 'Cura aliados numa área.' },
       e: { name: 'Bolha', icon: 'bubble', kind: 'ally', cd: 14, cast: 0, range: 0, radius: 6, shield: { b: 45, l: 14, ap: 0.35, t: 2.5 }, color: '#bae6fd', desc: 'Escudo em você e nos aliados por perto.' },
       r: { name: 'Maré Alta', icon: 'tide', kind: 'proj', cd: 75, cast: 0.3, range: 18, speed: 17, width: 4.2, pierce: true, dmg: { b: 150, l: 28, ap: 0.6, type: 'magic' }, fx: { knockback: 4, slow: [0.4, 2] }, color: '#3b82f6', desc: 'Uma onda gigante que empurra e fere todos.' },
     },
@@ -234,7 +236,7 @@ export const HEROES = {
     ranged: true,
     stats: { hp: 545, hpL: 88, atk: 52, atkL: 2.8, armor: 24, armorL: 2.5, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 5.95, range: 8.3, regen: 1.6, regenL: 0.15 },
     abilities: {
-      q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 80, l: 22, ap: 0.6, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
+      q: { name: 'Labareda', icon: 'fire', kind: 'proj', cd: 6, cast: 0.15, range: 12, speed: 26, width: 0.9, explode: 2.1, dmg: { b: 70, l: 22, ap: 0.6, type: 'magic' }, color: '#f472b6', desc: 'Bola de fogo que explode no primeiro inimigo.' },
       w: { name: 'Fogo-fátuo', icon: 'wisp', kind: 'aoe', cd: 12, cast: 0.15, range: 10, radius: 2.6, delay: 0.75, dmg: { b: 70, l: 19, ap: 0.6, type: 'magic' }, fx: { stun: 1.1 }, color: '#f9a8d4', desc: 'Depois de um instante, atordoa quem estiver na área.' },
       e: { name: 'Serpentear', icon: 'snake', kind: 'dash', cd: 13, cast: 0, range: 6, speed: 30, buff: { t: 2, ms: 0.25 }, desc: 'Desliza rápido e ganha velocidade.' },
       r: { name: 'Incêndio', icon: 'blaze', kind: 'zone', cd: 70, cast: 0.25, range: 11, radius: 4.6, dur: 4, tick: 0.5, dmg: { b: 50, l: 10, ap: 0.18, type: 'magic' }, fx: { slow: [0.3, 0.6] }, color: '#ec4899', desc: 'Incendeia o chão: queima e deixa lento por 4 s.' },
@@ -283,7 +285,7 @@ export const HEROES = {
     skillOrder: ['q', 'w', 'e'],
     stats: { hp: 530, hpL: 86, atk: 51, atkL: 2.7, armor: 22, armorL: 2.4, mres: 30, mresL: 1.3, as: 0.64, asL: 0.02, ms: 6.0, range: 9.2, regen: 1.5, regenL: 0.14 },
     abilities: {
-      q: { name: 'Tocha', icon: 'torch', kind: 'proj', cd: 5, cast: 0.2, range: 14, speed: 30, width: 0.9, explode: 1.8, dmg: { b: 65, l: 19, ap: 0.6, type: 'magic' }, fx: { burn: 3 }, color: '#ff7a1a', desc: 'Arremessa uma tocha de bem longe: explode no primeiro inimigo e deixa todo mundo em volta queimando.' },
+      q: { name: 'Tocha', icon: 'torch', kind: 'proj', cd: 6, cast: 0.2, range: 14, speed: 30, width: 0.9, explode: 1.8, dmg: { b: 65, l: 19, ap: 0.6, type: 'magic' }, fx: { burn: 3 }, color: '#ff7a1a', desc: 'Arremessa uma tocha de bem longe: explode no primeiro inimigo e deixa todo mundo em volta queimando.' },
       w: { name: 'Trilha de Brasa', icon: 'firewall', kind: 'zone', cd: 14, cast: 0.2, range: 11, radius: 1.1, line: 7, dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.08, type: 'magic' }, fx: { slow: [0.35, 0.6], burn: 2 }, color: '#ffb020', desc: 'Risca uma parede de fogo atravessada no chão: queima e deixa lento quem passar por ela.' },
       e: { name: 'Pés Virados', icon: 'feet', kind: 'blink', cd: 15, cast: 0, range: 6.5, origin: { radius: 2.4, delay: 0.5, dmg: { b: 60, l: 18, ap: 0.5, type: 'magic' }, fx: { burn: 3 } }, color: '#fb923c', desc: 'Some e reaparece mais adiante. As pegadas ficam viradas pro outro lado e explodem em brasa onde você estava.' },
       r: { name: 'Fúria da Mata', icon: 'forestfire', kind: 'aoe', cd: 80, cast: 0.35, range: 16, radius: 4.4, delay: 0.9, dmg: { b: 160, l: 28, ap: 0.8, type: 'magic' }, fx: { fear: 1.25, burn: 4 }, linger: { dur: 3, tick: 0.5, dmg: { b: 14, l: 4, ap: 0.06, type: 'magic' }, fx: { slow: [0.3, 0.6] } }, color: '#ff3d00', desc: 'De bem longe, a mata pega fogo: depois de um instante explode, os inimigos fogem de medo e o chão fica queimando.' },
@@ -313,7 +315,7 @@ export const HEROES = {
     look: { weapon: 'braid', hat: 'braids', robe: true, extra: 'leaves', body: '#3f6212', skin: '#a8704a' },
     ranged: true,
     skillOrder: ['q', 'e', 'w'],
-    stats: { hp: 600, hpL: 98, atk: 52, atkL: 2.8, armor: 30, armorL: 3.1, mres: 31, mresL: 1.4, as: 0.62, asL: 0.02, ms: 6.0, range: 6.2, regen: 1.9, regenL: 0.18 },
+    stats: { hp: 660, hpL: 98, atk: 52, atkL: 2.8, armor: 36, armorL: 3.1, mres: 31, mresL: 1.4, as: 0.62, asL: 0.02, ms: 6.0, range: 6.2, regen: 1.9, regenL: 0.18 },
     abilities: {
       q: { name: 'Laço de Trança', icon: 'braid', kind: 'proj', cd: 10, cast: 0.25, range: 11, speed: 24, width: 1.1, dmg: { b: 66, l: 17, ap: 0.54, type: 'magic' }, fx: { pull: 6, stun: 0.5 }, color: '#2dd4bf', desc: 'Joga a trança: o primeiro inimigo que ela pegar é puxado pra perto de você e fica atordoado.' },
       w: { name: 'Cipó Amigo', icon: 'vine', kind: 'ally', cd: 15, cast: 0.1, range: 10, radius: 2.6, shield: { b: 55, l: 18, ap: 0.4, t: 3 }, fetch: true, color: '#5eead4', desc: 'Lança um cipó num aliado: ele ganha um escudo e é puxado pro seu lado.' },
@@ -422,13 +424,13 @@ export const ITEMS = {
   caipora: { name: 'Arco da Caipora', cost: 2650, from: ['flecha', 'zarabatana'], stats: { as: 0.55, atk: 30 } },
   agouro: { name: 'Agouro da Acauã', cost: 3050, from: ['arraia', 'facao'], stats: { atk: 55, crit: 0.25 } },
   mortalha: { name: 'Rasga-Mortalha', cost: 2350, from: ['arraia', 'zarabatana'], stats: { crit: 0.2, as: 0.35, atk: 15 } },
-  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.5, pow: 64 } },
+  matinta: { name: 'Assobio da Matinta', cost: 2350, from: ['curare', 'pena'], stats: { as: 0.55, pow: 70 } },
   // ----- grandes: poder -----
   tupa: { name: 'Cajado de Tupã', cost: 2750, from: ['raio', 'raio', 'pena'], stats: { pow: 150 } },
   cocar: { name: 'Cocar do Pajé', cost: 2750, from: ['maraca', 'raio'], stats: { pow: 92, haste: 20 } },
   maedouro: { name: 'Coração da Mãe-do-Ouro', cost: 2500, from: ['muiraquita', 'raio'], stats: { pow: 92, hp: 350 } },
   maedagua: { name: "Véu da Mãe-d'Água", cost: 2500, from: ['raio', 'vitoria', 'pena'], stats: { pow: 80, mres: 45 } },
-  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 80, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
+  carranca: { name: 'Carranca', cost: 2900, from: ['raio', 'tatu', 'pena'], stats: { pow: 90, armor: 45 }, active: { stasis: 2.5, cd: 120, desc: 'Vira estátua por 2,5 s: não leva dano nem controle, mas não anda, não ataca e não lança nada. Recarga de 120 s.' } },
   benzedeira: { name: 'Cuia da Benzedeira', cost: 2700, from: ['muiraquita', 'guarana', 'pena'], stats: { pow: 58, haste: 20, hp: 250 } },
   // ----- grandes: defesa -----
   jabuti: { name: 'Casco de Jabuti', cost: 2400, from: ['gibao', 'tatu'], stats: { armor: 65, hp: 300 } },
