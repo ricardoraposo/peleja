@@ -313,7 +313,7 @@ export const HEROES = {
     look: { weapon: 'braid', hat: 'braids', robe: true, extra: 'leaves', body: '#3f6212', skin: '#a8704a' },
     ranged: true,
     skillOrder: ['q', 'e', 'w'],
-    stats: { hp: 600, hpL: 98, atk: 52, atkL: 2.8, armor: 30, armorL: 3.1, mres: 31, mresL: 1.4, as: 0.62, asL: 0.02, ms: 6.0, range: 6.2, regen: 1.9, regenL: 0.18 },
+    stats: { hp: 660, hpL: 98, atk: 52, atkL: 2.8, armor: 36, armorL: 3.1, mres: 31, mresL: 1.4, as: 0.62, asL: 0.02, ms: 6.0, range: 6.2, regen: 1.9, regenL: 0.18 },
     abilities: {
       q: { name: 'Laço de Trança', icon: 'braid', kind: 'proj', cd: 10, cast: 0.25, range: 11, speed: 24, width: 1.1, dmg: { b: 66, l: 17, ap: 0.54, type: 'magic' }, fx: { pull: 6, stun: 0.5 }, color: '#2dd4bf', desc: 'Joga a trança: o primeiro inimigo que ela pegar é puxado pra perto de você e fica atordoado.' },
       w: { name: 'Cipó Amigo', icon: 'vine', kind: 'ally', cd: 15, cast: 0.1, range: 10, radius: 2.6, shield: { b: 55, l: 18, ap: 0.4, t: 3 }, fetch: true, color: '#5eead4', desc: 'Lança um cipó num aliado: ele ganha um escudo e é puxado pro seu lado.' },
