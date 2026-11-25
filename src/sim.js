@@ -2258,8 +2258,9 @@ queueBolts(h, ab, slot, color) {
     const stop = u.r + t.r + u.stats.range * 0.85;
     if (this.inAttackRange(u, t, u.isHero && u.windup > 0 ? ATTACK_SLACK : 0)) {
       this.attackStep(u, t, dt);
-      // herói atrás de quem foge vai junto enquanto golpeia e recarrega: bater não deixa ninguém pra trás
-      if (u.isHero && this.fleeing(t, u)) this.moveToward(u, t.x, t.z, dt, stop, t);
+      // herói atrás de quem foge vai junto enquanto recarrega, mas planta o pé no golpe: é nessa brecha que quem foge
+      // (ou kita) ganha distância
+      if (u.isHero && u.windup <= 0 && this.fleeing(t, u)) this.moveToward(u, t.x, t.z, dt, stop, t);
     } else {
       u.windup = 0;
       this.moveToward(u, t.x, t.z, dt, stop, t);
