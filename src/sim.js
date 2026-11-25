@@ -1666,7 +1666,7 @@ queueBolts(h, ab, slot, color) {
     if (first) this.ann('Primeiro abate!', `${killer.name} abriu o placar`, 'first', killer.team);
     else if (killer && killer.multi >= 2) {
       const names = ['', '', 'Double kill!', 'Triple kill!', 'Quadra kill!', 'Pentakill!'];
-      this.ann(names[killer.multi], killer.name + (teamAlive ? '' : ' · time inteiro no chão'), killer.multi === 5 ? 'penta' : 'multi', killer.team);
+      this.ann(names[killer.multi], killer.name + (teamAlive ? '' : ' · time inteiro no chão'), killer.multi === 5 ? 'penta' : 'multi' + killer.multi, killer.team);
       // depois do pentakill a contagem recomeça
       if (killer.multi === 5) killer.multi = 0;
     } else if (killer && killer.streak >= 3 && killer.streak % 2 === 1) {

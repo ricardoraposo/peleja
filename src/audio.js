@@ -76,6 +76,15 @@ function noiseBurst(dest, t, dur, freq, q, type = 'bandpass', peak = 1, attack =
   return f;
 }
 
+// notas em sequência, com metal (serra) e corpo (triângulo); a última fica soando por `hold` segundos
+function fanfare(dest, t, notes, step, hold) {
+  notes.forEach((f, i) => {
+    const dur = i === notes.length - 1 ? hold : step * 1.4;
+    tone(dest, t + i * step, dur, f, f, 'sawtooth', 0.07);
+    tone(dest, t + i * step, dur, f, f, 'triangle', 0.16);
+  });
+}
+
 function tone(dest, t, dur, f0, f1, type = 'sine', peak = 1) {
   const o = ctx.createOscillator();
   o.type = type;
@@ -197,6 +206,24 @@ export function playSound(name, pos = null, gain = 1) {
     case 'announce':
       tone(d, t, 0.15, 880, 880, 'triangle', 0.18);
       tone(d, t + 0.12, 0.3, 1175, 1175, 'triangle', 0.18);
+      break;
+    // multi-abate: fanfarra que ganha uma nota a cada abate seguido; o pentakill fecha num acorde com tambor
+    case 'multi2':
+      fanfare(d, t, [784, 1047], 0.1, 0.35);
+      break;
+    case 'multi3':
+      fanfare(d, t, [659, 784, 1047], 0.09, 0.45);
+      break;
+    case 'multi4':
+      fanfare(d, t, [523, 659, 784, 1047], 0.08, 0.55);
+      noiseBurst(d, t + 0.24, 0.3, 180, 0.8, 'lowpass', 0.7);
+      break;
+    case 'penta':
+      fanfare(d, t, [523, 659, 784, 1047], 0.07, 0.2);
+      for (const f of [1047, 1319, 1568]) fanfare(d, t + 0.3, [f], 0, 1.1);
+      tone(d, t + 0.3, 0.9, 131, 65, 'sine', 0.9);
+      noiseBurst(d, t + 0.3, 0.5, 160, 0.8, 'lowpass', 1);
+      noiseBurst(d, t + 0.3, 0.6, 5000, 0.6, 'highpass', 0.25, 0.01);
       break;
     case 'laser':
       tone(d, t, 0.25, 2400, 1800, 'sawtooth', 0.08);

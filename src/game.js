@@ -283,7 +283,7 @@ export class Game {
         break;
       case 'ann':
         this.hud.announce(m.t, m.s, m.tm >= 0 ? (m.tm === this.myTeam ? '#4aa3ff' : '#f43f5e') : '#f4c430', m.k === 'penta');
-        playSound(m.k === 'start' ? 'horn' : 'announce');
+        playSound(m.k === 'start' ? 'horn' : /^(multi\d|penta)$/.test(m.k) ? m.k : 'announce');
         break;
       case 'cast':
         this.onCast(m);
