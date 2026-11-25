@@ -5,6 +5,8 @@ import {
   HERO_ORDER,
   HEROES,
   ITEMS,
+  ELIXIRS,
+  ELIXIR_SLOTS,
   MAP,
   MATCH,
   MINIONS,
@@ -430,6 +432,7 @@ export class Sim {
     h.goldEarned = MATCH.startGold;
     h.items = [];
     h.itemCd = {};
+    h.elixir = null;
     h.cds = { q: 0, w: 0, e: 0, r: 0, d: 0, f: 0 };
     h.cdMax = { q: 1, w: 1, e: 1, r: 1, d: 1, f: 1 };
     h.kills = h.deaths = h.assists = h.cs = h.streak = 0;
@@ -630,6 +633,7 @@ export class Sim {
       if (it.apen) s.apen += it.apen;
       if (it.mpen) s.mpen += it.mpen;
     }
+    if (h.elixir) for (const [k, p] of Object.entries(ELIXIRS[h.elixir.id].pct)) s[k] *= 1 + p;
     s.crit = Math.min(1, s.crit);
     s.apen = Math.min(PEN_MAX, s.apen);
     s.mpen = Math.min(PEN_MAX, s.mpen);
@@ -1886,6 +1890,11 @@ queueBolts(h, ab, slot, color) {
       u.stasisT -= dt;
       if (u.stasisT <= 0) this.endStasis(u);
     }
+    // o elixir continua contando com o herói morto
+    if (u.elixir && (u.elixir.t -= dt) <= 0) {
+      u.elixir = null;
+      this.calcStats(u);
+    }
     if (u.itemCd) for (const id in u.itemCd) if (u.itemCd[id] > 0) u.itemCd[id] = Math.max(0, u.itemCd[id] - dt);
     if (u.disp) {
       u.x += u.disp.vx * dt;
@@ -2623,7 +2632,28 @@ queueBolts(h, ab, slot, color) {
     return ITEMS[id] ? itemPrice(h.items, id) : null;
   }
 
+  // elixir só pra quem está de inventário cheio; comprar de novo renova, comprar outro troca
+  elixirBlock(h, id) {
+    const ex = ELIXIRS[id];
+    if (!ex) return 'Elixir desconhecido';
+    if (!this.canShop(h)) return 'Só na base ou quando cair';
+    if (h.items.length < ELIXIR_SLOTS) return 'Só com o inventário cheio';
+    if (h.gold < ex.cost) return `Faltam ${Math.ceil(ex.cost - h.gold)} de ouro`;
+    return '';
+  }
+
+  buyElixir(h, id) {
+    if (this.elixirBlock(h, id)) return false;
+    const ex = ELIXIRS[id];
+    h.gold -= ex.cost;
+    h.elixir = { id, t: ex.t };
+    this.calcStats(h);
+    if (!h.isBot) this.emit({ e: 'bought', i: id }, { to: h.id });
+    return true;
+  }
+
   buy(h, id) {
+    if (ELIXIRS[id]) return this.buyElixir(h, id);
     const it = ITEMS[id];
     if (!it || !this.canShop(h)) return false;
     const p = this.priceFor(h, id);
@@ -2845,6 +2875,8 @@ queueBolts(h, ab, slot, color) {
       lv: h.level,
       s: this.statLine(h),
       sh: this.canShop(h) ? 1 : 0,
+      ex: h.elixir ? h.elixir.id : undefined,
+      et: h.elixir ? Math.ceil(h.elixir.t) : undefined,
       rd: h.ready ? 1 : 0,
       rr: this.phase === 'draft' ? this.rerollsLeft(h) : undefined,
       ch: h.charge ? h.charge.left : 0,

@@ -1,4 +1,4 @@
-import { HERO_BUILDS, ITEMS, TOWER, abilityOf, nextBuy } from './config.js';
+import { ELIXIR_SLOTS, HERO_BUILDS, ITEMS, TOWER, abilityOf, nextBuy } from './config.js';
 import { cannonPos, fountainX, pushDir } from './geo.js';
 // bots voltando pra base curar alongavam demais as partidas (várias batendo no limite de 40 min); fica desligado
 const BOT_RECALL = false;
@@ -47,13 +47,29 @@ export class BotBrain {
     const build = builds[h.id % builds.length].items;
     for (let n = 0; n < 5; n++) {
       const next = build.find((id) => !h.items.includes(id));
-      if (!next) return;
+      if (!next) {
+        // build fechada: toma o elixir que combina com ela, renovando perto do fim
+        if (h.items.length >= ELIXIR_SLOTS && (!h.elixir || h.elixir.t < 20)) sim.buy(h, this.elixirPick());
+        return;
+      }
       const pick = nextBuy(h.items, h.gold, next);
       if (!pick) return;
       // peça solta só entra se ainda houver espaço sobrando pra montar depois
       if (pick !== next && !ITEMS[pick].from && h.items.length >= 5) return;
       if (!sim.buy(h, pick)) return;
     }
+  }
+
+  elixirPick() {
+    const { h } = this;
+    if (h.def.role === 'tanque') return 'arruda';
+    let atk = 0;
+    let pow = 0;
+    for (const id of h.items) {
+      atk += ITEMS[id].stats.atk || 0;
+      pow += ITEMS[id].stats.pow || 0;
+    }
+    return pow > atk ? 'jambu' : atk > 0 ? 'catuaba' : 'arruda';
   }
 
   velocity(e) {

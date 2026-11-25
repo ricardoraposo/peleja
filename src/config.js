@@ -495,6 +495,16 @@ export const ITEMS = {
 
 export const ITEM_ORDER = Object.keys(ITEMS);
 
+// Elixires: garrafadas pra quem já fechou a build (inventário cheio). Não ocupam espaço e duram `t` segundos, mesmo morrendo.
+// `pct` aumenta o atributo em porcentagem do que o herói já tem (base + itens). Só um elixir por vez: comprar outro troca.
+export const ELIXIRS = {
+  catuaba: { name: 'Garrafada de Catuaba', cost: 600, t: 180, pct: { atk: 0.12 }, color: '#f97316', desc: '+12% de ataque por 3 minutos.' },
+  jambu: { name: 'Garrafada de Jambu', cost: 600, t: 180, pct: { pow: 0.12 }, color: '#a855f7', desc: '+12% de poder por 3 minutos.' },
+  arruda: { name: 'Garrafada de Arruda', cost: 600, t: 180, pct: { maxHp: 0.08, armor: 0.08, mres: 0.08 }, color: '#22c55e', desc: '+8% de vida, armadura e resistência mágica por 3 minutos.' },
+};
+export const ELIXIR_ORDER = Object.keys(ELIXIRS);
+export const ELIXIR_SLOTS = 6;
+
 // 0 = básico, 1 = intermediário, 2 = grande
 export function itemTier(id) {
   const it = ITEMS[id];

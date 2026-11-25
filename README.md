@@ -76,6 +76,14 @@ São **79 itens** do folclore e do sertão, em três camadas (básicos, intermed
 
 As exceções aos atributos são os itens **de usar**, nas teclas `1` a `6`: a **Carranca**, que vira estátua por 2,5 s, e três de suporte que valem pra você e pros aliados em volta (a **Água de Cheiro** cura, a **Figa de Guiné** dá escudo e o **Berrante do Vaqueiro** acelera).
 
+Com a build fechada (seis itens) entram os **elixires**, garrafadas que não ocupam espaço e duram 3 minutos, mesmo se você cair. Só vale um por vez: comprar outro troca, e comprar o mesmo renova.
+
+| Elixir | O que dá |
+| --- | --- |
+| **Garrafada de Catuaba** | +12% de ataque |
+| **Garrafada de Jambu** | +12% de poder |
+| **Garrafada de Arruda** | +8% de vida, armadura e resistência mágica |
+
 | Linha | Itens grandes |
 | --- | --- |
 | Ataque | Garra do Lobisomem, Presa da Cobra-Grande, Borduna de Anhangá, Gume do Cangaceiro, Lança das Icamiabas, Garra da Onça-Pintada, Tacape do Bradador, Fita do Bonfim |

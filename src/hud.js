@@ -1,4 +1,4 @@
-import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
+import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, ELIXIRS, ELIXIR_ORDER, ELIXIR_SLOTS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
 import { OBSTACLES } from './geo.js';
 import { ITEM_ICONS } from './itemicons.js';
 
@@ -526,6 +526,18 @@ export class Hud {
         el.parentElement.classList.toggle('cooling', cd > 0);
       }
     }
+    // elixir ativo: garrafinha ao lado dos itens com o tempo que falta
+    const exKey = st.ex ? st.ex + '|' + st.et : '';
+    if (exKey !== this.elixirKey) {
+      this.elixirKey = exKey;
+      const el = $('elixir');
+      el.classList.toggle('hidden', !st.ex);
+      if (st.ex) {
+        const ex = ELIXIRS[st.ex];
+        el.style.setProperty('--c', ex.color);
+        el.innerHTML = `${ELIXIR_ICON}<div class="ex-t">${Math.floor(st.et / 60)}:${String(st.et % 60).padStart(2, '0')}</div><div class="tip"><b>${esc(ex.name)}</b><span>${esc(ex.desc)}</span></div>`;
+      }
+    }
     this.el.dead.classList.toggle('hidden', me.alive || g.phase !== 'playing');
     if (!me.alive) this.el.deadCount.textContent = Math.ceil(me.respawn);
     if (!this.el.shop.classList.contains('hidden')) this.updateShop();
@@ -588,7 +600,9 @@ export class Hud {
       } else if (e.button !== 0) return;
       const tile = pick(e, '.tile');
       const slot = pick(e, '.inv-slot[data-n]');
-      if (right) {
+      const ex = pick(e, '[data-ex]');
+      if (ex) this.game.buy(ex.dataset.ex);
+      else if (right) {
         // botão direito: compra o item (em qualquer lista) ou vende o do inventário, direto
         if (tile) {
           this.shopSel = tile.dataset.id;
@@ -652,8 +666,25 @@ export class Hud {
         )
         .join('');
     const tiers = ['Básicos', 'Intermediários', 'Grandes'];
-    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('');
+    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('') + this.elixirSection();
+    $('shop-rec').innerHTML += this.elixirSection();
     this.shopKey = this.shopStruct = this.shopDetailKey = '';
+  }
+
+  elixirSection() {
+    const cards = ELIXIR_ORDER.map((id) => {
+      const ex = ELIXIRS[id];
+      return `<button class="ex-card" data-ex="${id}" style="--c:${ex.color}"><span class="ex-icon">${ELIXIR_ICON}</span><span class="ex-body"><b>${esc(ex.name)}</b><small>${esc(ex.desc)}</small><em class="ex-why"></em></span><span class="ex-cost"><span class="coin"></span>${ex.cost}</span></button>`;
+    }).join('');
+    return `<h3>Elixires</h3><p class="rec-why">Pra quem já fechou a build (${ELIXIR_SLOTS} itens). Não ocupam espaço, duram mesmo se você cair e só vale um por vez: comprar outro troca.</p><div class="ex-list">${cards}</div>`;
+  }
+
+  // o que impede de comprar o elixir agora (vazio = pode)
+  elixirWhy(st, id) {
+    if (!st.sh) return 'Só na base ou quando cair';
+    if (st.it.length < ELIXIR_SLOTS) return `Só com a build fechada (${st.it.length}/${ELIXIR_SLOTS} itens)`;
+    if (st.g < ELIXIRS[id].cost) return `Faltam ${ELIXIRS[id].cost - st.g} de ouro`;
+    return st.ex === id ? `Ativo · ${Math.floor(st.et / 60)}:${String(st.et % 60).padStart(2, '0')} · comprar renova` : st.ex ? 'Troca o elixir ativo' : 'Clique pra comprar';
   }
 
   shopPrice(st, id) {
@@ -686,7 +717,7 @@ export class Hud {
     if (!this.shopSel) this.shopSel = next || ITEM_ORDER[0];
     const inv = st.it.join(',') + '|' + (st.sp || []).join(',');
     const struct = inv + '|' + this.shopSel + '|' + this.sellSel;
-    const key = st.g + '|' + st.sh + '|' + struct + '|' + this.shopTab + '|' + this.shopCat + '|' + next;
+    const key = st.g + '|' + st.sh + '|' + struct + '|' + this.shopTab + '|' + this.shopCat + '|' + next + '|' + st.ex + st.et;
     if (key === this.shopKey && !force) return;
     this.shopKey = key;
     $('shop-gold').textContent = st.g;
@@ -726,6 +757,14 @@ export class Hud {
     const sp = this.sellSel >= 0 ? st.sp?.[this.sellSel] ?? 0 : 0;
     sell.textContent = this.sellSel >= 0 ? `Vender (+${sp})${sp >= ITEMS[st.it[this.sellSel]].cost ? ' · devolve tudo' : ''}` : 'Vender';
 
+    for (const b of this.el.shop.querySelectorAll('[data-ex]')) {
+      const id = b.dataset.ex;
+      const why = this.elixirWhy(st, id);
+      const w = b.querySelector('.ex-why');
+      if (w.textContent !== why) w.textContent = why;
+      b.classList.toggle('afford', !!st.sh && st.it.length >= ELIXIR_SLOTS && st.g >= ELIXIRS[id].cost);
+      b.classList.toggle('owned', st.ex === id);
+    }
     for (const b of this.el.shop.querySelectorAll('.tile')) {
       const id = b.dataset.id;
       const pr = this.shopPrice(st, id);
@@ -905,6 +944,9 @@ export class Hud {
     return [((px - W / 2) / sx) * flip, ((py - H / 2) / sx) * flip];
   }
 }
+
+// garrafinha de garrafada, na cor do elixir
+const ELIXIR_ICON = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 2h4v4l4 5v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9l4-5z" style="fill:color-mix(in srgb, var(--c) 35%, #121828)" stroke="currentColor" stroke-width="1.5"/><path d="M7 13h10v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z" style="fill:var(--c)"/><rect x="9.5" y="1" width="5" height="2.5" rx="0.8" fill="#a16207"/></svg>';
 
 const ITEM_COLORS = {
   carranca: '#e8c170',
