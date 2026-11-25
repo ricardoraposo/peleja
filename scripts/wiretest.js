@@ -75,6 +75,9 @@ while (sim.phase === 'playing' && sim.gameTime < 60 * MINUTES) {
 // comandos do navegador, inclusive os tortos que o servidor precisa aguentar
 const commands = [
   { t: 'mv', x: 12.3, z: -4.5 },
+  { t: 'dr', x: 0.71, z: -0.71 },
+  { t: 'dr', x: 0, z: 0 },
+  { t: 'dr', x: 0.123456, z: 'a' },
   { t: 'am', x: 12.345678901, z: -0.000123 },
   { t: 'at', id: 4321 },
   { t: 'st' },

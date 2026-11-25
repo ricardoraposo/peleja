@@ -240,6 +240,13 @@
 
         <h3>Controles</h3>
         <div class="field">
+          <span>Andar com</span>
+          <div class="seg" id="input">
+            <button data-v="click" class="on">Botão direito</button><button data-v="wasd">WASD</button>
+          </div>
+          <small id="input-desc"></small>
+        </div>
+        <div class="field">
           <span>Lançar habilidades</span>
           <div class="seg" id="cast">
             <button data-v="release" class="on">Ao soltar a tecla</button><button data-v="instant">Na hora</button><button data-v="click">Com clique</button>
@@ -265,7 +272,7 @@
 
         <h3>Atalhos</h3>
         <div id="binds"></div>
-        <small class="set-note">Clique num atalho e aperte a tecla nova (Esc cancela). Se a tecla já estiver em uso, as duas ações trocam de lugar. Ficam fixos: <kbd>Esc</kbd> abre o menu e <kbd>Shift</kbd> + habilidade evolui.</small>
+        <small class="set-note" id="binds-note"></small>
         <button id="binds-reset" class="ghost">Restaurar atalhos padrão</button>
       </div>
     </div>

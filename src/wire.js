@@ -59,6 +59,7 @@ const EVENTS = {
 
 const COMMANDS = {
   mv: { x: 'n', z: 'n' },
+  dr: { x: 'd2', z: 'd2' },
   am: { x: 'n', z: 'n', h: 'u?' },
   at: { id: 'u' },
   st: {},

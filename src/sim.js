@@ -14,6 +14,7 @@ import {
   CRIT_MULT,
   PEN_MAX,
   ATTACK_SLACK,
+  WASD_KITE,
   itemPrice,
   itemStatsFor,
   RANK_MAX,
@@ -200,6 +201,7 @@ export class Sim {
     }
     if (!slot) return null;
     slot.isBot = false;
+    slot.dir = null;
     slot.name = clean;
     slot.ready = false;
     slot.spells = { ...DEFAULT_SPELLS };
@@ -212,6 +214,8 @@ export class Sim {
     const h = this.byId.get(id) || this.heroes.find((x) => x.id === id);
     if (!h || h.isBot) return;
     h.isBot = true;
+    // o bot que assume não pode herdar a tecla que o jogador deixou apertada
+    h.dir = null;
     h.name = this.nextBotName();
     h.ready = false;
     // os bots só sabem usar os feitiços padrão
@@ -449,6 +453,9 @@ export class Sim {
     h.empower = null;
     h.recast = null;
     h.fury = 0;
+    // WASD: direção que o jogador segura ({ x, z } de tamanho 1, ou null). É a mão dele, não um estado do herói:
+    // morrer não zera, e quem segura a tecla sai andando ao renascer
+    h.dir = null;
     h.stats.maxHp = 0;
     this.respawn(h, true);
   }
@@ -582,6 +589,7 @@ export class Sim {
     h.shredT = 0;
     h.shredP = 0;
     h.swinging = false;
+    h.kiteWait = false;
   }
 
   addFury(h, n) {
@@ -797,8 +805,32 @@ export class Sim {
   orderAttack(h, t) {
     if (!this.canAct(h) || !this.attackable(h, t)) return;
     if (h.target !== t) h.windup = 0;
-    h.order = { type: 'attack', target: t };
+    // com WASD segurado vale um golpe só: depois dele o herói volta a seguir as teclas
+    h.order = { type: 'attack', target: t, once: !!h.dir };
     h.target = t;
+  }
+
+  // WASD: a direção que o jogador segura, em coordenadas do mapa (0, 0 = soltou tudo). Soltar só para de andar.
+  // Apertar cancela a ordem de clique em andamento, menos o golpe que já começou: andar não cancela ataque
+  orderDir(h, x, z) {
+    const d = Math.hypot(x, z);
+    h.dir = d > 0.01 ? { x: x / d, z: z / d } : null;
+    if (!h.dir || !this.canAct(h) || h.fly) return;
+    const o = h.order;
+    if (o.type === 'attack' && h.windup > 0) o.once = true;
+    else if (o.type !== 'idle') {
+      h.order = { type: 'idle' };
+      h.windup = 0;
+    }
+  }
+
+  // anda na direção segurada mirando um ponto à frente, puxado pra dentro do chão: na beira do mapa o herói
+  // desliza junto da borda (ou para, se for reto contra ela) e os obstáculos redondos ele contorna
+  steer(h, dt) {
+    h.windup = 0;
+    h.target = null;
+    const [x, z] = clampWalk(h.x + h.dir.x * 3, h.z + h.dir.z * 3, h.r);
+    this.moveToward(h, x, z, dt);
   }
 
   orderAmove(h, x, z, heroesOnly = false) {
@@ -2116,8 +2148,8 @@ queueBolts(h, ab, slot, color) {
       return;
     }
     if (h.recallT > 0) {
-      // canalizando a volta: qualquer ordem nova cancela; parado, nem revida
-      if (h.order.type !== 'idle') h.recallT = 0;
+      // canalizando a volta: qualquer ordem nova ou tecla de andar cancela; parado, nem revida
+      if (h.order.type !== 'idle' || h.dir) h.recallT = 0;
       else {
         h.windup = 0;
         return;
@@ -2137,18 +2169,33 @@ queueBolts(h, ab, slot, color) {
       return;
     }
     const o = h.order;
+    // WASD: sem ordem de clique em andamento, o herói segue as teclas e não sai batendo sozinho
+    if (h.dir && o.type === 'idle') {
+      h.kiteWait = false;
+      this.steer(h, dt);
+      return;
+    }
     switch (o.type) {
       case 'move':
         if (!this.moveToward(h, o.x, o.z, dt)) h.order = { type: 'idle' };
         break;
-      case 'attack':
+      case 'attack': {
         if (!this.attackable(h, o.target)) {
           h.order = { type: 'idle' };
           h.target = null;
           break;
         }
+        // golpe só com WASD segurado: recarregando (ou na espera do kite), segue as teclas; pronto, bate ou vai atrás
+        if (o.once && h.dir && h.windup <= 0 && h.atkCd > 0) {
+          this.steer(h, dt);
+          h.target = o.target;
+          break;
+        }
+        const swing = h.windup > 0;
         this.engage(h, o.target, dt);
+        if (o.once && h.dir && swing && h.windup <= 0) h.order = { type: 'idle' };
         break;
+      }
       case 'amove': {
         if (!this.attackable(h, h.target) || edgeDist(h, h.target) > 9 || (o.heroes && !h.target.isHero)) h.target = this.nearestEnemy(h, 7.5, !o.heroes, o.heroes);
         if (h.target) this.engage(h, h.target, dt);
@@ -2240,6 +2287,14 @@ queueBolts(h, ab, slot, color) {
     }
     if (u.atkCd <= 0) {
       const period = 1 / u.stats.as;
+      // WASD: herói de distância com as teclas de andar seguradas espera um pouco antes do golpe (ver WASD_KITE)
+      if (u.isHero && u.dir && !u.kiteWait && u.ranged) {
+        const k = Math.min(WASD_KITE.max, WASD_KITE.per * u.stats.as) * (u.def.role === 'atirador' ? 1 : WASD_KITE.caster);
+        u.kiteWait = true;
+        u.atkCd = k;
+        return;
+      }
+      u.kiteWait = false;
       if (u.isHero) {
         // preparo curto: o golpe sai quase junto com o clique
         u.windup = u.ranged ? Math.min(0.1, period * 0.08) : Math.min(0.14, period * 0.11);
@@ -2753,6 +2808,9 @@ queueBolts(h, ab, slot, color) {
         break;
       case 'mv':
         this.orderMove(h, x, z);
+        break;
+      case 'dr':
+        if (Number.isFinite(x) && Number.isFinite(z)) this.orderDir(h, x, z);
         break;
       case 'am':
         this.orderAmove(h, x, z, Number(msg.h) === 1);

@@ -102,7 +102,9 @@ Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele). Em 
 
 ## Controles
 
-Todos os atalhos podem ser trocados em **Configurações**.
+Todos os atalhos podem ser trocados em **Configurações**. Lá também dá pra escolher **como andar**: com o botão direito (padrão) ou com **WASD**, do jeito do LoL.
+
+### Andando com o botão direito
 
 | Tecla | Ação |
 | --- | --- |
@@ -122,6 +124,25 @@ Todos os atalhos podem ser trocados em **Configurações**.
 | `Y` | Prende ou solta a câmera |
 | `Tab` | Placar |
 | `Esc` | Pausa e solta o mouse |
+
+### Andando com WASD
+
+As teclas andam e o mouse continua mirando. O WASD tem atalhos próprios, separados dos do botão direito.
+
+| Tecla | Ação |
+| --- | --- |
+| `W` `A` `S` `D` | Andam pra cima, esquerda, baixo e direita da tela. Na beira do mapa o herói desliza junto da borda |
+| Botão esquerdo | Ataca quem está no mouse (no chão, o inimigo mais perto dele). Segurando, ataca sempre que der |
+| Botão esquerdo no canhão da base | Entra no canhão |
+| Botão direito, `Shift`, `E`, `R` | Habilidades 1, 2, 3 e a especial |
+| `Ctrl` + habilidade | Evolui a habilidade ao subir de nível |
+| `Q` `F` | Feitiços |
+| `H` | Parar |
+| Botão do meio (segurar) | A câmera espia longe pro lado do mouse |
+
+As demais (`C`, `1` a `6`, `B`, `P`, `Espaço`, `Y`, `Tab`, `Esc`) são iguais. Ligar o WASD prende a câmera no herói. Presa, ela espia um pouco pro lado do mouse.
+
+Andar não cancela um ataque que já começou. Com uma tecla de andar segurada, o clique de ataque vira um golpe só: o herói vai até o alvo se precisar, bate e volta a seguir as teclas. Entre um golpe e outro, ele anda. Pra kitar não ficar mais fácil que no botão direito, herói de distância que segura as teclas na hora do golpe espera um pouco mais por ele. A espera cresce com a velocidade de ataque, é menor pra quem não é atirador, e corpo a corpo não espera.
 
 <p align="center">
   <img src="docs/menu.jpg" alt="Menu principal" />

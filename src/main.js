@@ -2,7 +2,7 @@ import { initAudio, playSound, setVolume } from './audio.js';
 import { DEFAULT_SPELLS, HERO_ORDER, HEROES, SPELL_POOL, TEAMS, MAP, MATCH } from './config.js';
 import { Game } from './game.js';
 import { esc, heroCard, setKeyLabel, spellPicker } from './hud.js';
-import { ACTIONS, DEFAULT_KEYS, canBind, cleanKeys, keyName } from './keys.js';
+import { actionsOf, canBind, cleanKeys, defaultKeys, keyName, mouseCode } from './keys.js';
 import { startDiag } from './diag.js';
 
 startDiag();
@@ -38,7 +38,10 @@ const settings = {
   cast: ['release', 'instant', 'click'].includes(stored.cast) ? stored.cast : 'release',
   camLock: stored.camLock ? 1 : 0,
   camSpeed: Math.max(0.5, Math.min(2, Number(stored.camSpeed) || 1)),
+  // como o herói anda: 'click' com o botão direito, 'wasd' com as teclas (cada esquema guarda os seus atalhos)
+  input: stored.input === 'wasd' ? 'wasd' : 'click',
   keys: cleanKeys(stored.keys),
+  wasdKeys: cleanKeys(stored.wasdKeys, 'wasd'),
   // último herói escolhido: já vem marcado na próxima partida
   hero: HEROES[stored.hero] ? stored.hero : '',
   // feitiços do D e do F: também voltam marcados
@@ -52,8 +55,10 @@ game.grab.mode = settings.mouse;
 game.castMode = settings.cast;
 game.camSpeed = settings.camSpeed;
 game.cam.locked = !!settings.camLock;
-setKeyLabel((action) => game.keyLabel(action));
-game.setKeys(settings.keys);
+// atalhos do esquema escolhido (a troca no menu de configurações mexe neste objeto)
+const keysOf = () => (settings.input === 'wasd' ? settings.wasdKeys : settings.keys);
+setKeyLabel((action) => game.keyLabel(action, true));
+game.setInput(settings.input, keysOf());
 const params = new URLSearchParams(location.search);
 let mode = 'bots';
 let endTimer = null;
@@ -361,6 +366,10 @@ const CAST_DESC = {
   instant: 'Apertou, lançou onde o mouse está, sem mostrar a mira.',
   click: 'A tecla mostra a mira; o botão esquerdo lança e o direito cancela.',
 };
+const INPUT_DESC = {
+  click: 'O botão direito anda e ataca.',
+  wasd: 'As teclas andam e o mouse mira; o botão esquerdo ataca. A câmera acompanha o herói e espia pro lado do mouse. Os atalhos deste modo são outros: confira abaixo.',
+};
 const GRAB_DESC = [
   'Cursor do próprio sistema, sem atraso. A câmera anda quando o mouse encosta ou sai pela borda da janela.',
   'O jogo segura o mouse dentro da janela e desenha o cursor. Tem um pequeno atraso.',
@@ -369,11 +378,25 @@ const GRAB_DESC = [
 let binding = '';
 
 function renderHelp() {
-  const k = (...ids) => ids.map((id) => `<kbd>${esc(keyName(settings.keys[id]))}</kbd>`).join('');
+  const keys = keysOf();
+  const k = (...ids) => ids.map((id) => `<kbd>${esc(keyName(keys[id]))}</kbd>`).join('');
   // as dicas fixas da tela (botão do ouro, aviso de morto) acompanham a tecla escolhida pra loja
-  for (const el of document.querySelectorAll('.k-shop')) el.textContent = keyName(settings.keys.shop);
+  for (const el of document.querySelectorAll('.k-shop')) el.textContent = keyName(keys.shop);
   const how = { release: 'solte pra lançar', instant: 'lançam na hora', click: 'clique pra lançar' }[settings.cast];
-  $('help-keys').innerHTML = [
+  const wasd = [
+    `${k('up', 'left', 'down', 'right')} andar · a câmera espia pro lado do mouse (segure ${k('peek')} pra ver longe)`,
+    '<kbd>Botão esquerdo</kbd> ataca quem está no mouse (no chão, o inimigo mais perto) · segurando, ataca sempre que der',
+    `${k('q', 'w', 'e', 'r')} habilidades (${how})`,
+    `${k('aim')} + habilidade: só mostra o alcance; clique esquerdo lança, <kbd>Esc</kbd> cancela`,
+    `<kbd>Ctrl</kbd> + ${k('q', 'w', 'e', 'r')} evolui a habilidade ao subir de nível`,
+    `${k('d')}${k('f')} feitiços, escolhidos antes da partida`,
+    keys.amove ? `${k('amove')} + clique: atacar o que aparecer` : '',
+    '<kbd>Botão esquerdo</kbd> no canhão da base: entra nele; depois clique onde quer cair',
+    `${k('stop')} parar · ${k('shop')} loja · ${k('recall')} voltar pra base (${MAP.recall} s parado)`,
+    `${k('center')} centraliza · ${k('cam')} prende ou solta a câmera`,
+    `${k('board')} placar · <kbd>Esc</kbd> pausa e solta o mouse`,
+  ];
+  const click = [
     '<kbd>Botão direito</kbd> andar · atacar',
     '<kbd>Shift</kbd> + <kbd>Botão direito</kbd> ataca só heróis',
     `${k('q', 'w', 'e', 'r')} habilidades (${how})`,
@@ -385,7 +408,11 @@ function renderHelp() {
     `${k('stop')} parar · ${k('shop')} loja · ${k('recall')} voltar pra base (${MAP.recall} s parado)`,
     `Mouse na borda move a câmera · ${k('center')} centraliza · ${k('cam')} prende no herói`,
     `${k('board')} placar · <kbd>Esc</kbd> pausa e solta o mouse`,
-  ].map((li) => `<li>${li}</li>`).join('');
+  ];
+  $('help-keys').innerHTML = (settings.input === 'wasd' ? wasd : click)
+    .filter(Boolean)
+    .map((li) => `<li>${li}</li>`)
+    .join('');
 }
 
 function renderSettings() {
@@ -393,14 +420,23 @@ function renderSettings() {
   $('grab-desc').textContent = GRAB_DESC[settings.mouse];
   $('camspeed').value = settings.camSpeed;
   $('camspeed-val').textContent = Math.round(settings.camSpeed * 100);
-  $('binds').innerHTML = ACTIONS.map(([id, label]) => `<div class="bind"><span>${label}</span><button data-bind="${id}" class="${binding === id ? 'on' : ''}">${binding === id ? 'Aperte uma tecla…' : esc(keyName(settings.keys[id]))}</button></div>`).join('');
+  $('input-desc').textContent = INPUT_DESC[settings.input];
+  for (const b of $('input').querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === settings.input);
+  for (const b of $('camlock').querySelectorAll('button')) b.classList.toggle('on', Number(b.dataset.v) === settings.camLock);
+  const keys = keysOf();
+  const wait = settings.input === 'wasd' ? 'Aperte uma tecla ou botão…' : 'Aperte uma tecla…';
+  $('binds').innerHTML = actionsOf(settings.input).map(([id, label]) => `<div class="bind"><span>${label}</span><button data-bind="${id}" class="${binding === id ? 'on' : ''}">${binding === id ? wait : esc(keyName(keys[id]))}</button></div>`).join('');
+  $('binds-note').innerHTML =
+    settings.input === 'wasd'
+      ? 'Clique num atalho e aperte a tecla ou o botão do mouse novo (Esc cancela). Se já estiver em uso, as duas ações trocam de lugar. Ficam fixos: <kbd>Esc</kbd> abre o menu, o <kbd>Botão esquerdo</kbd> ataca e <kbd>Ctrl</kbd> + habilidade evolui.'
+      : 'Clique num atalho e aperte a tecla nova (Esc cancela). Se a tecla já estiver em uso, as duas ações trocam de lugar. Ficam fixos: <kbd>Esc</kbd> abre o menu e <kbd>Shift</kbd> + habilidade evolui.';
 }
 
 function applySettings() {
   game.grab.mode = settings.mouse;
   game.castMode = settings.cast;
   game.camSpeed = settings.camSpeed;
-  game.setKeys(settings.keys);
+  game.setInput(settings.input, keysOf());
   save(settings);
   renderSettings();
   renderHelp();
@@ -420,6 +456,20 @@ $('settings').addEventListener('mousedown', (e) => {
   if (e.target === $('settings')) openSettings(false);
 });
 for (const id of ['grab', 'cast']) $(id).addEventListener('click', applySettings);
+for (const b of $('input').querySelectorAll('button')) {
+  b.addEventListener('click', () => {
+    if (settings.input === b.dataset.v) return;
+    settings.input = b.dataset.v;
+    binding = '';
+    // ligar o WASD prende a câmera no herói: andando pelas teclas, câmera solta deixaria ele sair da tela
+    if (settings.input === 'wasd') {
+      settings.camLock = 1;
+      game.cam.locked = true;
+    }
+    playSound('click');
+    applySettings();
+  });
+}
 // tela cheia entra por um clique de interface (escolher o modo, dar pronto, começar), nunca pelo botão direito no campo
 for (const id of ['grab', 'ready', 'play', 'again', 'lobby-start', 'resume']) $(id).addEventListener('click', () => game.grab.fullscreen());
 $('camlock').addEventListener('click', () => (game.cam.locked = !!settings.camLock));
@@ -436,7 +486,8 @@ $('binds').addEventListener('click', (e) => {
 });
 $('binds-reset').addEventListener('click', () => {
   binding = '';
-  settings.keys = { ...DEFAULT_KEYS };
+  if (settings.input === 'wasd') settings.wasdKeys = defaultKeys('wasd');
+  else settings.keys = defaultKeys('click');
   playSound('click');
   applySettings();
 });
@@ -454,15 +505,27 @@ window.addEventListener('keydown', (e) => {
   }
   if (!binding) return;
   e.preventDefault();
-  if (!canBind(e.code)) return;
+  bindTo(e.code);
+}, true);
+// no WASD os botões do mouse (menos o esquerdo, que ataca) também viram atalho
+window.addEventListener('mousedown', (e) => {
+  if (!binding || e.button === 0 || $('settings').classList.contains('hidden')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  bindTo(mouseCode(e.button));
+}, true);
+
+function bindTo(code) {
+  if (!canBind(code, settings.input)) return;
+  const keys = keysOf();
   // tecla já usada: a outra ação fica com a tecla antiga desta
-  const other = ACTIONS.map(([id]) => id).find((id) => id !== binding && settings.keys[id] === e.code);
-  if (other) settings.keys[other] = settings.keys[binding];
-  settings.keys[binding] = e.code;
+  const other = Object.keys(keys).find((id) => id !== binding && keys[id] === code);
+  if (other) keys[other] = keys[binding];
+  keys[binding] = code;
   binding = '';
   playSound('click');
   applySettings();
-}, true);
+}
 renderHelp();
 $('vol').addEventListener('input', (e) => {
   settings.volume = Number(e.target.value);

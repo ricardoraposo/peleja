@@ -532,6 +532,10 @@ export const CRIT_MULT = 1.75;
 export const PEN_MAX = 0.4;
 // Golpe básico de herói já começado ainda sai com o alvo até esta distância além do alcance: andando pra trás ninguém escapa, só com investida ou salto
 export const ATTACK_SLACK = 1.4;
+// WASD: herói de distância que segura as teclas de andar na hora do golpe espera um pouco mais por ele, pra kitar não
+// ficar mais fácil que no clique. Cresce com a vel. de ataque (per × vel.) até o teto; quem não é atirador espera
+// só uma parte (caster) e corpo a corpo não espera. Soltar as teclas antes do golpe evita a espera.
+export const WASD_KITE = { per: 0.05, max: 0.1, caster: 0.5 };
 
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
 export const AFFINITY_BONUS = 0.2;

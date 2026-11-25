@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DEFAULT_KEYS, keyName } from './keys.js';
+import { DEFAULT_KEYS, MOVE_ACTIONS, keyName, mouseCode } from './keys.js';
 import { MouseGrab } from './grab.js';
 import { initAudio, playSound, setListener, setMuted } from './audio.js';
 import { HERO_ORDER, HEROES, ITEMS, MAP, SLOTS, TEAMS, TOWER, abilityOf, canRankUp } from './config.js';
@@ -100,6 +100,8 @@ export class Game {
     this.cam = { x: 0, z: 0, h: 26, zoom: 26, locked: false };
     // preferências do menu de configurações (o main.js preenche com o que está salvo)
     this.castMode = 'release';
+    // esquema de controle: 'click' (o botão direito anda) ou 'wasd' (as teclas andam, o botão esquerdo ataca)
+    this.input = 'click';
     this.camSpeed = 1;
     this.inputBlocked = false;
     this.keys = { ...DEFAULT_KEYS };
@@ -111,6 +113,12 @@ export class Game {
     this.mouse = { x: 0, y: 0, wx: 0, wz: 0, inside: false, out: null };
     this.rightHeld = false;
     this.rightT = 0;
+    // WASD: teclas de andar seguradas, última direção mandada, botão esquerdo segurado e botão de espiar
+    this.moveKeys = new Set();
+    this.dirSent = '';
+    this.leftHeld = false;
+    this.leftT = 0;
+    this.peekHeld = false;
     this.aiming = null;
     this.amove = false;
     this.hoverId = 0;
@@ -151,6 +159,15 @@ export class Game {
 
   get playing() {
     return this.phase === 'playing' && !!this.me && !this.paused;
+  }
+
+  get wasd() {
+    return this.input === 'wasd';
+  }
+
+  // Shift + clique escolhe só heróis; no WASD o Shift é habilidade
+  get heroesOnly() {
+    return this.shiftHeld && !this.wasd;
   }
 
   resize() {
@@ -520,6 +537,9 @@ export class Game {
     this.phase = ph;
     if (ph === 'playing' && !this.spectator) {
       this.camSnap = true;
+      // herói novo na simulação: quem já segura a tecla de andar sai andando
+      this.dirSent = '';
+      if (this.wasd) this.sendDir();
       playSound('horn');
       // como num ARAM: a partida abre com a loja na sua frente
       setTimeout(() => this.phase === 'playing' && this.meState?.sh && this.gameTime < 20 && !this.transport?.sandbox && this.toggleShop(true), 300);
@@ -833,8 +853,35 @@ export class Game {
     if (close) close.title = `Fechar (${this.keyLabel('shop')})`;
   }
 
-  keyLabel(action) {
-    return keyName(this.keys[action]);
+  keyLabel(action, short = false) {
+    if (action === 'evolve') return this.wasd ? 'Ctrl' : 'Shift';
+    return keyName(this.keys[action], short);
+  }
+
+  // troca o esquema de controle, já com os atalhos dele; saindo do WASD, o herói para de seguir as teclas
+  setInput(input, keys) {
+    if (this.wasd && input !== 'wasd') {
+      this.moveKeys.clear();
+      this.sendDir();
+    }
+    this.input = input;
+    this.leftHeld = false;
+    this.peekHeld = false;
+    this.setKeys(keys);
+  }
+
+  // WASD: manda a direção das teclas seguradas, já girada pro lado da tela (o time vermelho vê o mapa invertido)
+  sendDir() {
+    const k = this.moveKeys;
+    let x = (k.has('right') ? 1 : 0) - (k.has('left') ? 1 : 0);
+    let z = (k.has('down') ? 1 : 0) - (k.has('up') ? 1 : 0);
+    const d = Math.hypot(x, z) || 1;
+    x = Math.round(((x * this.flip) / d) * 100) / 100 || 0;
+    z = Math.round(((z * this.flip) / d) * 100) / 100 || 0;
+    const key = `${x},${z}`;
+    if (key === this.dirSent || this.spectator || this.phase === 'idle') return;
+    this.dirSent = key;
+    this.send({ t: 'dr', x, z });
   }
 
   castSlot(slot) {
@@ -916,7 +963,7 @@ export class Game {
     }
     this.amove = false;
     this.refreshMouse();
-    this.hoverId = this.pickUnit(this.shiftHeld);
+    this.hoverId = this.pickUnit(this.heroesOnly);
     const t = this.hoverId ? this.units.get(this.hoverId) : null;
     const cn = this.overCannon();
     if (t && t.team !== this.myTeam && t.alive && !(t.flags & F.invuln)) {
@@ -953,9 +1000,54 @@ export class Game {
     if (this.amove) {
       this.amove = false;
       this.refreshMouse();
-      this.send(this.shiftHeld ? { t: 'am', x: this.mouse.wx, z: this.mouse.wz, h: 1 } : { t: 'am', x: this.mouse.wx, z: this.mouse.wz });
+      this.send(this.heroesOnly ? { t: 'am', x: this.mouse.wx, z: this.mouse.wz, h: 1 } : { t: 'am', x: this.mouse.wx, z: this.mouse.wz });
       this.effects.clickMarker(this.mouse.wx, this.mouse.wz, true);
+      return;
     }
+    if (this.wasd) {
+      this.leftHeld = true;
+      this.leftT = 0.15;
+      this.attackClick(false);
+    }
+  }
+
+  // WASD: o botão esquerdo ataca quem está embaixo do mouse ou, no chão, o inimigo mais perto dele; no canhão da base, entra.
+  // Segurando o botão, o ataque se repete (`again`), sem marcador nem som
+  attackClick(again) {
+    this.refreshMouse();
+    const t = this.attackPick();
+    if (t) {
+      this.send({ t: 'at', id: t.id });
+      this.targetId = t.id;
+      if (!again) {
+        this.effects.clickMarker(t.x, t.z, true);
+        playSound('click');
+      }
+      return;
+    }
+    const cn = again ? null : this.overCannon();
+    if (cn?.to) {
+      this.targetId = 0;
+      this.send({ t: 'mv', x: cn.x, z: cn.z });
+      this.effects.clickMarker(cn.x, cn.z, false);
+      playSound('click');
+    }
+  }
+
+  attackPick() {
+    const hover = this.units.get(this.pickUnit());
+    if (hover && hover.team !== this.myTeam && hover.alive && !(hover.flags & F.invuln)) return hover;
+    let best = null;
+    let bestD = 2.5;
+    for (const u of this.units.values()) {
+      if (!u.alive || u.team === this.myTeam || u.flags & (F.invuln | F.fly)) continue;
+      const d = Math.hypot(u.x - this.mouse.wx, u.z - this.mouse.wz) - (u.kind === 'hero' ? 0.6 : 0);
+      if (d < bestD) {
+        bestD = d;
+        best = u;
+      }
+    }
+    return best;
   }
 
   // o canhão do meu time, se o mouse estiver em cima dele
@@ -1002,7 +1094,7 @@ export class Game {
     }
     const over = this.overCannon();
     const hover = over && !(this.units.get(this.hoverId)?.team !== this.myTeam && this.hoverId) ? over : null;
-    this.cannonHint = hover ? { x: hover.x, z: hover.z, on: !!hover.to, text: hover.to ? 'Canhão · botão direito pra entrar e escolher onde cair' : 'Canhão sem torre pra mirar' } : null;
+    this.cannonHint = hover ? { x: hover.x, z: hover.z, on: !!hover.to, text: hover.to ? `Canhão · botão ${this.wasd ? 'esquerdo' : 'direito'} pra entrar e escolher onde cair` : 'Canhão sem torre pra mirar' } : null;
     const a = this.cannonAim;
     const me = this.me;
     if (a) {
@@ -1040,6 +1132,77 @@ export class Game {
     } else if (this.phase === 'playing') this.setPaused(!this.paused);
   }
 
+  // atalho apertado (tecla ou botão do mouse); `evolve`: com o modificador de evoluir habilidade
+  press(act, evolve, repeat) {
+    if (act === 'board') {
+      this.hud.el.board.classList.remove('hidden');
+      this.hud.renderBoard();
+      // o mouse pode já estar em cima de alguém: confere o que está embaixo dele
+      this.grab.dirty = true;
+      return;
+    }
+    if (repeat) return;
+    if (MOVE_ACTIONS.includes(act)) {
+      this.moveKeys.add(act);
+      this.sendDir();
+      return;
+    }
+    if (SLOTS.includes(act)) {
+      if (evolve) this.rankUp(act);
+      else this.pressSlot(act);
+      return;
+    }
+    if (/^i[1-6]$/.test(act)) {
+      this.useItem(Number(act[1]) - 1);
+      return;
+    }
+    switch (act) {
+      case 'amove':
+        if (this.playing) {
+          this.amove = true;
+          this.aiming = null;
+        }
+        break;
+      case 'stop':
+        if (this.playing) this.send({ t: 'st' });
+        this.targetId = 0;
+        break;
+      case 'recall':
+        if (this.playing) this.send({ t: 'rc' });
+        this.targetId = 0;
+        break;
+      case 'shop':
+        this.toggleShop();
+        break;
+      case 'cam':
+        this.cam.locked = !this.cam.locked;
+        break;
+      case 'center':
+        this.spaceHeld = true;
+        break;
+      case 'peek':
+        this.peekHeld = true;
+        break;
+      case 'aim':
+        this.aimHeld = true;
+        break;
+      default:
+        break;
+    }
+  }
+
+  release(act) {
+    if (act === 'board') {
+      this.hud.el.board.classList.add('hidden');
+      this.grab.dirty = true;
+    } else if (MOVE_ACTIONS.includes(act)) {
+      if (this.moveKeys.delete(act)) this.sendDir();
+    } else if (act === 'center') this.spaceHeld = false;
+    else if (act === 'peek') this.peekHeld = false;
+    else if (act === 'aim') this.aimHeld = false;
+    else if (SLOTS.includes(act)) this.releaseSlot(act);
+  }
+
   bindInput() {
     this.grab = new MouseGrab(this);
     // na captura: nenhum outro handler consegue segurar o evento e deixar o menu do navegador abrir
@@ -1051,14 +1214,23 @@ export class Game {
     this.canvas.addEventListener('mousedown', (e) => {
       initAudio();
       this.shiftHeld = e.shiftKey;
-      if (e.button === 2) {
+      // botão do mouse que virou atalho (no WASD o direito é a Habilidade 1)
+      const act = this.codeAction[mouseCode(e.button)];
+      if (e.button === 1 || e.button > 2) e.preventDefault();
+      if (act) {
+        if (!this.inputBlocked && this.phase !== 'idle' && !this.spectator) this.press(act, this.wasd ? e.ctrlKey : e.shiftKey, false);
+      } else if (e.button === 2 && !this.wasd) {
         this.rightHeld = true;
         this.rightClick();
       } else if (e.button === 0) this.leftClick();
-      else if (e.button === 1) e.preventDefault();
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 2) this.rightHeld = false;
+      if (e.button === 0) this.leftHeld = false;
+      // voltar e avançar do mouse trocam de página no navegador: como atalho, ficam só no jogo
+      if (e.button > 2 && this.phase !== 'idle') e.preventDefault();
+      const act = this.codeAction[mouseCode(e.button)];
+      if (act) this.release(act);
     });
     window.addEventListener('mousemove', (e) => {
       if (this.grab.locked) return;
@@ -1128,67 +1300,28 @@ export class Game {
       const act = this.codeAction[e.code];
       if (!act) return;
       e.preventDefault();
-      if (act === 'board') {
-        this.hud.el.board.classList.remove('hidden');
-        this.hud.renderBoard();
-        // o mouse pode já estar em cima de alguém: confere o que está embaixo dele
-        this.grab.dirty = true;
-        return;
-      }
-      if (e.repeat) return;
-      if (SLOTS.includes(act)) {
-        if (e.shiftKey) this.rankUp(act);
-        else this.pressSlot(act);
-        return;
-      }
-      if (/^i[1-6]$/.test(act)) {
-        this.useItem(Number(act[1]) - 1);
-        return;
-      }
-      switch (act) {
-        case 'amove':
-          if (this.playing) {
-            this.amove = true;
-            this.aiming = null;
-          }
-          break;
-        case 'stop':
-          if (this.playing) this.send({ t: 'st' });
-          this.targetId = 0;
-          break;
-        case 'recall':
-          if (this.playing) this.send({ t: 'rc' });
-          this.targetId = 0;
-          break;
-        case 'shop':
-          this.toggleShop();
-          break;
-        case 'cam':
-          this.cam.locked = !this.cam.locked;
-          break;
-        case 'center':
-          this.spaceHeld = true;
-          break;
-        case 'aim':
-          this.aimHeld = true;
-          break;
-        default:
-          break;
-      }
+      // evoluir: Shift + habilidade no clique; no WASD o Shift é habilidade, então é Ctrl + habilidade
+      this.press(act, this.wasd ? e.ctrlKey : e.shiftKey, e.repeat);
     });
     window.addEventListener('keyup', (e) => {
       if (e.key === 'Shift') this.shiftHeld = false;
       const act = this.codeAction[e.code];
-      if (act === 'board') {
-        this.hud.el.board.classList.add('hidden');
-        this.grab.dirty = true;
-      }
-      else if (act === 'center') this.spaceHeld = false;
-      else if (act === 'aim') this.aimHeld = false;
-      else if (SLOTS.includes(act)) this.releaseSlot(act);
+      if (act) this.release(act);
+    });
+    // no WASD o Ctrl evolui habilidade e o W anda: Ctrl+W fecharia a aba no meio da partida, então o navegador pergunta antes
+    window.addEventListener('beforeunload', (e) => {
+      if (!this.wasd || this.phase !== 'playing' || this.spectator) return;
+      e.preventDefault();
+      e.returnValue = '';
     });
     window.addEventListener('blur', () => {
       this.rightHeld = false;
+      this.leftHeld = false;
+      this.peekHeld = false;
+      if (this.moveKeys.size) {
+        this.moveKeys.clear();
+        this.sendDir();
+      }
       this.spaceHeld = false;
       this.aimHeld = false;
       this.shiftHeld = false;
@@ -1296,10 +1429,22 @@ export class Game {
       c.x += (me.x - c.x) * k;
       c.z += (me.z - c.z) * k;
     } else if (me && (c.locked || this.spaceHeld)) {
-      const jump = Math.hypot(me.x - c.x, me.z - c.z) > 30;
-      const k = jump ? 1 : Math.min(1, dt * 10);
-      c.x += (me.x - c.x) * k;
-      c.z += (me.z - c.z) * k;
+      let tx = me.x;
+      let tz = me.z;
+      let reach = 0;
+      // WASD: câmera dinâmica, presa no herói mas espiando pro lado do mouse; segurando o botão de espiar, bem mais longe
+      if (this.wasd && !this.spaceHeld && (this.mouse.inside || this.grab.locked) && document.hasFocus()) {
+        const nx = Math.max(-1, Math.min(1, (this.mouse.x / window.innerWidth) * 2 - 1));
+        const ny = Math.max(-1, Math.min(1, (this.mouse.y / window.innerHeight) * 2 - 1));
+        reach = c.h * (this.peekHeld ? 0.9 : 0.2);
+        tx += nx * reach * this.flip;
+        tz += ny * reach * this.flip;
+      }
+      // herói longe da câmera (renasceu, voltou pra base): pula direto em vez de deslizar
+      const jump = Math.hypot(me.x - c.x, me.z - c.z) > 30 + reach * 1.5;
+      const k = jump ? 1 : Math.min(1, dt * (this.peekHeld ? 4 : 10));
+      c.x += (tx - c.x) * k;
+      c.z += (tz - c.z) * k;
     } else if ((this.mouse.inside || this.mouse.out) && document.hasFocus() && this.phase === 'playing') {
       const edge = this.grab.locked ? 3 : 18;
       const sp = (30 + c.h * 0.9) * dt * this.camSpeed;
@@ -1389,7 +1534,7 @@ export class Game {
         this.mouse.wz = p.z;
       }
     }
-    this.hoverId = this.phase === 'playing' && !this.spectator ? this.pickUnit(this.shiftHeld) : 0;
+    this.hoverId = this.phase === 'playing' && !this.spectator ? this.pickUnit(this.heroesOnly) : 0;
     const hover = this.units.get(this.hoverId);
     this.updateCannons(visDt);
     document.body.classList.toggle('cur-attack', !!hover && hover.team !== this.myTeam);
@@ -1400,6 +1545,14 @@ export class Game {
       if (this.rightT <= 0 && !this.rightTarget) {
         this.rightT = 0.12;
         this.send({ t: 'mv', x: Math.round(this.mouse.wx * 10) / 10, z: Math.round(this.mouse.wz * 10) / 10 });
+      }
+    }
+    // WASD: segurar o botão esquerdo continua atacando quem estiver no mouse; andando, cada golpe sai assim que der
+    if (this.leftHeld && this.wasd && this.playing && !this.aiming && !this.cannonAim && !this.amove) {
+      this.leftT -= dt;
+      if (this.leftT <= 0) {
+        this.leftT = 0.15;
+        this.attackClick(true);
       }
     }
     if (me && this.aiming && me.alive) this.effects.showIndicator(me, abilityOf(me.heroId, this.aiming, this.mySpells), this.mouse.wx, this.mouse.wz);

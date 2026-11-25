@@ -394,7 +394,7 @@ export class Hud {
       d.className = 'skill' + (slot === 'd' || slot === 'f' ? ' spell' : '') + (slot === 'r' ? ' ult' : '');
       d.style.setProperty('--c', ab.color || h.color);
       const max = RANK_MAX[slot] || 0;
-      const pips = max ? `<div class="sk-rank">${'<i></i>'.repeat(max)}</div><button class="sk-up" data-up="${slot}" title="Evoluir (Shift+${keyLabel(slot)})">+</button>` : '';
+      const pips = max ? `<div class="sk-rank">${'<i></i>'.repeat(max)}</div><button class="sk-up" data-up="${slot}" title="Evoluir (${keyLabel('evolve')}+${keyLabel(slot)})">+</button>` : '';
       d.innerHTML = `<div class="sk-icon">${ICONS[ab.icon] || ''}</div><div class="sk-cd"></div><div class="sk-num"></div><div class="sk-key">${keyLabel(slot)}</div>${ab.charges ? '<div class="sk-charge"></div>' : ''}${pips}<div class="tip">${abilityTip(ab, slot)}</div>`;
       this.el.skills.appendChild(d);
       this.skillEls[slot] = { root: d, ab, tip: d.querySelector('.tip'), tipKey: '', charge: d.querySelector('.sk-charge'), cd: d.querySelector('.sk-cd'), num: d.querySelector('.sk-num'), pips: [...d.querySelectorAll('.sk-rank i')], rank: -1 };
@@ -455,7 +455,7 @@ export class Hud {
     this.el.gold.textContent = st.g;
     this.el.goldBtn.classList.toggle('can', !!st.sh);
     this.el.skills.classList.toggle('has-points', st.pt > 0);
-    this.el.skills.dataset.pt = st.pt > 0 ? `+${st.pt} ${st.pt === 1 ? 'ponto' : 'pontos'} · Shift + tecla` : '';
+    this.el.skills.dataset.pt = st.pt > 0 ? `+${st.pt} ${st.pt === 1 ? 'ponto' : 'pontos'} · ${keyLabel('evolve')} + tecla` : '';
     SLOTS.forEach((slot, i) => {
       const s = this.skillEls[slot];
       if (!s) return;
