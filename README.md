@@ -142,7 +142,7 @@ As teclas andam e o mouse continua mirando. O WASD tem atalhos próprios, separa
 
 As demais (`C`, `1` a `6`, `B`, `P`, `Espaço`, `Y`, `Tab`, `Esc`) são iguais. Ligar o WASD prende a câmera no herói. Presa, ela espia um pouco pro lado do mouse.
 
-Andar não cancela um ataque que já começou. Com uma tecla de andar segurada, o clique de ataque vira um golpe só: o herói vai até o alvo se precisar, bate e volta a seguir as teclas. Entre um golpe e outro, ele anda. Pra kitar não ficar mais fácil que no botão direito, herói de distância que segura as teclas na hora do golpe espera um pouco mais por ele. A espera cresce com a velocidade de ataque, é menor pra quem não é atirador, e corpo a corpo não espera.
+Andar não cancela um ataque que já começou. Com uma tecla de andar segurada, quem manda no caminho são as teclas, e o clique de ataque vira um golpe só. Ele sai quando o alvo está ao alcance e a recarga acabou; até lá fica guardado enquanto o herói anda, e depois dele o herói volta a seguir as teclas. Segurando o botão esquerdo, o atirador bate sempre que der sem parar de andar. Pra kitar não ficar mais fácil que no botão direito, herói de distância que segura as teclas na hora do golpe espera um pouco mais por ele. A espera cresce com a velocidade de ataque, é menor pra quem não é atirador, e corpo a corpo não espera.
 
 <p align="center">
   <img src="docs/menu.jpg" alt="Menu principal" />

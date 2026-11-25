@@ -2185,14 +2185,23 @@ queueBolts(h, ab, slot, color) {
           h.target = null;
           break;
         }
-        // golpe só com WASD segurado: recarregando (ou na espera do kite), segue as teclas; pronto, bate ou vai atrás
-        if (o.once && h.dir && h.windup <= 0 && h.atkCd > 0) {
-          this.steer(h, dt);
-          h.target = o.target;
-          break;
+        // golpe só com WASD segurado: quem manda no caminho são as teclas. O golpe sai quando o alvo está ao alcance
+        // e a recarga acabou; até lá (e na espera do kite) o herói segue as teclas, com o golpe guardado
+        if (o.once && h.dir && h.windup <= 0) {
+          const near = this.inAttackRange(h, o.target);
+          if (near && h.atkCd <= 0 && !h.kiteWait && h.ranged) {
+            h.kiteWait = true;
+            h.atkCd = Math.min(WASD_KITE.max, WASD_KITE.per * h.stats.as) * (h.def.role === 'atirador' ? 1 : WASD_KITE.caster);
+          }
+          if (!near || h.atkCd > 0) {
+            this.steer(h, dt);
+            h.target = o.target;
+            break;
+          }
         }
         const swing = h.windup > 0;
         this.engage(h, o.target, dt);
+        if (h.windup > 0) h.kiteWait = false;
         if (o.once && h.dir && swing && h.windup <= 0) h.order = { type: 'idle' };
         break;
       }
@@ -2288,14 +2297,6 @@ queueBolts(h, ab, slot, color) {
     }
     if (u.atkCd <= 0) {
       const period = 1 / u.stats.as;
-      // WASD: herói de distância com as teclas de andar seguradas espera um pouco antes do golpe (ver WASD_KITE)
-      if (u.isHero && u.dir && !u.kiteWait && u.ranged) {
-        const k = Math.min(WASD_KITE.max, WASD_KITE.per * u.stats.as) * (u.def.role === 'atirador' ? 1 : WASD_KITE.caster);
-        u.kiteWait = true;
-        u.atkCd = k;
-        return;
-      }
-      u.kiteWait = false;
       if (u.isHero) {
         // preparo curto: o golpe sai quase junto com o clique
         u.windup = u.ranged ? Math.min(0.1, period * 0.08) : Math.min(0.14, period * 0.11);
