@@ -224,6 +224,10 @@ kbd {
     0 0 24px rgba(0, 0, 0, 0.4);
 }
 
+#announce.big .an-title {
+  font-size: clamp(40px, 6vw, 68px);
+}
+
 #announce .an-sub {
   font-size: 16px;
   font-weight: 600;

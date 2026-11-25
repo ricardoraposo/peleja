@@ -1643,7 +1643,7 @@ queueBolts(h, ab, slot, color) {
         a.assists++;
         this.giveGold(a, (gold * 0.5) / assists.length, t);
       }
-      if (this.time - killer.multiT < 10) killer.multi++;
+      if (this.time - killer.multiT < (killer.multi === 4 ? MATCH.pentaWindow : MATCH.multiWindow)) killer.multi++;
       else killer.multi = 1;
       killer.multiT = this.time;
     }
@@ -1657,15 +1657,18 @@ queueBolts(h, ab, slot, color) {
       v: t.id,
       as: assists.map((a) => a.id),
     });
+    // o multi-abate leva junto o aviso de time inteiro no chão, pra um não apagar o outro
+    const teamAlive = this.heroes.some((h) => h.team === t.team && h.alive);
     if (first) this.ann('Primeiro abate!', `${killer.name} abriu o placar`, 'first', killer.team);
     else if (killer && killer.multi >= 2) {
-      const names = ['', '', 'Abate duplo!', 'Abate triplo!', 'Abate quádruplo!', 'MASSACRE!'];
-      this.ann(names[Math.min(5, killer.multi)], killer.name, 'multi', killer.team);
+      const names = ['', '', 'Double kill!', 'Triple kill!', 'Quadra kill!', 'Pentakill!'];
+      this.ann(names[killer.multi], killer.name + (teamAlive ? '' : ' · time inteiro no chão'), killer.multi === 5 ? 'penta' : 'multi', killer.team);
+      // depois do pentakill a contagem recomeça
+      if (killer.multi === 5) killer.multi = 0;
     } else if (killer && killer.streak >= 3 && killer.streak % 2 === 1) {
       this.ann(killer.streak >= 7 ? 'Imparável!' : 'Em chamas!', `${killer.name} · ${killer.streak} abates seguidos`, 'spree', killer.team);
     } else if (spree >= 3 && killer) this.ann('Acabou a festa!', `${killer.name} parou ${t.name}`, 'shut', killer.team);
-    const teamAlive = this.heroes.some((h) => h.team === t.team && h.alive);
-    if (!teamAlive && killer) this.ann('Time inteiro no chão!', '', 'ace', killer.team);
+    if (!teamAlive && killer && !(killer.multi >= 2)) this.ann('Time inteiro no chão!', '', 'ace', killer.team);
   }
 
   killStruct(t) {

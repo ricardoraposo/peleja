@@ -532,8 +532,9 @@ export class Hud {
     if (!this.el.board.classList.contains('hidden')) this.renderBoard();
   }
 
-  announce(text, sub, color) {
+  announce(text, sub, color, big = false) {
     const a = this.el.announce;
+    a.classList.toggle('big', big);
     a.querySelector('.an-title').textContent = text;
     a.querySelector('.an-sub').textContent = sub || '';
     a.style.setProperty('--c', color || '#f4c430');

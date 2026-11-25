@@ -64,6 +64,9 @@ export const MATCH = {
   assistWindow: 10,
   killGold: 300,
   firstBloodGold: 100,
+  // abates seguidos contam como multi-abate se cada um vier até multiWindow segundos depois do outro (o quinto tem pentaWindow)
+  multiWindow: 10,
+  pentaWindow: 30,
   towerGold: 150,
   // habilidade em área fere estrutura com essa fração do dano (sem isso, time só de magos não derrubava torre)
   abilityStructDmg: 0.3,
