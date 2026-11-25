@@ -574,13 +574,32 @@ export class Hud {
     $('shop-filters').innerHTML = SHOP_CATS.map((c) => `<button data-cat="${c.id}" title="${c.name}">${c.icon}<span>${c.name}</span></button>`).join('');
     const root = this.el.shop;
     const pick = (e, sel) => e.target.closest?.(sel);
-    root.addEventListener('click', (e) => {
-      const tab = pick(e, '[data-tab]');
-      const cat = pick(e, '[data-cat]');
+    // tudo responde no aperto do botão, não no clique: a loja se redesenha quando o inventário muda,
+    // e um clique que começa num elemento e termina no que entrou no lugar dele se perdia.
+    // Escuta também o contextmenu porque nem todo navegador/mouse entrega o mousedown do botão direito; o tempo evita contar duas vezes.
+    let lastRight = 0;
+    const press = (e) => {
+      const right = e.type === 'contextmenu' || e.button === 2;
+      if (right) {
+        e.preventDefault();
+        const now = performance.now();
+        if (now - lastRight < 250) return;
+        lastRight = now;
+      } else if (e.button !== 0) return;
       const tile = pick(e, '.tile');
       const slot = pick(e, '.inv-slot[data-n]');
-      if (tab) this.shopTab = tab.dataset.tab;
-      else if (cat) this.shopCat = cat.dataset.cat;
+      if (right) {
+        // botão direito: compra o item (em qualquer lista) ou vende o do inventário, direto
+        if (tile) {
+          this.shopSel = tile.dataset.id;
+          this.sellSel = -1;
+          this.game.buy(tile.dataset.id);
+        } else if (slot) {
+          this.game.sell(Number(slot.dataset.n));
+          this.sellSel = -1;
+        } else return;
+      } else if (pick(e, '[data-tab]')) this.shopTab = pick(e, '[data-tab]').dataset.tab;
+      else if (pick(e, '[data-cat]')) this.shopCat = pick(e, '[data-cat]').dataset.cat;
       else if (tile) {
         // clicar seleciona; clicar de novo no item já selecionado compra
         if (this.shopSel === tile.dataset.id && tile.closest('.shop-list')) this.game.buy(tile.dataset.id);
@@ -598,36 +617,15 @@ export class Hud {
         this.sellSel = -1;
       } else return;
       this.updateShop(true);
-    });
-    // botão direito: compra o item (em qualquer lista) ou vende o do inventário, direto.
-    // Escuta os dois eventos porque nem todo navegador/mouse entrega o mesmo; o tempo evita contar duas vezes.
-    let lastRight = 0;
-    const right = (e) => {
-      if (e.type === 'mousedown' && e.button !== 2) return;
-      e.preventDefault();
-      const now = performance.now();
-      if (now - lastRight < 250) return;
-      const tile = pick(e, '.tile');
-      const slot = pick(e, '.inv-slot[data-n]');
-      if (!tile && !slot) return;
-      lastRight = now;
-      if (tile) {
-        this.shopSel = tile.dataset.id;
-        this.sellSel = -1;
-        this.game.buy(tile.dataset.id);
-      } else {
-        this.game.sell(Number(slot.dataset.n));
-        this.sellSel = -1;
-      }
-      this.updateShop(true);
     };
-    root.addEventListener('mousedown', right);
-    root.addEventListener('contextmenu', right);
+    root.addEventListener('mousedown', press);
+    root.addEventListener('contextmenu', press);
     root.addEventListener('mouseover', (e) => {
       const id = pick(e, '.tile, .inv-slot[data-id]')?.dataset.id || null;
       if (id === this.shopHover) return;
       this.shopHover = id;
-      this.updateShop(true);
+      // passar o mouse só troca os detalhes: redesenhar o resto mexia nos itens embaixo do cursor
+      this.renderShopDetail();
     });
   }
 
@@ -655,7 +653,7 @@ export class Hud {
         .join('');
     const tiers = ['Básicos', 'Intermediários', 'Grandes'];
     $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('');
-    this.shopKey = '';
+    this.shopKey = this.shopStruct = this.shopDetailKey = '';
   }
 
   shopPrice(st, id) {
@@ -672,26 +670,29 @@ export class Hud {
     return null;
   }
 
+  // O ouro sobe 4 vezes por segundo: com ele só mudam preços, cores e o botão de comprar.
+  // Inventário e árvore só se redesenham quando o inventário ou a seleção mudam, e os detalhes quando muda o item apontado.
   updateShop(force = false) {
     const g = this.game;
     const st = g.meState;
     if (!st) return;
-    $('shop-gold').textContent = st.g;
-    const where = $('shop-where');
-    where.textContent = st.sh ? 'Pode comprar' : 'Só compra na base ou quando cair';
-    where.classList.toggle('bad', !st.sh);
     const heroId = g.me?.heroId;
     if (heroId && heroId !== this.shopHero) {
       this.buildRecommended(heroId);
       force = true;
     }
-    const key = st.g + '|' + st.it.join(',') + '|' + st.sh + '|' + (st.sp || []).join(',');
-    if (key === this.shopKey && !force) return;
-    this.shopKey = key;
     if (this.sellSel >= st.it.length) this.sellSel = -1;
     const next = this.shopNext(st);
     if (!this.shopSel) this.shopSel = next || ITEM_ORDER[0];
-    const shown = this.shopHover || this.shopSel;
+    const inv = st.it.join(',') + '|' + (st.sp || []).join(',');
+    const struct = inv + '|' + this.shopSel + '|' + this.sellSel;
+    const key = st.g + '|' + st.sh + '|' + struct + '|' + this.shopTab + '|' + this.shopCat + '|' + next;
+    if (key === this.shopKey && !force) return;
+    this.shopKey = key;
+    $('shop-gold').textContent = st.g;
+    const where = $('shop-where');
+    where.textContent = st.sh ? 'Pode comprar' : 'Só compra na base ou quando cair';
+    where.classList.toggle('bad', !st.sh);
 
     for (const b of this.el.shop.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === this.shopTab);
     $('shop-rec').classList.toggle('hidden', this.shopTab !== 'rec');
@@ -700,25 +701,22 @@ export class Hud {
     for (const b of this.el.shop.querySelectorAll('[data-cat]')) b.classList.toggle('on', b.dataset.cat === this.shopCat);
     const cat = SHOP_CATS.find((c) => c.id === this.shopCat);
 
-    // lado direito: inventário, árvore do item selecionado e detalhes do item apontado
-    $('shop-inv').innerHTML = Array.from({ length: 6 }, (_, i) => {
-      const id = st.it[i];
-      if (!id) return '<div class="inv-slot empty"></div>';
-      const full = (st.sp?.[i] ?? 0) >= ITEMS[id].cost;
-      return `<button class="inv-slot ${tierClass(id)}${i === this.sellSel ? ' sel' : ''}${full ? ' refund' : ''}" data-n="${i}" data-id="${id}" style="--c:${itemColor(id)}" title="Botão direito vende por ${st.sp?.[i] ?? 0}">${itemIcon(id)}<small>${st.sp?.[i] ?? ''}</small></button>`;
-    }).join('');
-    const sel = ITEMS[this.shopSel];
-    const into = ITEM_ORDER.filter((id) => ITEMS[id].from?.includes(this.shopSel));
-    $('shop-tree').innerHTML =
-      (into.length ? `<h3>Vira</h3><div class="tiles small">${into.map((id) => this.shopTile(id)).join('')}</div>` : '') +
-      `<h3>Montagem</h3><div class="tree"><div class="tiles">${this.shopTile(this.shopSel)}</div>${sel.from ? `<div class="tree-line" style="--n:${sel.from.length}"></div><div class="tiles">${sel.from.map((id) => this.shopTile(id)).join('')}</div>` : '<small>Item básico: não precisa de nada antes.</small>'}</div>`;
-    const it = ITEMS[shown];
-    const p = this.shopPrice(st, shown);
-    $('shop-detail').innerHTML =
-      `<div class="sd-head ${tierClass(shown)}" style="--c:${itemColor(shown)}"><span class="tile-icon">${itemIcon(shown)}</span><div><b>${esc(it.name)}</b><span class="sd-cost"><span class="coin"></span>${p.cost}${p.cost < it.cost ? ` <s>${it.cost}</s>` : ''}</span></div></div>` +
-      `<ul class="sd-stats">${itemStats(it, this.shopHero, '|').split('|').map((s) => `<li>${s}</li>`).join('')}</ul>` +
-      (it.from ? `<p>Aproveita o que você já tiver de: ${it.from.map((c) => esc(ITEMS[c].name)).join(' e ')}.</p>` : '') +
-      (it.group ? '<p>Só uma bota por herói.</p>' : '');
+    // lado direito: inventário e árvore do item selecionado
+    if (struct !== this.shopStruct) {
+      this.shopStruct = struct;
+      $('shop-inv').innerHTML = Array.from({ length: 6 }, (_, i) => {
+        const id = st.it[i];
+        if (!id) return '<div class="inv-slot empty"></div>';
+        const full = (st.sp?.[i] ?? 0) >= ITEMS[id].cost;
+        return `<button class="inv-slot ${tierClass(id)}${i === this.sellSel ? ' sel' : ''}${full ? ' refund' : ''}" data-n="${i}" data-id="${id}" style="--c:${itemColor(id)}" title="Botão direito vende por ${st.sp?.[i] ?? 0}">${itemIcon(id)}<small>${st.sp?.[i] ?? ''}</small></button>`;
+      }).join('');
+      const sel = ITEMS[this.shopSel];
+      const into = ITEM_ORDER.filter((id) => ITEMS[id].from?.includes(this.shopSel));
+      $('shop-tree').innerHTML =
+        (into.length ? `<h3>Vira</h3><div class="tiles small">${into.map((id) => this.shopTile(id)).join('')}</div>` : '') +
+        `<h3>Montagem</h3><div class="tree"><div class="tiles">${this.shopTile(this.shopSel)}</div>${sel.from ? `<div class="tree-line" style="--n:${sel.from.length}"></div><div class="tiles">${sel.from.map((id) => this.shopTile(id)).join('')}</div>` : '<small>Item básico: não precisa de nada antes.</small>'}</div>`;
+    }
+    this.renderShopDetail();
     const ps = this.shopPrice(st, this.shopSel);
     const buy = $('shop-buy');
     buy.disabled = !ps.ok;
@@ -731,7 +729,8 @@ export class Hud {
     for (const b of this.el.shop.querySelectorAll('.tile')) {
       const id = b.dataset.id;
       const pr = this.shopPrice(st, id);
-      b.querySelector('.tile-cost').textContent = pr.cost;
+      const cost = b.querySelector('.tile-cost');
+      if (cost.textContent !== String(pr.cost)) cost.textContent = pr.cost;
       b.classList.toggle('afford', pr.ok);
       b.classList.toggle('owned', st.it.includes(id));
       b.classList.toggle('sel', id === this.shopSel);
@@ -739,6 +738,23 @@ export class Hud {
       b.classList.toggle('next', id === next && !!b.closest('#shop-rec') && !b.closest('.rec-build:not(.on)'));
       b.classList.toggle('off', !!b.closest('#shop-all') && (cat?.active ? !ITEMS[id].active : !!cat?.stats && !Object.keys(ITEMS[id].stats).some((k) => cat.stats.includes(k))));
     }
+  }
+
+  // detalhes do item apontado (ou do selecionado); só refaz quando o item ou o inventário mudam
+  renderShopDetail() {
+    const st = this.game.meState;
+    if (!st || !this.shopSel) return;
+    const shown = this.shopHover || this.shopSel;
+    const key = shown + '|' + st.it.join(',') + '|' + this.shopHero;
+    if (key === this.shopDetailKey) return;
+    this.shopDetailKey = key;
+    const it = ITEMS[shown];
+    const p = this.shopPrice(st, shown);
+    $('shop-detail').innerHTML =
+      `<div class="sd-head ${tierClass(shown)}" style="--c:${itemColor(shown)}"><span class="tile-icon">${itemIcon(shown)}</span><div><b>${esc(it.name)}</b><span class="sd-cost"><span class="coin"></span>${p.cost}${p.cost < it.cost ? ` <s>${it.cost}</s>` : ''}</span></div></div>` +
+      `<ul class="sd-stats">${itemStats(it, this.shopHero, '|').split('|').map((s) => `<li>${s}</li>`).join('')}</ul>` +
+      (it.from ? `<p>Aproveita o que você já tiver de: ${it.from.map((c) => esc(ITEMS[c].name)).join(' e ')}.</p>` : '') +
+      (it.group ? '<p>Só uma bota por herói.</p>' : '');
   }
 
   // ---------- placar ----------
