@@ -436,6 +436,13 @@ export class Game {
       case 'xp':
         this.overlay.float(m.x, 1.6, m.z, `+${m.v} xp`, '#c4b5fd', 14, 1.0, 34);
         break;
+      case 'reset': {
+        // habilidade devolvida por abate: aviso em cima do herói
+        const u = this.units.get(m.id);
+        if (u) this.overlay.float(u.x, 2.6, u.z, 'Recarga zerada!', '#fde047', 18, 1.3, 44);
+        if (m.id === this.myId) playSound('level');
+        break;
+      }
       case 'lvl': {
         const u = this.units.get(m.id);
         if (u) this.effects.levelUp(u.x, u.z);

@@ -29,6 +29,7 @@ const EVENTS = {
   xp: { v: 'i', x: 'd1', z: 'd1' },
   rank: { s: 's', r: 'u' },
   lvl: { id: 'u', l: 'u' },
+  reset: { id: 'u', s: 's' },
   kill: { k: 'u', kk: 'i', v: 'u', as: 'u*' },
   struct: { id: 'u', d: 'u' },
   pack: { i: 'u', u: 'u', id: 'u?' },

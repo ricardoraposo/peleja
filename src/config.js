@@ -145,6 +145,7 @@ export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_S
 // fx.drowsy [segundos lento, segundos dormindo] · fx.wake: teto do dano extra de quem acordar o alvo
 // steal: copia o último feitiço (D/F) que um herói inimigo lançou nos últimos `window` segundos
 // ret: o salto (blink) volta sozinho pro ponto de partida depois de tantos segundos
+// killReset: se o golpe (target) matar um herói, a recarga zera na hora
 export const HEROES = {
   faisca: {
     name: 'Faísca',
@@ -203,7 +204,7 @@ export const HEROES = {
       q: { name: 'Ferroada', icon: 'sting', kind: 'target', cd: 7, cast: 0, range: 6.5, dashTo: true, dmg: { b: 60, l: 19, ad: 1.0, type: 'phys' }, color: '#fde047', desc: 'Avança no alvo e fere.' },
       w: { name: 'Adrenalina', icon: 'heart', kind: 'self', cd: 14, cast: 0, heal: { b: 55, l: 17, ad: 0.3 }, buff: { t: 2.5, ms: 0.3, as: 0.3 }, desc: 'Cura e acelera ataque e passo.' },
       e: { name: 'Enxame', icon: 'swarm', kind: 'nova', cd: 9, cast: 0.1, radius: 3.3, delay: 0, dmg: { b: 50, l: 15, ad: 0.5, ap: 0.5, type: 'magic' }, fx: { slow: [0.4, 1.5] }, color: '#facc15', desc: 'Nuvem de ferrões ao redor que deixa lento.' },
-      r: { name: 'Ferrão Mortal', icon: 'skull', kind: 'target', cd: 45, cast: 0, range: 5, dashTo: true, heroesOnly: true, exec: 1.2, dmg: { b: 140, l: 28, ad: 1.0, type: 'phys' }, color: '#eab308', desc: 'Golpe que fica mais forte quanto menos vida o alvo tem.' },
+      r: { name: 'Ferrão Mortal', icon: 'skull', kind: 'target', cd: 45, cast: 0, range: 5, dashTo: true, heroesOnly: true, exec: 1.2, killReset: true, dmg: { b: 140, l: 28, ad: 1.0, type: 'phys' }, color: '#eab308', desc: 'Golpe que fica mais forte quanto menos vida o alvo tem. Se matar, a recarga volta na hora.' },
     },
   },
   mandacaru: {

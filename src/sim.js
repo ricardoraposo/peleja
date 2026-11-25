@@ -1263,6 +1263,14 @@ queueBolts(h, ab, slot, color) {
     this.damage(t, h, dmg, ab.dmg.type);
     this.applyFx(t, ab.fx, h);
     this.emit({ e: 'boom', x: r1(t.x), z: r1(t.z), r: 1.2, c: ab.color || h.def.color, o: h.id });
+    // abate com a habilidade devolve ela na hora
+    if (ab.killReset && t.isHero && !t.alive) {
+      const slot = this.slotOf(h, ab);
+      if (slot) {
+        h.cds[slot] = 0;
+        this.emit({ e: 'reset', id: h.id, s: slot });
+      }
+    }
   }
 
   startDash(h, ab, tx, tz, tgt, color, opts = {}) {
