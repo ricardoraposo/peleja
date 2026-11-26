@@ -20,6 +20,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **Golpe começado sai**: depois que o herói ergue a arma, o ataque básico acerta mesmo que o alvo dê uns passos pra trás. Só escapa quem avança ou salta pra longe. Atrás de quem foge, o herói vai andando enquanto recarrega, mas planta o pé no golpe: é nessa brecha que quem foge ou kita ganha distância.
 - **Moitas**: seis touceiras de capim nas bordas da ponte, três de cada lado. Herói dentro some pro time inimigo e o próprio time vê ele meio transparente. Quem entra na mesma moita (herói ou tropa) enxerga quem está lá. Atacar ou usar habilidade revela por 1 segundo. Ninguém clica em quem não vê, mas disparo e área acertam normal.
 - **Ouro**: abate vale 400, torre derrubada 300 pra cada herói do time, e o ouro que pinga sozinho é pouco (3 por segundo). Quem ganha as brigas fecha a build antes.
+- **Assistência**: quem bateu no herói nos últimos 15 segundos, ou curou, deu escudo ou bônus em quem bateu, ganha assistência. As assistências dividem 75% do ouro do abate, cada uma com pelo menos 100.
 - **Abates seguidos**: matar de novo em até 10 segundos anuncia **Double kill** (+150 de ouro), **Triple kill** (+300) e **Quadra kill** (+450); o quinto, em até 30 segundos depois do quarto, é **Pentakill** (+600).
 - **Time inteiro no chão**: as tropas do time que derrubou todo mundo ficam 50% mais fortes por 60 segundos.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
@@ -95,6 +96,8 @@ Com a build fechada (seis itens) entram os **elixires**, garrafadas que não ocu
 | Poder | Cajado de Tupã, Cocar do Pajé, Coração da Mãe-do-Ouro, Véu da Mãe-d'Água, Carranca, Cuia da Benzedeira, Fogo da Mula sem Cabeça, Rosário da Rezadeira, Cabaça do Pajé |
 | Suporte (de usar) | Água de Cheiro, Figa de Guiné, Berrante do Vaqueiro |
 | Defesa | Casco de Jabuti, Manto de Jaci, Couro do Mapinguari, Armadura de Xique-xique, Raiz de Sumaúma, Tambor do Boi-Bumbá, Couraça do Tatu-Canastra, Escama do Pirarucu, Rede de Tucum, Tronco do Jequitibá, Bandeira do Divino, Cuia de Tacacá |
+
+Em **Todos os itens**, a barra lateral filtra por atributo: marque vida e armadura e só aparecem os itens que têm os dois. Depois dá pra ordenar a lista pelo preço ou por quanto cada item dá de um atributo.
 
 Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele). Em **Recomendados**, a loja mostra por onde começar e **três builds do herói**, montadas pelo que as habilidades dele usam (por exemplo, dano, sobrevivência ou ajudar o time). Clique no nome de uma pra loja seguir ela; a escolha fica lembrada. Os bots também usam essas builds.
 

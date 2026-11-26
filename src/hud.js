@@ -86,14 +86,16 @@ export const ICONS = {
 
 const $ = (id) => document.getElementById(id);
 // filtros da aba "todos": cada categoria junta os atributos que ela cobre
-const SHOP_CATS = [
-  { id: 'all', name: 'Tudo', icon: S('<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>') },
-  { id: 'atk', name: 'Ataque', stats: ['atk', 'as', 'crit', 'ls', 'apen'], icon: ICONS.sword },
-  { id: 'pow', name: 'Poder', stats: ['pow', 'haste', 'mpen'], icon: ICONS.gem },
-  { id: 'def', name: 'Defesa', stats: ['hp', 'armor', 'mres'], icon: ICONS.vest },
-  { id: 'mov', name: 'Passo', stats: ['ms'], icon: ICONS.boots },
-  { id: 'use', name: 'De usar', active: true, icon: ICONS.drop },
+// Filtro da aba "Todos": caixinhas por atributo, em grupos; marcando várias, só ficam os itens que têm todas
+const SHOP_GROUPS = [
+  ['Ataque', [['atk', 'Ataque'], ['as', 'Vel. de ataque'], ['crit', 'Crítico'], ['ls', 'Roubo de vida'], ['apen', 'Pen. de armadura']]],
+  ['Poder', [['pow', 'Poder'], ['haste', 'Aceleração'], ['mpen', 'Pen. mágica']]],
+  ['Defesa', [['hp', 'Vida'], ['armor', 'Armadura'], ['mres', 'Res. mágica']]],
+  ['Outros', [['ms', 'Passo'], ['use', 'De usar']]],
 ];
+const SHOP_STATS = SHOP_GROUPS.flatMap((g) => g[1]).filter(([k]) => k !== 'use');
+// depois de filtrar, dá pra ordenar do maior pro menor por um atributo (ou pelo preço, do mais barato)
+const SHOP_SORTS = [['', 'Padrão'], ['cost', 'Preço'], ...SHOP_STATS];
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -579,11 +581,12 @@ export class Hud {
 
   buildShop() {
     this.shopTab = 'rec';
-    this.shopCat = 'all';
+    this.shopStats = new Set();
+    this.shopSort = '';
+    this.shopSortOpen = false;
     this.shopSel = null;
     this.shopHover = null;
     this.sellSel = -1;
-    $('shop-filters').innerHTML = SHOP_CATS.map((c) => `<button data-cat="${c.id}" title="${c.name}">${c.icon}<span>${c.name}</span></button>`).join('');
     const root = this.el.shop;
     const pick = (e, sel) => e.target.closest?.(sel);
     // tudo responde no aperto do botão, não no clique: a loja se redesenha quando o inventário muda,
@@ -598,6 +601,11 @@ export class Hud {
         if (now - lastRight < 250) return;
         lastRight = now;
       } else if (e.button !== 0) return;
+      // menu de ordem aberto: clicar fora dele fecha
+      if (this.shopSortOpen && !pick(e, '.sf-sort')) {
+        this.shopSortOpen = false;
+        this.renderShopAll();
+      }
       const tile = pick(e, '.tile');
       const slot = pick(e, '.inv-slot[data-n]');
       const ex = pick(e, '[data-ex]');
@@ -613,7 +621,21 @@ export class Hud {
           this.sellSel = -1;
         } else return;
       } else if (pick(e, '[data-tab]')) this.shopTab = pick(e, '[data-tab]').dataset.tab;
-      else if (pick(e, '[data-cat]')) this.shopCat = pick(e, '[data-cat]').dataset.cat;
+      else if (pick(e, '[data-stat]')) {
+        const k = pick(e, '[data-stat]').dataset.stat;
+        if (!this.shopStats.delete(k)) this.shopStats.add(k);
+        this.renderShopAll();
+      } else if (pick(e, '[data-clear]')) {
+        this.shopStats.clear();
+        this.renderShopAll();
+      } else if (pick(e, '[data-sortopen]')) {
+        this.shopSortOpen = !this.shopSortOpen;
+        this.renderShopAll();
+      } else if (pick(e, '[data-sort]')) {
+        this.shopSort = pick(e, '[data-sort]').dataset.sort;
+        this.shopSortOpen = false;
+        this.renderShopAll();
+      }
       else if (tile) {
         // clicar seleciona; clicar de novo no item já selecionado compra
         if (this.shopSel === tile.dataset.id && tile.closest('.shop-list')) this.game.buy(tile.dataset.id);
@@ -665,9 +687,55 @@ export class Hud {
             `<div class="rec-build${i === sel ? ' on' : ''}"><button class="rec-pick" data-build="${i}"><span class="rec-n">${i + 1}</span>${esc(b.name)}${i === sel ? '<em>seguindo</em>' : ''}</button><p>${esc(b.why)}</p>${row(b.items)}</div>`,
         )
         .join('');
-    const tiers = ['Básicos', 'Intermediários', 'Grandes'];
-    $('shop-all').innerHTML = tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ITEM_ORDER.filter((id) => itemTier(id) === t).map((id) => this.shopTile(id)).join('')}</div>`).join('') + this.elixirSection();
     $('shop-rec').innerHTML += this.elixirSection();
+    this.renderShopAll();
+  }
+
+  // aba "Todos": barra lateral com as caixinhas e, ao lado, os itens. Sem filtro nem ordem, por camada;
+  // com eles, uma lista só com os itens que têm todos os atributos marcados
+  renderShopAll() {
+    const want = [...this.shopStats];
+    const has = (id, k) => (k === 'use' ? !!ITEMS[id].active : !!ITEMS[id].stats[k]);
+    const ids = ITEM_ORDER.filter((id) => want.every((k) => has(id, k)));
+    // cada caixinha mostra quantos itens sobrariam marcando ela também
+    $('shop-filters').innerHTML =
+      `<div class="sf-head"><b>Filtrar</b>${want.length ? '<button data-clear="1">Limpar</button>' : ''}</div>` +
+      SHOP_GROUPS.map(
+        ([name, opts]) =>
+          `<div class="sf-group"><h4>${name}</h4>${opts
+            .map(([k, label]) => {
+              const on = this.shopStats.has(k);
+              const n = on ? ids.length : ids.filter((id) => has(id, k)).length;
+              return `<button class="sf-check${on ? ' on' : ''}${n ? '' : ' none'}" data-stat="${k}"><span class="sf-box"></span><span class="sf-name">${label}</span><small>${n}</small></button>`;
+            })
+            .join('')}</div>`,
+      ).join('');
+    const sort = this.shopSort;
+    const val = (id) => (sort === 'cost' ? ITEMS[id].cost : itemStatsFor(this.shopHero, id)[sort] || 0);
+    // o valor do atributo da ordem aparece embaixo de cada item, já com a afinidade
+    const tag = (id) => {
+      if (!sort || sort === 'cost') return '';
+      const v = val(id);
+      return v ? `<span class="tile-val">+${STAT_PCT.includes(sort) ? Math.round(v * 100) + '%' : Math.round(v)}</span>` : '';
+    };
+    const tile = (id) => this.shopTile(id).replace('<span class="tile-cost">', `${tag(id)}<span class="tile-cost">`);
+    const sortName = SHOP_SORTS.find((x) => x[0] === sort)[1];
+    const sortBox =
+      `<div class="sf-sort"><span>Ordenar por</span><button class="sf-sort-btn${this.shopSortOpen ? ' open' : ''}" data-sortopen="1">${sortName}<i>▾</i></button>` +
+      (this.shopSortOpen ? `<div class="sf-menu">${SHOP_SORTS.map(([k, name]) => `<button data-sort="${k}"${k === sort ? ' class="on"' : ''}>${name}</button>`).join('')}</div>` : '') +
+      '</div>';
+    let html;
+    if (!want.length && !sort) {
+      const tiers = ['Básicos', 'Intermediários', 'Grandes'];
+      html = `<div class="sa-head"><h3>${ids.length} itens</h3>${sortBox}</div>` + tiers.map((name, t) => `<h3>${name}</h3><div class="tiles">${ids.filter((id) => itemTier(id) === t).map(tile).join('')}</div>`).join('');
+    } else {
+      const list = sort ? [...ids].sort((a, b) => (sort === 'cost' ? val(a) - val(b) : val(b) - val(a)) || itemTier(b) - itemTier(a)) : ids;
+      const what = want.map((k) => SHOP_GROUPS.flatMap((g) => g[1]).find((x) => x[0] === k)[1].toLowerCase());
+      html =
+        `<div class="sa-head"><h3>${list.length} ${list.length === 1 ? 'item' : 'itens'}${what.length ? ' com ' + what.join(' + ') : ''}</h3>${sortBox}</div>` +
+        (list.length ? `<div class="tiles">${list.map(tile).join('')}</div>` : '<p class="rec-why">Nenhum item tem tudo isso junto. Desmarque alguma caixinha.</p>');
+    }
+    $('shop-all').innerHTML = html + this.elixirSection();
     this.shopKey = this.shopStruct = this.shopDetailKey = '';
   }
 
@@ -717,7 +785,7 @@ export class Hud {
     if (!this.shopSel) this.shopSel = next || ITEM_ORDER[0];
     const inv = st.it.join(',') + '|' + (st.sp || []).join(',');
     const struct = inv + '|' + this.shopSel + '|' + this.sellSel;
-    const key = st.g + '|' + st.sh + '|' + struct + '|' + this.shopTab + '|' + this.shopCat + '|' + next + '|' + st.ex + st.et;
+    const key = st.g + '|' + st.sh + '|' + struct + '|' + this.shopTab + '|' + next + '|' + st.ex + st.et;
     if (key === this.shopKey && !force) return;
     this.shopKey = key;
     $('shop-gold').textContent = st.g;
@@ -729,8 +797,6 @@ export class Hud {
     $('shop-rec').classList.toggle('hidden', this.shopTab !== 'rec');
     $('shop-all').classList.toggle('hidden', this.shopTab !== 'all');
     $('shop-filters').classList.toggle('hidden', this.shopTab !== 'all');
-    for (const b of this.el.shop.querySelectorAll('[data-cat]')) b.classList.toggle('on', b.dataset.cat === this.shopCat);
-    const cat = SHOP_CATS.find((c) => c.id === this.shopCat);
 
     // lado direito: inventário e árvore do item selecionado
     if (struct !== this.shopStruct) {
@@ -775,7 +841,6 @@ export class Hud {
       b.classList.toggle('sel', id === this.shopSel);
       // o próximo item só acende na build que a loja está seguindo
       b.classList.toggle('next', id === next && !!b.closest('#shop-rec') && !b.closest('.rec-build:not(.on)'));
-      b.classList.toggle('off', !!b.closest('#shop-all') && (cat?.active ? !ITEMS[id].active : !!cat?.stats && !Object.keys(ITEMS[id].stats).some((k) => cat.stats.includes(k))));
     }
   }
 
