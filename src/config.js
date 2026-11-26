@@ -62,8 +62,12 @@ export const MATCH = {
   packRespawn: 40,
   packHeal: 110,
   packHealPct: 0.08,
-  assistWindow: 10,
+  // dano no morto, ou cura, escudo e bônus em quem bateu nele, até esse tanto antes do abate conta como assistência
+  assistWindow: 15,
   killGold: 400,
+  // as assistências dividem essa fração do ouro do abate (fora o bônus de multi-abate), cada uma com pelo menos assistMin
+  assistShare: 0.75,
+  assistMin: 100,
   firstBloodGold: 100,
   // abates seguidos contam como multi-abate se cada um vier até multiWindow segundos depois do outro (o quinto tem pentaWindow)
   multiWindow: 10,

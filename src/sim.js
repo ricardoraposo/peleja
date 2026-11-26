@@ -449,6 +449,7 @@ export class Sim {
     h.multi = 0;
     h.multiT = -99;
     h.damagers = new Map();
+    h.helpers = new Map();
     h.respawnT = 0;
     h.combatT = -99;
     h.empower = null;
@@ -496,6 +497,7 @@ export class Sim {
     h.target = null;
     h.order = { type: 'idle' };
     h.damagers = new Map();
+    h.helpers = new Map();
     this.calcStats(h);
     h.hp = h.stats.maxHp;
     this.brains.get(h.id)?.reset();
@@ -1283,6 +1285,7 @@ queueBolts(h, ab, slot, color) {
 
   applySelf(target, src, ab) {
     if (ab.heal) this.heal(target, this.val(src, ab.heal, ab), src);
+    if (ab.shield || ab.buff) this.markHelp(target, src);
     if (ab.shield) {
       target.shields.push({ amt: this.val(src, ab.shield, ab), t: ab.shield.t || 3 });
     }
@@ -1537,7 +1540,13 @@ queueBolts(h, ab, slot, color) {
     t.hp = Math.min(t.maxHp, t.hp + amt);
     const d = t.hp - before;
     if (src?.isHero && src !== t) src.healDone += d;
+    if (d > 0) this.markHelp(t, src);
     if (!silent && d >= 1) this.emit({ e: 'heal', v: t.id, d: Math.round(d) });
+  }
+
+  // aliado que curou, deu escudo ou bônus fica registrado: se o ajudado participar de um abate, quem ajudou ganha assistência
+  markHelp(t, src) {
+    if (src?.isHero && t.isHero && src !== t && src.team === t.team) t.helpers.set(src.id, this.time);
   }
 
   callForHelp(attacker, victim) {
@@ -1661,11 +1670,15 @@ queueBolts(h, ab, slot, color) {
     t.target = null;
     this.kills[1 - t.team]++;
     const assists = [];
-    for (const [id, time] of t.damagers) {
-      const a = this.byId.get(id);
-      if (!a || a === killer || a.team === t.team || this.time - time > MATCH.assistWindow) continue;
-      assists.push(a);
-    }
+    const recent = (time) => this.time - time <= MATCH.assistWindow;
+    const add = (a) => {
+      if (a && a !== killer && a.team !== t.team && !assists.includes(a)) assists.push(a);
+    };
+    const fighters = [...t.damagers].filter(([, time]) => recent(time)).map(([id]) => this.byId.get(id));
+    if (killer && !fighters.includes(killer)) fighters.push(killer);
+    for (const a of fighters) add(a);
+    // quem curou, protegeu ou fortaleceu alguém que bateu no morto também participou
+    for (const f of fighters) if (f?.helpers) for (const [id, time] of f.helpers) if (recent(time)) add(this.byId.get(id));
     let first = false;
     if (killer) {
       killer.kills++;
@@ -1679,7 +1692,7 @@ queueBolts(h, ab, slot, color) {
       this.giveGold(killer, gold, t);
       for (const a of assists) {
         a.assists++;
-        this.giveGold(a, (gold * 0.5) / assists.length, t);
+        this.giveGold(a, Math.max(MATCH.assistMin, (gold * MATCH.assistShare) / assists.length), t);
       }
       if (this.time - killer.multiT < (killer.multi === 4 ? MATCH.pentaWindow : MATCH.multiWindow)) killer.multi++;
       else killer.multi = 1;
