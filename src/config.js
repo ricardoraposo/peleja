@@ -54,7 +54,8 @@ export const MATCH = {
   startLevel: 3,
   maxLevel: 18,
   startGold: 1400,
-  goldPerSec: 4,
+  // ouro passivo baixo e abate/torre valendo mais: quem ganha as brigas fecha a build antes (efeito bola de neve)
+  goldPerSec: 3,
   xpPerSec: 3.5,
   firstWave: 12,
   waveEvery: 26,
@@ -62,12 +63,17 @@ export const MATCH = {
   packHeal: 110,
   packHealPct: 0.08,
   assistWindow: 10,
-  killGold: 300,
+  killGold: 400,
   firstBloodGold: 100,
   // abates seguidos contam como multi-abate se cada um vier até multiWindow segundos depois do outro (o quinto tem pentaWindow)
   multiWindow: 10,
   pentaWindow: 30,
-  towerGold: 150,
+  // ouro a mais pro autor no 2º, 3º, 4º e 5º abate seguido (não divide com assistência)
+  multiGold: [0, 0, 150, 300, 450, 600],
+  // time inteiro no chão: tropas de quem derrubou ficam mais fortes por aceT segundos
+  aceT: 60,
+  aceMinion: 1.5,
+  towerGold: 300,
   // habilidade em área fere estrutura com essa fração do dano (sem isso, time só de magos não derrubava torre)
   abilityStructDmg: 0.3,
   seloRespawn: 150,

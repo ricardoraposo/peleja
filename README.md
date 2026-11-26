@@ -19,7 +19,9 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **Canhão da base**: clique com o botão direito no canhão ao lado da fonte pra entrar nele. A câmera abre e você tem 5 segundos pra clicar onde quer cair, em volta da torre mais avançada do seu time que ainda está de pé (sem clicar, cai atrás dela; `S` desiste). No ar ninguém te acerta, e a queda joga pro alto os inimigos que estiverem embaixo. Sem as duas torres da ponte, o canhão para de atirar.
 - **Golpe começado sai**: depois que o herói ergue a arma, o ataque básico acerta mesmo que o alvo dê uns passos pra trás. Só escapa quem avança ou salta pra longe. Atrás de quem foge, o herói vai andando enquanto recarrega, mas planta o pé no golpe: é nessa brecha que quem foge ou kita ganha distância.
 - **Moitas**: seis touceiras de capim nas bordas da ponte, três de cada lado. Herói dentro some pro time inimigo e o próprio time vê ele meio transparente. Quem entra na mesma moita (herói ou tropa) enxerga quem está lá. Atacar ou usar habilidade revela por 1 segundo. Ninguém clica em quem não vê, mas disparo e área acertam normal.
-- **Abates seguidos**: matar de novo em até 10 segundos anuncia **Double kill**, **Triple kill** e **Quadra kill**; o quinto, em até 30 segundos depois do quarto, é **Pentakill**.
+- **Ouro**: abate vale 400, torre derrubada 300 pra cada herói do time, e o ouro que pinga sozinho é pouco (3 por segundo). Quem ganha as brigas fecha a build antes.
+- **Abates seguidos**: matar de novo em até 10 segundos anuncia **Double kill** (+150 de ouro), **Triple kill** (+300) e **Quadra kill** (+450); o quinto, em até 30 segundos depois do quarto, é **Pentakill** (+600).
+- **Time inteiro no chão**: as tropas do time que derrubou todo mundo ficam 50% mais fortes por 60 segundos.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.
 - **Em estruturas só o ataque básico fere**, e ele soma o ataque inteiro, 60% do poder e 1,5% da vida máxima: mago, suporte e tanque também derrubam torre.
 - **Habilidades em área também desgastam torres**, com 30% do dano. Disparos num alvo só passam direto por elas.

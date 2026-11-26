@@ -261,7 +261,7 @@ export class Sim {
       const col = (i % 3) - 1;
       const [px, pz] = clampWalk(x - pushDir(team) * Math.floor(i / 3) * 1.4, z + col * 1.5);
       const m = new Unit(this.nextId++, type, team, px, pz, MINIONS[type].r);
-      m.stats = this.minionStats(type);
+      m.stats = this.minionStats(type, team);
       m.hp = m.stats.maxHp;
       m.laneZ = col * 1.6;
       m.retargetT = 0;
@@ -380,6 +380,7 @@ export class Sim {
     this.winner = -1;
     this.kills = [0, 0];
     this.firstBlood = false;
+    this.aceUntil = [0, 0];
     this.waveN = 0;
     this.waveT = MATCH.firstWave;
     for (const p of this.projectiles) this.emit({ e: 'pjx', id: p.id });
@@ -667,12 +668,13 @@ export class Sim {
     if (h.hp > s.maxHp) h.hp = s.maxHp;
   }
 
-  minionStats(type) {
+  minionStats(type, team = -1) {
     const d = MINIONS[type];
     const min = this.gameTime / 60;
+    const ace = team >= 0 && this.aceUntil[team] > this.gameTime ? MATCH.aceMinion : 1;
     return {
-      maxHp: d.hp * (1 + MINIONS.growHp * min),
-      atk: d.atk * (1 + MINIONS.growAtk * min),
+      maxHp: d.hp * (1 + MINIONS.growHp * min) * ace,
+      atk: d.atk * (1 + MINIONS.growAtk * min) * ace,
       pow: 0,
       armor: d.armor,
       mres: d.mres,
@@ -702,7 +704,7 @@ export class Sim {
         const row = Math.floor(i / 3);
         const col = i % 3;
         const m = new Unit(this.nextId++, type, team, x0 - dir * row * 1.4, (col - 1) * 1.5, d.r);
-        m.stats = this.minionStats(type);
+        m.stats = this.minionStats(type, team);
         m.hp = m.stats.maxHp;
         m.laneZ = (col - 1) * 1.6;
         m.retargetT = 0;
@@ -1682,6 +1684,8 @@ queueBolts(h, ab, slot, color) {
       if (this.time - killer.multiT < (killer.multi === 4 ? MATCH.pentaWindow : MATCH.multiWindow)) killer.multi++;
       else killer.multi = 1;
       killer.multiT = this.time;
+      const bonus = MATCH.multiGold[killer.multi] || 0;
+      if (bonus) this.giveGold(killer, bonus, t);
     }
     // abate vale mais contra quem está na frente e menos contra quem ficou pra trás
     const gap = killer ? Math.max(-4, Math.min(4, t.level - killer.level)) : 0;
@@ -1695,16 +1699,26 @@ queueBolts(h, ab, slot, color) {
     });
     // o multi-abate leva junto o aviso de time inteiro no chão, pra um não apagar o outro
     const teamAlive = this.heroes.some((h) => h.team === t.team && h.alive);
+    const multiAnn = !first && killer && killer.multi >= 2;
     if (first) this.ann('Primeiro abate!', `${killer.name} abriu o placar`, 'first', killer.team);
     else if (killer && killer.multi >= 2) {
       const names = ['', '', 'Double kill!', 'Triple kill!', 'Quadra kill!', 'Pentakill!'];
-      this.ann(names[killer.multi], killer.name + (teamAlive ? '' : ' · time inteiro no chão'), killer.multi === 5 ? 'penta' : 'multi' + killer.multi, killer.team);
+      this.ann(names[killer.multi], `${killer.name} · +${MATCH.multiGold[killer.multi]} de ouro` + (teamAlive ? '' : ' · time inteiro no chão, tropas mais fortes'), killer.multi === 5 ? 'penta' : 'multi' + killer.multi, killer.team);
       // depois do pentakill a contagem recomeça
       if (killer.multi === 5) killer.multi = 0;
     } else if (killer && killer.streak >= 3 && killer.streak % 2 === 1) {
       this.ann(killer.streak >= 7 ? 'Imparável!' : 'Em chamas!', `${killer.name} · ${killer.streak} abates seguidos`, 'spree', killer.team);
     } else if (spree >= 3 && killer) this.ann('Acabou a festa!', `${killer.name} parou ${t.name}`, 'shut', killer.team);
-    if (!teamAlive && killer && !(killer.multi >= 2)) this.ann('Time inteiro no chão!', '', 'ace', killer.team);
+    if (!teamAlive && killer) {
+      this.aceUntil[killer.team] = this.gameTime + MATCH.aceT;
+      // as tropas que já estão na ponte também crescem
+      for (const m of this.units) if (m.alive && m.team === killer.team && MINIONS[m.kind]) {
+        const frac = m.hp / m.stats.maxHp;
+        m.stats = this.minionStats(m.kind, m.team);
+        m.hp = m.stats.maxHp * frac;
+      }
+      if (!multiAnn) this.ann('Time inteiro no chão!', `Tropas do time mais fortes por ${MATCH.aceT} s`, 'ace', killer.team);
+    }
   }
 
   killStruct(t) {
