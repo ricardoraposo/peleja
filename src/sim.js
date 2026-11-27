@@ -443,6 +443,8 @@ export class Sim {
     h.cds = { q: 0, w: 0, e: 0, r: 0, d: 0, f: 0 };
     h.cdMax = { q: 1, w: 1, e: 1, r: 1, d: 1, f: 1 };
     h.kills = h.deaths = h.assists = h.cs = h.streak = 0;
+    // mortes seguidas sem matar nem dar assistência
+    h.deathRun = 0;
     h.dmgDealt = h.dmgTaken = h.healDone = 0;
     // dano recebido na partida por tipo (físico, mágico, verdadeiro), pro gráfico do placar
     h.dmgTakenBy = [0, 0, 0];
@@ -1595,6 +1597,13 @@ queueBolts(h, ab, slot, color) {
     return amount;
   }
 
+  // ouro que o abate de `t` vale agora: mais pra quem está embalado (recompensa), menos pra quem morre seguido
+  killValue(t) {
+    const bounty = Math.min(MATCH.bountyMax, MATCH.bountyPer * Math.max(0, t.streak - 1));
+    const tax = Math.max(MATCH.deathFloor, 1 - MATCH.deathTax * t.deathRun);
+    return { gold: Math.round(MATCH.killGold * tax) + bounty, bounty };
+  }
+
   // quanto o tanque ou lutador deixa de levar por estar apanhando de vários heróis ao mesmo tempo (0 a FOCUS_GUARD.max)
   focusGuard(t, src = null) {
     if (!FOCUS_GUARD.roles.includes(t.def.role)) return 0;
@@ -1717,8 +1726,10 @@ queueBolts(h, ab, slot, color) {
       }
     }
     if (killer && killer.team === t.team) killer = null;
+    const worth = this.killValue(t);
     const spree = t.streak;
     t.deaths++;
+    t.deathRun++;
     t.streak = 0;
     t.respawnT = respawnTime(t.level, this.gameTime / 60);
     t.buffs = [];
@@ -1754,7 +1765,8 @@ queueBolts(h, ab, slot, color) {
     if (killer) {
       killer.kills++;
       killer.streak++;
-      let gold = MATCH.killGold + (spree >= 3 ? Math.min(400, 60 * (spree - 1)) : 0);
+      killer.deathRun = 0;
+      let gold = worth.gold;
       if (!this.firstBlood) {
         gold += MATCH.firstBloodGold;
         this.firstBlood = true;
@@ -1763,6 +1775,7 @@ queueBolts(h, ab, slot, color) {
       this.giveGold(killer, gold, t);
       for (const a of assists) {
         a.assists++;
+        a.deathRun = 0;
         this.giveGold(a, Math.max(MATCH.assistMin, (gold * MATCH.assistShare) / assists.length), t);
       }
       if (this.time - killer.multiT < (killer.multi === 4 ? MATCH.pentaWindow : MATCH.multiWindow)) killer.multi++;
@@ -1792,7 +1805,7 @@ queueBolts(h, ab, slot, color) {
       if (killer.multi === 5) killer.multi = 0;
     } else if (killer && killer.streak >= 3 && killer.streak % 2 === 1) {
       this.ann(killer.streak >= 7 ? 'Imparável!' : 'Em chamas!', `${killer.name} · ${killer.streak} abates seguidos`, 'spree', killer.team);
-    } else if (spree >= 3 && killer) this.ann('Acabou a festa!', `${killer.name} parou ${t.name}`, 'shut', killer.team);
+    } else if (spree >= 3 && killer) this.ann('Acabou a festa!', `${killer.name} parou ${t.name} · +${worth.bounty} de recompensa`, 'shut', killer.team);
     if (!teamAlive && killer) {
       this.aceUntil[killer.team] = this.gameTime + MATCH.aceT;
       // as tropas que já estão na ponte também crescem
@@ -3069,7 +3082,7 @@ queueBolts(h, ab, slot, color) {
   board() {
     return {
       e: 'board',
-      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h), (h.dmgTakenBy || [0, 0, 0]).map(Math.round), Object.entries(h.dmgFrom || {}).flatMap(([k, v]) => [Number(k), Math.round(v)])]),
+      l: this.heroes.map((h) => [h.id, h.kills, h.deaths, h.assists, h.cs, h.level, h.items, Math.floor(h.goldEarned), Math.round(h.dmgDealt), Math.round(h.healDone), this.statLine(h), (h.dmgTakenBy || [0, 0, 0]).map(Math.round), Object.entries(h.dmgFrom || {}).flatMap(([k, v]) => [Number(k), Math.round(v)]), this.killValue(h).gold]),
     };
   }
 }

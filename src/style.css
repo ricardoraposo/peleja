@@ -1032,6 +1032,13 @@ em.use {
 .b-sub {
   display: block;
 }
+.b-worth {
+  color: #9ca3af;
+}
+.b-worth.hi {
+  color: #facc15;
+  font-weight: 700;
+}
 
 .b-items {
   display: flex;

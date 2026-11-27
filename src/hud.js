@@ -1,4 +1,4 @@
-import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, ELIXIRS, ELIXIR_ORDER, ELIXIR_SLOTS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, FOCUS_GUARD, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
+import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, MATCH, ITEM_ORDER, ITEMS, ELIXIRS, ELIXIR_ORDER, ELIXIR_SLOTS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, FOCUS_GUARD, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
 import { OBSTACLES } from './geo.js';
 import { ITEM_ICONS } from './itemicons.js';
 
@@ -250,6 +250,12 @@ const setBuildPick = (heroId, n) => {
   } catch {
     return;
   }
+};
+
+// quanto o abate desse herói vale agora, quando foge do normal: dourado se ele está embalado, cinza se morre seguido
+const worthTag = (v) => {
+  if (!v || v === MATCH.killGold) return '';
+  return ` · <span class="b-worth${v > MATCH.killGold ? ' hi' : ''}" title="Ouro que o abate dele vale agora">vale ${v}</span>`;
 };
 
 // atributos de um herói (a lista que a simulação manda em `statLine`); `named` escreve o nome de cada um ao lado
@@ -901,7 +907,7 @@ export class Hud {
       const items = withItems ? `<td><div class="b-items">${(b[6] || []).map((it) => `<span class="mini-item b-tip" style="--c:${itemColor(it)}">${itemIcon(it)}<span class="tip"><b>${esc(ITEMS[it].name)}</b><span>${itemStats(ITEMS[it], hid)}</span></span></span>`).join('')}</div></td>` : '';
       const tip = withItems && b[10] ? `<span class="tip b-stats-tip"><b>${esc(r.name)}</b><small>${h.name} · ${h.title} · nv ${b[5]}</small><span class="b-stats">${statCells(b[10], true)}</span><small class="dmg-title">Dano recebido · ${Math.round((b[11] || []).reduce((x, y) => x + y, 0) / 100) / 10}k</small>${dmgBar(b[11])}</span>` : '';
       rows.push(
-        `<tr class="${id === g.myId ? 'me' : ''}${tip ? ' b-tip b-row' : ''}"><td class="b-anchor"><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span>${tip}</td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
+        `<tr class="${id === g.myId ? 'me' : ''}${tip ? ' b-tip b-row' : ''}"><td class="b-anchor"><span class="b-hero" style="--c:${h.color}">${h.name[0]}</span>${tip}</td><td class="b-name">${esc(r.name)}${r.isBot ? ' <small>bot</small>' : ''}<small class="b-sub">${h.name} · nv ${b[5]}${worthTag(b[13])}</small></td><td class="n">${b[1]} / ${b[2]} / ${b[3]}</td><td class="n">${b[4]} <small>cs</small></td>${items}<td class="n">${Math.round(b[8] / 100) / 10}k <small>dano</small></td></tr>`,
       );
     }
     return rows.join('');

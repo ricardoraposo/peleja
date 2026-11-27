@@ -69,6 +69,13 @@ export const MATCH = {
   assistShare: 0.75,
   assistMin: 100,
   firstBloodGold: 100,
+  // recompensa por derrubar quem está embalado: bountyPer de ouro por abate seguido do morto além do primeiro, até bountyMax
+  bountyPer: 100,
+  bountyMax: 700,
+  // quem morre seguido sem matar nem dar assistência vale menos: cada morte seguida tira deathTax do ouro do abate,
+  // até sobrar deathFloor dele
+  deathTax: 0.15,
+  deathFloor: 0.4,
   // ping de dúvida (tecla V): no máximo pingMax a cada pingPer segundos por jogador
   pingMax: 3,
   pingPer: 5,
