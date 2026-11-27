@@ -55,7 +55,7 @@ export const ICONS = {
   mask: S('<path d="M3 8c3-2 6-2 9 0 3-2 6-2 9 0 0 5-2 9-5 9-2 0-3-2-4-2s-2 2-4 2c-3 0-5-4-5-9z"/><path d="M7 11h2M15 11h2"/>'),
   sleep: S('<path d="M4 6h7l-7 8h7M14 10h6l-6 7h6"/>'),
   portal: S('<ellipse cx="12" cy="17" rx="8" ry="3"/><path d="M8 11V5M5 8l3-3 3 3M16 5v6M13 8l3 3 3-3"/>'),
-  dive: S('<path d=""M3 13c2-6 9-9 14-5l4-2-2 5c0 4-3 6-7 6M2 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>'),
+  dive: S('<path d="M3 13c2-6 9-9 14-5l4-2-2 5c0 4-3 6-7 6M2 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0"/>'),
   leaf: S('<path d="M5 19C5 10 10 4 20 4c0 10-6 15-15 15zM5 19l7-7"/>'),
   blink: S('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="3"/><path d="M8 16l2-2M12 12l2-2" stroke-dasharray="2 2"/>'),
   boots: S('<path d="M7 3v10l-3 3v4h16v-3l-6-2V3z"/>'),
