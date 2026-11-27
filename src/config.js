@@ -162,6 +162,9 @@ export const SPELLS = { d: SPELL_POOL[DEFAULT_SPELLS.d], f: SPELL_POOL[DEFAULT_S
 // steal: copia o último feitiço (D/F) que um herói inimigo lançou nos últimos `window` segundos
 // ret: o salto (blink) volta sozinho pro ponto de partida depois de tantos segundos
 // killReset: se o golpe (target) matar um herói, a recarga zera na hora
+// passive (no herói): passiva com name, icon e desc, que aparecem na escolha e no HUD.
+//   every + vamp: conta as habilidades (Q/W/E/R) lançadas; a de número `every` cura quem lançou em `vamp` do dano que ela
+//   causar em heróis e tropas (projéteis, volta, jatos, área, zona e avanço); color pinta essa habilidade
 export const HEROES = {
   faisca: {
     name: 'Faísca',
@@ -388,6 +391,7 @@ export const HEROES = {
     color: '#ff8fab',
     look: { weapon: 'pearl', hat: 'boater', extra: 'fin', suit: '#f8fafc', skin: '#f7a1b8', snout: true },
     ranged: true,
+    passive: { name: 'Coração Roubado', icon: 'heartsteal', every: 7, vamp: 0.35, color: '#e11d48', desc: 'A cada seis habilidades lançadas, a sétima rouba vida: você cura 35% do dano que ela causar.' },
     stats: { hp: 550, hpL: 90, atk: 53, atkL: 2.9, armor: 24, armorL: 2.6, mres: 30, mresL: 1.3, as: 0.65, asL: 0.02, ms: 6.05, range: 7.6, regen: 1.6, regenL: 0.15 },
     abilities: {
       q: { name: 'Pérola do Rio', icon: 'pearl', kind: 'proj', cd: 7, cast: 0.2, range: 11, speed: 24, width: 1.1, pierce: true, back: { speed: 30, type: 'true' }, dmg: { b: 36, l: 10, ap: 0.35, type: 'magic' }, color: '#ffc2d1', desc: 'Joga uma pérola que atravessa todo mundo e volta pra sua mão. Na volta, o dano ignora defesas.' },

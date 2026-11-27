@@ -455,6 +455,8 @@ export class Sim {
     h.empower = null;
     h.recast = null;
     h.fury = 0;
+    h.vampN = 0;
+    h.vampNow = 0;
     // WASD: direção que o jogador segura ({ x, z } de tamanho 1, ou null). É a mão dele, não um estado do herói:
     // morrer não zera, e quem segura a tecla sai andando ao renascer
     h.dir = null;
@@ -586,6 +588,8 @@ export class Sim {
 
   clearHeroState(h) {
     h.fury = 0;
+    h.vampN = 0;
+    h.vampNow = 0;
     h.empower = null;
     h.recast = null;
     h.burn = null;
@@ -967,7 +971,7 @@ export class Sim {
   // Projéteis teleguiados de habilidade: um por inimigo próximo, heróis primeiro.
   // Se sobrar projétil, ele repete num alvo já escolhido com dano reduzido (bolts.repeat).
 queueBolts(h, ab, slot, color) {
-    (h.bolts ||= []).push({ ab, slot, color, left: ab.bolts.n, wait: ab.bolts.wait || 0, gapT: 0, hit: new Set() });
+    (h.bolts ||= []).push({ ab, slot, color, left: ab.bolts.n, wait: ab.bolts.wait || 0, gapT: 0, hit: new Set(), vamp: h.vampNow || 0 });
     this.tickBolts(h, 0);
   }
 
@@ -1020,6 +1024,7 @@ queueBolts(h, ab, slot, color) {
       kind: 's',
       size: 0.3,
       width: 0.7,
+      vamp: q.vamp,
     });
     return true;
   }
@@ -1089,8 +1094,22 @@ queueBolts(h, ab, slot, color) {
     return (v.b || 0) + (v.l || 0) * (lvl - 1) + (v.ad || 0) * s.atk + (v.ap || 0) * s.pow + (v.hp || 0) * s.maxHp;
   }
 
+  // passiva every/vamp (Boto): conta as habilidades lançadas; a de número `every` rouba vida
+  passiveVamp(h) {
+    const p = h.def?.passive;
+    if (!p?.every) return 0;
+    h.vampN = (h.vampN || 0) + 1;
+    if (h.vampN < p.every) return 0;
+    h.vampN = 0;
+    return p.vamp || 0;
+  }
+
   execute(h, slot, ab, x, z, t) {
     h.revealT = MAP.bush.reveal;
+    // só habilidade própria conta pra passiva; a copiada (steal) herda o roubo de vida de quem a lançou
+    const own = !!h.def && h.def.abilities[slot] === ab;
+    const prevVamp = h.vampNow || 0;
+    if (own) h.vampNow = this.passiveVamp(h);
     let dx = x - h.x;
     let dz = z - h.z;
     let d = Math.hypot(dx, dz);
@@ -1102,7 +1121,7 @@ queueBolts(h, ab, slot, color) {
       dx /= d;
       dz /= d;
     }
-    const color = ab.color || h.def?.color || '#ffffff';
+    const color = (h.vampNow && h.def.passive.color) || ab.color || h.def?.color || '#ffffff';
     // feitiço (D ou F) lançado por um herói: fica anotado pra quem sabe copiar (ver steal)
     if ((slot === 'd' || slot === 'f') && h.isHero && SPELL_POOL[h.spells?.[slot]] === ab) (this.lastSpell ||= [null, null])[h.team] = { id: h.spells[slot], t: this.time };
     let px = h.x + dx * 0.6;
@@ -1291,6 +1310,7 @@ queueBolts(h, ab, slot, color) {
       default:
         break;
     }
+    h.vampNow = prevVamp;
   }
 
   applySelf(target, src, ab) {
@@ -1326,7 +1346,7 @@ queueBolts(h, ab, slot, color) {
 
   startDash(h, ab, tx, tz, tgt, color, opts = {}) {
     const d = Math.hypot(tx - h.x, tz - h.z);
-    h.dash = { ab, tx, tz, tgt, speed: ab.speed || 26, hit: new Set(), left: d / (ab.speed || 26) + 0.4, color, ...opts, gained: 0 };
+    h.dash = { ab, tx, tz, tgt, speed: ab.speed || 26, hit: new Set(), left: d / (ab.speed || 26) + 0.4, color, vamp: h.vampNow || 0, ...opts, gained: 0 };
     h.windup = 0;
     this.emit({ e: 'dash', id: h.id, d: r2(d / (ab.speed || 26)), a: ab.arc ? 1 : 0, c: color });
   }
@@ -1363,6 +1383,7 @@ queueBolts(h, ab, slot, color) {
     }
     this.resolveStatic(h);
     const ab = ds.ab;
+    h.vampNow = ds.vamp;
     if (ab.path) {
       const emp = ds.emp ? ab.recast.emp : null;
       const dmg = this.val(h, ab.path.dmg, ab) * (emp?.dmg || 1);
@@ -1397,10 +1418,11 @@ queueBolts(h, ab, slot, color) {
       if (ab.bolts) this.queueBolts(h, ab, this.slotOf(h, ab), ds.color);
       if (ds.tgt && this.attackable(h, ds.tgt) && h.order.type === 'idle') this.orderAttack(h, ds.tgt);
     }
+    h.vampNow = 0;
   }
 
   addDelayed(h, x, z, r, delay, dmg, type, fx, color, follow = null, linger = null) {
-    this.delayed.push({ owner: h, team: h.team, x, z, r, t: delay, dmg, type: type || 'magic', fx, color, linger });
+    this.delayed.push({ owner: h, team: h.team, x, z, r, t: delay, dmg, type: type || 'magic', fx, color, linger, vamp: h.vampNow || 0 });
     this.emit({ e: 'aoe', x: r1(x), z: r1(z), r, t: delay, c: color, tm: h.team, o: h.id });
   }
 
@@ -1540,6 +1562,9 @@ queueBolts(h, ab, slot, color) {
       this.emit({ e: 'hit', v: t.id, a: src?.id || 0, d: Math.round(amount), k: DMG_TYPE[type] ?? 0, au: opts.auto ? 1 : 0, cr: opts.crit ? 1 : 0 });
     }
     if (src?.isHero && t.isHero) this.callForHelp(src, t);
+    // passiva de roubo de vida: a habilidade marcada cura quem lançou (estrutura não conta)
+    const vamp = opts.vamp || src?.vampNow || 0;
+    if (vamp > 0 && !t.isStructure) this.heal(src, amount * vamp, src);
     if (t.hp <= 0) this.kill(t, src);
     return amount;
   }
@@ -2502,6 +2527,7 @@ queueBolts(h, ab, slot, color) {
 
   spawnProj(p) {
     p.id = this.projSeq++;
+    if (p.vamp === undefined) p.vamp = p.owner?.vampNow || 0;
     p.x0 = p.x;
     p.z0 = p.z;
     p.traveled = 0;
@@ -2553,7 +2579,7 @@ queueBolts(h, ab, slot, color) {
             const w = p.width / 2 + u.r;
             if (d2 > w * w) continue;
             p.hit.add(u.id);
-            this.damage(u, p.owner, p.dmg, p.type);
+            this.damage(u, p.owner, p.dmg, p.type, { vamp: p.vamp });
           }
           p.x = nx;
           p.z = nz;
@@ -2564,7 +2590,7 @@ queueBolts(h, ab, slot, color) {
           done.push(p);
           if (p.kind === 't') this.towerHit(p.owner, t);
           else if (p.skill) {
-            this.damage(t, p.owner, p.dmg, p.type);
+            this.damage(t, p.owner, p.dmg, p.type, { vamp: p.vamp });
             this.applyFx(t, p.fx, p.owner);
           } else this.autoHit(p.owner, t, p.dmg);
           continue;
@@ -2635,7 +2661,7 @@ queueBolts(h, ab, slot, color) {
         // errou: a fumaça fica no chão como armadilha pro primeiro que pisar
         if (!stopped && p.trap) this.spawnZone(p.owner, p.x, p.z, { r: p.trap.r, dur: p.trap.dur, tick: 0.1, dmg: p.dmg, type: p.type, fx: p.fx, once: true }, p.color);
         if (!stopped && p.back && p.owner.alive) {
-          back.push({ owner: p.owner, team: p.team, x: p.x, z: p.z, homing: p.owner, sweep: true, speed: p.back.speed || p.speed, dmg: p.backDmg, type: p.back.type || p.type, width: p.width, color: p.color, slot: p.slot, kind: 's', size: p.width });
+          back.push({ owner: p.owner, team: p.team, x: p.x, z: p.z, homing: p.owner, sweep: true, speed: p.back.speed || p.speed, dmg: p.backDmg, type: p.back.type || p.type, width: p.width, color: p.color, slot: p.slot, kind: 's', size: p.width, vamp: p.vamp });
         }
       }
     }
@@ -2653,7 +2679,7 @@ queueBolts(h, ab, slot, color) {
       for (const o of this.units) {
         if (!o.alive || o.team === p.team || o.isStructure) continue;
         if (o !== u && dist(o, u) > p.explode + o.r) continue;
-        this.damage(o, owner, dmg, p.type);
+        this.damage(o, owner, dmg, p.type, { vamp: p.vamp });
         this.applyFx(o, p.fx, owner);
       }
       this.structHit(owner, u.x, u.z, p.explode, dmg, p.type);
@@ -2661,7 +2687,7 @@ queueBolts(h, ab, slot, color) {
       return;
     }
     owner.lastProjDir = [p.dx, p.dz];
-    this.damage(u, owner, dmg, p.type);
+    this.damage(u, owner, dmg, p.type, { vamp: p.vamp });
     this.applyFx(u, p.fx, owner);
     owner.lastProjDir = null;
   }
@@ -2671,14 +2697,16 @@ queueBolts(h, ab, slot, color) {
     for (const a of this.delayed) {
       a.t -= dt;
       if (a.t > 0) continue;
+      a.owner.vampNow = a.vamp;
       this.hitArea(a.owner, a.x, a.z, a.r, a.dmg, a.type, a.fx, a.color);
       if (a.linger) this.spawnZone(a.owner, a.x, a.z, { r: a.r, dur: a.linger.dur, tick: a.linger.tick, dmg: a.linger.dmg, type: a.linger.type, fx: a.linger.fx }, a.color);
+      a.owner.vampNow = 0;
     }
     this.delayed = this.delayed.filter((a) => a.t > 0);
   }
 
   spawnZone(h, x, z, o, color) {
-    const zn = { id: this.zoneSeq++, owner: h, team: h.team, x, z, r: o.r, t: o.dur, tick: o.tick, tickT: 0, dmg: o.dmg, type: o.type || 'magic', fx: o.fx, line: o.line || null, once: !!o.once, color };
+    const zn = { id: this.zoneSeq++, owner: h, team: h.team, x, z, r: o.r, t: o.dur, tick: o.tick, tickT: 0, dmg: o.dmg, type: o.type || 'magic', fx: o.fx, line: o.line || null, once: !!o.once, color, vamp: h.vampNow || 0 };
     this.zones.push(zn);
     const m = { e: 'zone', id: zn.id, x: r1(x), z: r1(z), r: zn.r, t: zn.t, c: color, tm: h.team, o: h.id };
     if (zn.line) m.l = zn.line;
@@ -2700,7 +2728,7 @@ queueBolts(h, ab, slot, color) {
           const [d2] = segDist2(u.x, u.z, zn.line[0], zn.line[1], zn.line[2], zn.line[3]);
           if (d2 > (zn.r + u.r) ** 2) continue;
         } else if (Math.hypot(u.x - zn.x, u.z - zn.z) > zn.r + u.r) continue;
-        this.damage(u, zn.owner, zn.dmg, zn.type);
+        this.damage(u, zn.owner, zn.dmg, zn.type, { vamp: zn.vamp });
         this.applyFx(u, zn.fx, zn.owner);
         if (zn.once) {
           // armadilha: dispara no primeiro que pisar e some
@@ -2982,6 +3010,7 @@ queueBolts(h, ab, slot, color) {
       ch: h.charge ? h.charge.left : 0,
       st: h.def?.abilities?.w?.steal ? this.stolenFor(h, h.def.abilities.w)?.id || '' : undefined,
       fu: h.def?.fury ? Math.floor(h.fury || 0) : undefined,
+      vp: h.def?.passive?.every ? h.vampN || 0 : undefined,
     };
   }
 

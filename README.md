@@ -33,7 +33,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 
 ## Heróis
 
-Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível.
+Quinze heróis do folclore e do sertão, cada um com quatro habilidades (Q, W, E e a suprema no R) que evoluem conforme você sobe de nível. O Boto tem também uma passiva, o **Coração Roubado**: a cada seis habilidades lançadas, a sétima cura 35% do dano que causar.
 
 | Herói | Papel | Alcance |
 | --- | --- | --- |

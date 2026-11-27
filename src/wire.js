@@ -9,7 +9,7 @@
 
 const EVENTS = {
   snap: { t: 'd2', ph: 's', pt: 'd1', gt: 'd1', k: 'u*', wv: 'd1', u: ['u', 'u', 'u', 'd1', 'd1', 'd2', 'u', 'u', 'u', 'u', 'i', 'u', 'd1'], pk: 'u*' },
-  me: { id: 'u', g: 'i', it: 's*', rk: 'u*', pt: 'i', sp: 'n*', ic: 'd1*', cd: 'd1*', cm: 'd1*', xp: 'u', xn: 'n', lv: 'u', s: 'n*', sh: 'u', rd: 'u', ch: 'u', fu: 'u?', st: 's?', rr: 'u?', ex: 's?', et: 'u?' },
+  me: { id: 'u', g: 'i', it: 's*', rk: 'u*', pt: 'i', sp: 'n*', ic: 'd1*', cd: 'd1*', cm: 'd1*', xp: 'u', xn: 'n', lv: 'u', s: 'n*', sh: 'u', rd: 'u', ch: 'u', fu: 'u?', vp: 'u?', st: 's?', rr: 'u?', ex: 's?', et: 'u?' },
   hit: { v: 'u', a: 'u', d: 'i', k: 'u', au: 'u', cr: 'u' },
   swing: { id: 'u', v: 'u', r: 'u', w: 'u' },
   pj: { id: 'u', o: 'u', x: 'd1', z: 'd1', dx: 'd2', dz: 'd2', h: 'u', s: 'n', r: 'n', w: 'd2', c: 's', k: 's', sl: 's', wd: 'n' },

@@ -19,6 +19,7 @@ export const ICONS = {
   scope: S('<circle cx="12" cy="12" r="8"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>'),
   sting: S('<path d="M5 19 19 5M14 5h5v5M5 19l2-6 4 4z"/>'),
   heart: S('<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>'),
+  heartsteal: S('<path d="M11 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 16 6.6"/><path d="M13 15l8-8M16 7h5v5"/>'),
   swarm: S('<circle cx="6" cy="8" r="2"/><circle cx="16" cy="6" r="2"/><circle cx="12" cy="14" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="6" cy="18" r="2"/>'),
   skull: S('<path d="M5 11a7 7 0 1 1 14 0v4h-3v4H8v-4H5z"/><circle cx="9" cy="11" r="1.5"/><circle cx="15" cy="11" r="1.5"/>'),
   thorns: S('<path d="M3 12h18M7 12 5 7M11 12l-2-6M15 12l2-6M19 12l2-5M9 12l-2 5M15 12l2 5"/>'),
@@ -319,9 +320,11 @@ export function heroCard(heroId, big = false) {
       return `<div class="hc-ab" title="${esc(ab.desc)}"><span class="hc-key">${keyLabel(s)}</span><span class="hc-icon">${ICONS[ab.icon] || ''}</span><span class="hc-name">${esc(ab.name)}${big ? `<small>${esc(ab.desc)}</small>` : ''}</span></div>`;
     })
     .join('');
+  const p = h.passive;
+  const pas = p ? `<div class="hc-ab hc-pas" title="${esc(p.desc)}"><span class="hc-key"></span><span class="hc-icon">${ICONS[p.icon] || ''}</span><span class="hc-name">${esc(p.name)}<small>${big ? `Passiva. ${esc(p.desc)}` : 'Passiva'}</small></span></div>` : '';
   return `<div class="hero-card${big ? ' big' : ''}" style="--c:${h.color}">
     <div class="hc-top"><div class="hc-badge">${h.name[0]}</div><div><div class="hc-title">${h.name}</div><div class="hc-role">${h.title} · ${h.ranged ? 'à distância' : 'corpo a corpo'}</div></div></div>
-    <div class="hc-abs">${abil}</div>
+    <div class="hc-abs">${abil}${pas}</div>
   </div>`;
 }
 
@@ -348,6 +351,10 @@ export class Hud {
       fury: $('fury-bar'),
       furyFill: $('fury-fill'),
       furyText: $('fury-text'),
+      pas: $('pas-bar'),
+      pasFill: $('pas-fill'),
+      pasText: $('pas-text'),
+      pasTip: $('pas-tip'),
       skills: $('skills'),
       stats: $('stats'),
       items: $('items'),
@@ -451,6 +458,24 @@ export class Hud {
       this.el.fury.classList.toggle('full', full);
       this.el.furyText.textContent = `Fúria ${st.fu}`;
       for (const k of ['q', 'w', 'e']) this.skillEls[k]?.root.classList.toggle('emp', full);
+    }
+    // passiva que conta habilidades (Coração Roubado do Boto): quantas já foram e se a próxima é a marcada
+    const pas = HEROES[me.heroId]?.passive;
+    const hasPas = !!pas?.every && st.vp !== undefined && st.vp !== null;
+    this.el.pas.classList.toggle('hidden', !hasPas);
+    if (hasPas) {
+      const need = pas.every - 1;
+      const full = st.vp >= need;
+      if (this.pasHero !== me.heroId) {
+        this.pasHero = me.heroId;
+        this.el.root.style.setProperty('--pc', pas.color || HEROES[me.heroId].color);
+        this.el.pas.style.setProperty('--seg', `${100 / need}%`);
+        this.el.pasTip.innerHTML = `<b>${esc(pas.name)}</b><span>${esc(pas.desc)}</span><small>Passiva</small>`;
+      }
+      this.el.pasFill.style.width = `${(Math.min(st.vp, need) / need) * 100}%`;
+      this.el.pas.classList.toggle('full', full);
+      this.el.pasText.textContent = full ? `${pas.name}: a próxima rouba vida` : `${pas.name} ${st.vp}/${need}`;
+      for (const k of ['q', 'w', 'e', 'r']) this.skillEls[k]?.root.classList.toggle('vamp', full);
     }
     this.el.lvl.textContent = st.lv;
     this.el.xp.style.height = `${st.lv >= 18 ? 100 : (st.xp / st.xn) * 100}%`;
