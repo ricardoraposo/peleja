@@ -14,6 +14,7 @@ import {
   CRIT_MULT,
   PEN_MAX,
   AMOVE_PICK,
+  FOCUS_GUARD,
   ATTACK_SLACK,
   WASD_KITE,
   itemPrice,
@@ -35,7 +36,7 @@ import { OBSTACLES, PACKS, baseX, bushAt, cannonPos, clampWalk, fountainX, inBas
 
 export const KIND = { hero: 0, melee: 1, ranged: 2, siege: 3, super: 4, tower: 5, selo: 6, core: 7 };
 export const KIND_NAMES = Object.keys(KIND);
-export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576, fly: 2097152, hidden: 4194304 };
+export const F = { alive: 1, stun: 2, root: 4, slow: 8, air: 16, dash: 32, attack: 64, invuln: 128, move: 256, cast: 512, buff: 1024, aura: 2048, stasis: 4096, fear: 8192, big: 16384, fury: 32768, burn: 65536, charm: 131072, orbs: 262144, sleep: 524288, recall: 1048576, fly: 2097152, hidden: 4194304, guard: 8388608 };
 export const DMG_TYPE = { phys: 0, magic: 1, true: 2 };
 
 const STRUCTURE = new Set(['tower', 'selo', 'core']);
@@ -1561,6 +1562,7 @@ queueBolts(h, ab, slot, color) {
     const pen = type === 'phys' ? src?.stats?.apen : type === 'magic' ? src?.stats?.mpen : 0;
     if (pen > 0) res *= 1 - pen;
     amount *= 100 / (100 + Math.max(0, res));
+    if (t.isHero) amount *= 1 - this.focusGuard(t, src);
     let left = amount;
     for (const sh of t.shields) {
       const a = Math.min(sh.amt, left);
@@ -1591,6 +1593,14 @@ queueBolts(h, ab, slot, color) {
     if (vamp > 0 && !t.isStructure) this.heal(src, amount * vamp, src);
     if (t.hp <= 0) this.kill(t, src);
     return amount;
+  }
+
+  // quanto o tanque ou lutador deixa de levar por estar apanhando de vários heróis ao mesmo tempo (0 a FOCUS_GUARD.max)
+  focusGuard(t, src = null) {
+    if (!FOCUS_GUARD.roles.includes(t.def.role)) return 0;
+    let n = src?.isHero && src.team !== t.team ? 1 : 0;
+    for (const [id, time] of t.damagers) if (id !== src?.id && this.time - time <= FOCUS_GUARD.window) n++;
+    return Math.min(FOCUS_GUARD.max, FOCUS_GUARD.per * Math.max(0, n - 1));
   }
 
   heal(t, amt, src, silent = false) {
@@ -2976,6 +2986,7 @@ queueBolts(h, ab, slot, color) {
     if (u.charmT > 0) f |= F.charm;
     if (u.sleepT > 0) f |= F.sleep;
     if (u.recallT > 0) f |= F.recall;
+    if (u.isHero && u.alive && this.focusGuard(u) > 0) f |= F.guard;
     if (u.fly) f |= F.fly;
     if (u.hidden) f |= F.hidden;
     if (u.bolts) f |= F.orbs;

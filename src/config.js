@@ -555,6 +555,9 @@ export const ATTACK_SLACK = 1.4;
 export const WASD_KITE = { per: 0.05, max: 0.1, caster: 0.5 };
 // A + clique: sem inimigo ao alcance, mira o mais perto do clique até esta distância dele (senão anda e ataca o que aparecer)
 export const AMOVE_PICK = 2.5;
+// Resistência a foco: tanque e lutador levam menos dano quanto mais heróis inimigos bateram neles nos últimos `window`
+// segundos: `per` a menos por herói além do primeiro, até `max`. Sozinho contra ele nada muda; em bando, ele aguenta
+export const FOCUS_GUARD = { roles: ['tanque', 'lutador'], window: 3, per: 0.15, max: 0.45 };
 
 // Afinidade: cada classe aproveita melhor certos atributos. Itens rendem +20% nesses atributos.
 export const AFFINITY_BONUS = 0.2;
@@ -562,7 +565,7 @@ export const AFFINITY = {
   atirador: ['crit', 'atk'],
   assassino: ['atk', 'crit', 'haste'],
   lutador: ['atk', 'hp'],
-  tanque: ['hp', 'armor', 'mres'],
+  tanque: ['hp', 'haste'],
   mago: ['pow', 'haste'],
   suporte: ['haste', 'hp'],
 };

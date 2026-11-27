@@ -101,6 +101,24 @@ export class Overlay {
         c.strokeText(name, p[0] + 10, y - 10);
         c.fillStyle = rel === 'enemy' ? '#ffd0d6' : rel === 'me' ? '#fff3c4' : '#d6ebff';
         c.fillText(name, p[0] + 10, y - 10);
+        // resistência a foco ligada: escudinho de pedra do lado da barra
+        if (u.flags & F.guard) {
+          const sx = x + w + 9;
+          const sy = y + 5;
+          c.fillStyle = '#f59e0b';
+          c.strokeStyle = 'rgba(0,0,0,0.75)';
+          c.lineWidth = 2;
+          c.beginPath();
+          c.moveTo(sx, sy - 8);
+          c.lineTo(sx + 7, sy - 5);
+          c.lineTo(sx + 6, sy + 3);
+          c.lineTo(sx, sy + 8);
+          c.lineTo(sx - 6, sy + 3);
+          c.lineTo(sx - 7, sy - 5);
+          c.closePath();
+          c.stroke();
+          c.fill();
+        }
         if (u.flags & F.stasis) {
           c.font = '700 11px Rubik, sans-serif';
           c.fillStyle = '#e8c170';

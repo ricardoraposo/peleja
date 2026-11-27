@@ -21,6 +21,7 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **Moitas**: seis touceiras de capim nas bordas da ponte, três de cada lado. Herói dentro some pro time inimigo e o próprio time vê ele meio transparente. Quem entra na mesma moita (herói ou tropa) enxerga quem está lá. Atacar ou usar habilidade revela por 1 segundo. Ninguém clica em quem não vê, mas disparo e área acertam normal.
 - **Ouro**: abate vale 400, torre derrubada 300 pra cada herói do time, e o ouro que pinga sozinho é pouco (3 por segundo). Quem ganha as brigas fecha a build antes.
 - **Assistência**: quem bateu no herói nos últimos 15 segundos, ou curou, deu escudo ou bônus em quem bateu, ganha assistência. As assistências dividem 75% do ouro do abate, cada uma com pelo menos 100.
+- **Aguenta foco**: tanque e lutador levam 15% menos dano por herói inimigo além do primeiro que bateu neles nos últimos 3 segundos, até 45%. Sozinho contra eles nada muda; quando o time inteiro cai em cima, eles duram o bastante pra agir. Um escudinho laranja do lado da barra de vida mostra quando está valendo.
 - **Morto**: as recargas de habilidades, feitiços e itens continuam correndo enquanto o herói espera pra renascer.
 - **Abates seguidos**: matar de novo em até 10 segundos anuncia **Double kill** (+150 de ouro), **Triple kill** (+300) e **Quadra kill** (+450); o quinto, em até 30 segundos depois do quarto, é **Pentakill** (+600).
 - **Time inteiro no chão**: as tropas do time que derrubou todo mundo ficam 50% mais fortes por 60 segundos.

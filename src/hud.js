@@ -1,4 +1,4 @@
-import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, ELIXIRS, ELIXIR_ORDER, ELIXIR_SLOTS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
+import { SPELL_ORDER, SPELL_POOL, HERO_ORDER, HEROES, ITEM_ORDER, ITEMS, ELIXIRS, ELIXIR_ORDER, ELIXIR_SLOTS, MAP, SLOTS, STAT_LABEL, TEAMS, abilityOf, HERO_BUILDS, RANK_MAX, RANK_SLOTS, ULT_LEVELS, canRankUp, AFFINITY_BONUS, FOCUS_GUARD, STAT_PCT, affinityOf, itemPrice, itemStatsFor, itemTier, missingBasics, nextBuy, effectiveLevel } from './config.js';
 import { OBSTACLES } from './geo.js';
 import { ITEM_ICONS } from './itemicons.js';
 
@@ -705,6 +705,7 @@ export class Hud {
     $('shop-rec').innerHTML =
       `<p class="rec-why"><b style="color:${h.color}">${esc(h.name)}</b> · Três jeitos de montar. Clique no nome de uma build pra loja seguir ela.</p>` +
       `<p class="rec-aff"><b>★ Afinidade:</b> itens rendem +${Math.round(AFFINITY_BONUS * 100)}% de ${aff.map((k) => esc(STAT_LABEL[k].split(' (')[0])).join(', ')} em você.</p>` +
+      (FOCUS_GUARD.roles.includes(h.role) ? `<p class="rec-aff"><b>⛨ Aguenta foco:</b> leva ${Math.round(FOCUS_GUARD.per * 100)}% menos dano por herói inimigo além do primeiro que te acertou nos últimos ${FOCUS_GUARD.window} s, até ${Math.round(FOCUS_GUARD.max * 100)}% (o escudinho do lado da barra).</p>` : '') +
       `<h3>Comece por</h3><div class="tiles">${start.map((id) => this.shopTile(id)).join('')}</div>` +
       builds
         .map(
