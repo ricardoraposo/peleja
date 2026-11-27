@@ -1721,6 +1721,8 @@ queueBolts(h, ab, slot, color) {
     t.fly = null;
     t.bolts = null;
     if (t.charge) this.endCharges(t);
+    // morreu esperando o segundo uso: a recarga entra como se a janela tivesse acabado
+    if (t.recast) t.cds[t.recast.slot] = Math.max(t.cds[t.recast.slot], t.recast.cd);
     this.endStasis(t);
     this.clearHeroState(t);
     t.disp = null;
@@ -1838,6 +1840,8 @@ queueBolts(h, ab, slot, color) {
     this.updatePacks(dt);
     for (const u of this.units) {
       if (u.alive) this.tickStatus(u, dt);
+      // morto, as recargas de habilidade, feitiço e item continuam correndo
+      else if (u.isHero) this.tickCooldowns(u, dt);
     }
     // alterna a ordem a cada passo pra nenhum time levar vantagem por ser processado depois
     this.flip = !this.flip;
@@ -1912,6 +1916,11 @@ queueBolts(h, ab, slot, color) {
   // o time `team` enxerga a unidade `u`?
   visibleTo(team, u) {
     return u.team === team || !u.hidden;
+  }
+
+  tickCooldowns(h, dt) {
+    for (const s of SLOTS) if (h.cds[s] > 0) h.cds[s] = Math.max(0, h.cds[s] - dt);
+    for (const id in h.itemCd) if (h.itemCd[id] > 0) h.itemCd[id] = Math.max(0, h.itemCd[id] - dt);
   }
 
   tickStatus(u, dt) {
@@ -2013,7 +2022,6 @@ queueBolts(h, ab, slot, color) {
       u.elixir = null;
       this.calcStats(u);
     }
-    if (u.itemCd) for (const id in u.itemCd) if (u.itemCd[id] > 0) u.itemCd[id] = Math.max(0, u.itemCd[id] - dt);
     if (u.disp) {
       u.x += u.disp.vx * dt;
       u.z += u.disp.vz * dt;
@@ -2055,7 +2063,7 @@ queueBolts(h, ab, slot, color) {
       if (u.buffs.length !== n) changed = true;
     }
     if (u.isHero) {
-      for (const s of SLOTS) if (u.cds[s] > 0) u.cds[s] = Math.max(0, u.cds[s] - dt);
+      this.tickCooldowns(u, dt);
       this.calcStats(u);
     } else if (changed && u.isMinion) {
       let slow = 0;
