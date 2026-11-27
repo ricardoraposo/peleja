@@ -1282,6 +1282,10 @@ em.use {
   margin-top: 10px;
 }
 
+#gfx-note {
+  margin: -4px 0 12px;
+}
+
 .ghost.wide {
   width: 100%;
   margin-top: 8px;

@@ -204,7 +204,7 @@
               <div class="join-row"><input id="room-code" maxlength="4" placeholder="CÓDIGO" autocomplete="off" spellcheck="false" /><button id="room-join" class="ghost">Entrar na sala</button></div>
               <small>Crie uma sala e mande o link pros amigos, ou entre com o código de uma sala que já existe.</small>
             </div>
-            <button id="open-settings" class="ghost wide">Configurações: som, controles e atalhos</button>
+            <button id="open-settings" class="ghost wide">Configurações: som, controles, gráficos e atalhos</button>
             <button id="play-sandbox" class="ghost sandbox hidden">Treino livre: teste heróis, itens e mecânicas sem partida</button>
             <div id="net-msg" class="net-msg hidden"></div>
             <div class="roster-title">Heróis</div>
@@ -274,6 +274,22 @@
         </div>
 
         <h3>Gráficos</h3>
+        <label class="field"><span>Resolução do jogo <b id="res-val">100</b>%</span><input type="range" id="res" min="0.5" max="1" step="0.05" value="1" /></label>
+        <div class="row2">
+          <div class="field">
+            <span>Sombras</span>
+            <div class="seg" id="shadows">
+              <button data-v="0">Sem</button><button data-v="1">Simples</button><button data-v="2" class="on">Suaves</button>
+            </div>
+          </div>
+          <div class="field">
+            <span>Suavizar bordas</span>
+            <div class="seg" id="aa">
+              <button data-v="0">Não</button><button data-v="1" class="on">Sim</button>
+            </div>
+          </div>
+        </div>
+        <small class="set-note" id="gfx-note"></small>
         <div class="field">
           <span>Mostrar desempenho</span>
           <div class="seg" id="perf-show">

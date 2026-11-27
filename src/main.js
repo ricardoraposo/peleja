@@ -42,6 +42,10 @@ const settings = {
   input: stored.input === 'wasd' ? 'wasd' : 'click',
   keys: cleanKeys(stored.keys),
   wasdKeys: cleanKeys(stored.wasdKeys, 'wasd'),
+  // gráficos: fração da resolução da tela, sombras (0 sem, 1 simples, 2 suaves) e suavizar bordas
+  res: Math.max(0.5, Math.min(1, Number(stored.res) || 1)),
+  shadows: [0, 1, 2].includes(stored.shadows) ? stored.shadows : 2,
+  aa: stored.aa === 0 ? 0 : 1,
   // medidor de desempenho no canto da partida
   perf: stored.perf ? 1 : 0,
   // último herói escolhido: já vem marcado na próxima partida
@@ -51,7 +55,8 @@ const settings = {
 };
 setVolume(settings.volume);
 
-const game = new Game($('game'), $('overlay'));
+const game = new Game($('game'), $('overlay'), { antialias: !!settings.aa });
+game.setGraphics(settings);
 window.__peleja = game;
 game.grab.mode = settings.mouse;
 game.castMode = settings.cast;
@@ -361,6 +366,8 @@ seg('size', 'size', Number);
 seg('grab', 'mouse', Number);
 seg('cast', 'cast');
 seg('camlock', 'camLock', Number);
+seg('shadows', 'shadows', Number);
+seg('aa', 'aa', Number);
 seg('perf-show', 'perf', Number);
 
 // ---------- configurações ----------
@@ -427,6 +434,12 @@ function renderSettings() {
   $('input-desc').textContent = INPUT_DESC[settings.input];
   for (const b of $('input').querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === settings.input);
   for (const b of $('camlock').querySelectorAll('button')) b.classList.toggle('on', Number(b.dataset.v) === settings.camLock);
+  $('res').value = settings.res;
+  $('res-val').textContent = Math.round(settings.res * 100);
+  $('gfx-note').textContent =
+    !!settings.aa !== game.antialias
+      ? 'Suavizar bordas só muda depois de recarregar a página.'
+      : 'Jogo pesado? Baixe a resolução e tire as sombras primeiro: é o que mais alivia a placa de vídeo.';
   const keys = keysOf();
   const wait = settings.input === 'wasd' ? 'Aperte uma tecla ou botão…' : 'Aperte uma tecla…';
   $('binds').innerHTML = actionsOf(settings.input).map(([id, label]) => `<div class="bind"><span>${label}</span><button data-bind="${id}" class="${binding === id ? 'on' : ''}">${binding === id ? wait : esc(keyName(keys[id]))}</button></div>`).join('');
@@ -441,6 +454,7 @@ function applySettings() {
   game.castMode = settings.cast;
   game.camSpeed = settings.camSpeed;
   game.setInput(settings.input, keysOf());
+  game.setGraphics(settings);
   save(settings);
   renderSettings();
   renderHelp();
@@ -459,7 +473,7 @@ $('set-close').addEventListener('click', () => openSettings(false));
 $('settings').addEventListener('mousedown', (e) => {
   if (e.target === $('settings')) openSettings(false);
 });
-for (const id of ['grab', 'cast']) $(id).addEventListener('click', applySettings);
+for (const id of ['grab', 'cast', 'shadows', 'aa']) $(id).addEventListener('click', applySettings);
 for (const b of $('input').querySelectorAll('button')) {
   b.addEventListener('click', () => {
     if (settings.input === b.dataset.v) return;
@@ -480,6 +494,10 @@ $('camlock').addEventListener('click', () => (game.cam.locked = !!settings.camLo
 $('perf-show').addEventListener('click', () => game.perf.show(!!settings.perf));
 $('camspeed').addEventListener('input', (e) => {
   settings.camSpeed = Number(e.target.value);
+  applySettings();
+});
+$('res').addEventListener('input', (e) => {
+  settings.res = Number(e.target.value);
   applySettings();
 });
 $('binds').addEventListener('click', (e) => {

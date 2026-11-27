@@ -33,10 +33,12 @@ function lerpAngle(a, b, t) {
 }
 
 export class Game {
-  constructor(canvas, overlayCanvas) {
+  // `antialias` só vale na criação do contexto: trocar em Configurações pede recarregar a página
+  constructor(canvas, overlayCanvas, { antialias = true } = {}) {
     this.canvas = canvas;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.antialias = antialias;
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias, powerPreference: 'high-performance' });
+    this.resScale = 1;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -178,10 +180,35 @@ export class Game {
   resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    // resolução do jogo (Configurações): fração dos pixels da tela, até o dobro em tela de alta densidade
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * this.resScale);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.overlay.resize(w, h);
+  }
+
+  // qualidade gráfica (Configurações): fração da resolução e sombras (0 sem, 1 simples, 2 suaves)
+  setGraphics({ res = 1, shadows = 2 }) {
+    if (res !== this.resScale) {
+      this.resScale = res;
+      this.resize();
+    }
+    const r = this.renderer;
+    const on = shadows > 0;
+    const type = shadows === 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    const size = shadows === 2 ? 2048 : 1024;
+    if (r.shadowMap.enabled === on && r.shadowMap.type === type && this.sun.shadow.mapSize.x === size) return;
+    r.shadowMap.enabled = on;
+    r.shadowMap.type = type;
+    this.sun.castShadow = on;
+    this.sun.shadow.mapSize.set(size, size);
+    this.sun.shadow.map?.dispose();
+    this.sun.shadow.map = null;
+    // o tipo de sombra entra no shader: o que já foi desenhado precisa recompilar
+    this.scene.traverse((o) => {
+      if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true;
+    });
   }
 
   // ---------- conexão ----------

@@ -109,6 +109,8 @@ Cada herói tem **afinidade** com certos atributos (rendem 20% a mais nele). Em 
 
 Todos os atalhos podem ser trocados em **Configurações**. Lá também dá pra escolher **como andar**: com o botão direito (padrão) ou com **WASD**, do jeito do LoL.
 
+Jogo pesado? Em **Configurações › Gráficos** dá pra baixar a resolução, simplificar ou tirar as sombras, desligar a suavização das bordas e ligar o medidor de desempenho (FPS, tempo de cada parte do quadro e placa de vídeo).
+
 ### Andando com o botão direito
 
 | Tecla | Ação |
