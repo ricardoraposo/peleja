@@ -38,6 +38,8 @@ export class Game {
     this.canvas = canvas;
     this.antialias = antialias;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias, powerPreference: 'high-performance' });
+    // o Three zera a contagem depois da passada de sombra; zerando aqui o medidor conta as duas
+    this.renderer.info.autoReset = false;
     this.resScale = 1;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1534,6 +1536,7 @@ export class Game {
     const t1 = performance.now();
     this.update(dt);
     const t2 = performance.now();
+    this.renderer.info.reset();
     this.renderer.render(this.scene, this.camera);
     this.perf.sample(now, t1 - t0, t2 - t1, performance.now() - t2);
     requestAnimationFrame(this.frame);
