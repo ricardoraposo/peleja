@@ -13,6 +13,7 @@ import {
   SLOTS,
   CRIT_MULT,
   PEN_MAX,
+  AMOVE_PICK,
   ATTACK_SLACK,
   WASD_KITE,
   itemPrice,
@@ -841,12 +842,35 @@ export class Sim {
     this.moveToward(h, x, z, dt);
   }
 
+  // A + clique: ataca o inimigo mais perto do clique entre os que já estão ao alcance; sem nenhum, o mais perto do
+  // clique ao redor dele; sem nenhum, anda até lá atacando o que aparecer. Repetir no mesmo alvo não perde o golpe
   orderAmove(h, x, z, heroesOnly = false) {
     if (!this.canAct(h) || !Number.isFinite(x) || !Number.isFinite(z)) return;
     const [cx, cz] = clampWalk(x, z, h.r);
-    h.order = { type: 'amove', x: cx, z: cz, heroes: !!heroesOnly };
-    h.target = null;
-    h.windup = 0;
+    const t = this.amovePick(h, x, z, heroesOnly);
+    if (t !== h.target) h.windup = 0;
+    h.order = { type: 'amove', x: cx, z: cz, heroes: !!heroesOnly, pick: t };
+    h.target = t;
+  }
+
+  amovePick(h, x, z, heroesOnly) {
+    let near = null;
+    let nearD = Infinity;
+    let around = null;
+    let aroundD = AMOVE_PICK;
+    for (const u of this.units) {
+      if (!this.attackable(h, u) || (heroesOnly && !u.isHero)) continue;
+      const d = Math.hypot(u.x - x, u.z - z) - u.r;
+      if (this.inAttackRange(h, u, 0.3) && d < nearD) {
+        nearD = d;
+        near = u;
+      }
+      if (d < aroundD) {
+        aroundD = d;
+        around = u;
+      }
+    }
+    return near || around;
   }
 
   // voltar pra base: fica parado canalizando e, se nada interromper, reaparece na fonte
@@ -2268,7 +2292,9 @@ queueBolts(h, ab, slot, color) {
         break;
       }
       case 'amove': {
-        if (!this.attackable(h, h.target) || edgeDist(h, h.target) > 9 || (o.heroes && !h.target.isHero)) h.target = this.nearestEnemy(h, 7.5, !o.heroes, o.heroes);
+        // o alvo escolhido no clique é seguido como no clique direito; o que apareceu no caminho, só até 9 passos
+        const keep = this.attackable(h, h.target) && (h.target === o.pick || edgeDist(h, h.target) <= 9) && (!o.heroes || h.target.isHero);
+        if (!keep) h.target = this.nearestEnemy(h, 7.5, !o.heroes, o.heroes);
         if (h.target) this.engage(h, h.target, dt);
         else if (!this.moveToward(h, o.x, o.z, dt)) h.order = { type: 'idle' };
         break;

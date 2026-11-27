@@ -123,7 +123,7 @@ Jogo pesado? Em **Configurações › Gráficos** dá pra baixar a resolução, 
 | `C` + habilidade | Só mostra o alcance: o clique esquerdo lança e o direito cancela, seja qual for o modo de lançamento |
 | `D` `F` | Feitiços |
 | `1` a `6` | Usa os itens do inventário |
-| `A` + clique | Avança atacando o que aparecer (com `Shift`, só heróis) |
+| `A` + clique | Ataca o inimigo mais perto do clique entre os que já estão ao alcance (sem nenhum, o mais perto do clique); no chão vazio, avança atacando o que aparecer. Repetir o `A` no mesmo alvo não perde o golpe (com `Shift`, só heróis) |
 | `S` | Parar |
 | `B` | Voltar pra base |
 | `V` | Ping de dúvida (?) onde está o mouse, ou no ponto do minimapa sob ele. Só o seu time vê e ouve (até 3 a cada 5 s) |

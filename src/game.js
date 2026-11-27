@@ -1429,7 +1429,8 @@ export class Game {
       const k = Math.max(0, Math.min(1, ((mx - ax) * ex + (my - ay) * ey) / (ex * ex + ey * ey || 1)));
       const d = Math.hypot(mx - (ax + ex * k), my - (ay + ey * k));
       const enemy = u.team !== this.myTeam;
-      const lim = rad * ppu + (enemy ? (hero ? 18 : 11) : 2);
+      // folga em volta do boneco: generosa no herói inimigo, curta na tropa, pra clicar no chão no meio da onda andar em vez de atacar
+      const lim = rad * ppu + (enemy ? (hero ? 18 : struct ? 8 : 4) : 2);
       if (d > lim) continue;
       let score = d / lim;
       if (!enemy) score += 3;
