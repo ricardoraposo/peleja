@@ -852,6 +852,16 @@ export class Sim {
     h.recallT = MAP.recall;
   }
 
+  // ping de dúvida: marca um ponto no mapa que só o próprio time recebe, com limite pra não virar spam
+  ping(h, x, z) {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return;
+    h.pings = (h.pings || []).filter((t) => this.time - t < MATCH.pingPer);
+    if (h.pings.length >= MATCH.pingMax) return;
+    h.pings.push(this.time);
+    const lim = MAP.laneHalf + 36;
+    this.emit({ e: 'ping', x: r1(Math.max(-lim, Math.min(lim, x))), z: r1(Math.max(-lim, Math.min(lim, z))), o: h.id }, { team: h.team });
+  }
+
   orderStop(h) {
     if (!this.canAct(h)) return;
     // parar enquanto escolhe a queda é desistir do canhão
@@ -2852,6 +2862,9 @@ queueBolts(h, ab, slot, color) {
         break;
       case 'rc':
         this.recall(h);
+        break;
+      case 'pg':
+        this.ping(h, x, z);
         break;
       case 'cn':
         this.aimCannon(h, x, z);

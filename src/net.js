@@ -22,6 +22,7 @@ export class LocalTransport {
 
   route(msg, opts) {
     if (opts?.to && (!this.me || opts.to !== this.me.id)) return;
+    if (opts?.team !== undefined && (!this.me || this.me.team !== opts.team)) return;
     this.queue.push(msg);
   }
 

@@ -35,6 +35,29 @@ function shared(color, opacity = 1, additive = false) {
   return m;
 }
 
+// o ? do ping, desenhado uma vez num canvas e reaproveitado
+let PING_TEX = null;
+function questionTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  c.fillStyle = 'rgba(20,16,4,0.75)';
+  c.beginPath();
+  c.arc(64, 64, 54, 0, Math.PI * 2);
+  c.fill();
+  c.lineWidth = 8;
+  c.strokeStyle = '#facc15';
+  c.stroke();
+  c.font = 'bold 84px sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillStyle = '#fde047';
+  c.fillText('?', 64, 70);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function flat(mesh, y = 0.06) {
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = y;
@@ -1304,6 +1327,31 @@ export class Effects {
       ring.scale.setScalar(0.25 + k * 0.6);
       ring.material.opacity = k;
     });
+  }
+
+  // ping de dúvida: um ? amarelo que cai do alto e balança em cima de um anel pulsando no chão
+  ping(x, z) {
+    PING_TEX ||= questionTexture();
+    const life = 2.6;
+    const mark = new THREE.Sprite(new THREE.SpriteMaterial({ map: PING_TEX, transparent: true, depthTest: false }));
+    mark.renderOrder = 10;
+    mark.scale.setScalar(2.2);
+    mark.position.set(x, 3, z);
+    this.temp(mark, life, (k) => {
+      const age = (1 - k) * life;
+      mark.position.y = 2.6 + Math.max(0, 1.6 - age * 8) + Math.sin(age * 6) * 0.15;
+      mark.material.opacity = Math.min(1, k * 4);
+    });
+    for (let i = 0; i < 3; i++) {
+      const ring = flat(new THREE.Mesh(RING, basic('#facc15', 0.9, true)), 0.1);
+      ring.position.set(x, 0.1, z);
+      const t0 = i * 0.35;
+      this.temp(ring, life, (k) => {
+        const p = Math.max(0, ((1 - k) * life - t0) % 1);
+        ring.scale.setScalar(0.4 + p * 1.8);
+        ring.material.opacity = (1 - p) * Math.min(1, k * 4) * ((1 - k) * life > t0 ? 0.9 : 0);
+      });
+    }
   }
 
   // ---------- indicadores de mira do jogador ----------

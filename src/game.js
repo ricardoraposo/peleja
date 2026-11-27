@@ -15,6 +15,8 @@ import { F, KIND_NAMES } from './sim.js';
 const STEP = 1 / 30;
 // altura da câmera enquanto o herói está no canhão (a roda do mouse vai de 18 a 40)
 const CANNON_ZOOM = 62;
+// segundos que o ping de dúvida fica no minimapa
+const PING_LIFE = 4;
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _ray = new THREE.Raycaster();
 const _v = new THREE.Vector3();
@@ -62,6 +64,7 @@ export class Game {
     this.effects = new Effects(this.scene);
     this.overlay = new Overlay(overlayCanvas);
     this.hud = new Hud(this);
+    this.pings = [];
 
     this.packs = PACKS.map((p) => {
       const m = packModel();
@@ -399,6 +402,12 @@ export class Game {
           if (st.el === 'wind') playSound('gust', u, 0.7);
           else if (st.el === 'thorn') playSound('bash', u, 0.6);
         }
+        break;
+      }
+      case 'ping': {
+        this.effects.ping(m.x, m.z);
+        this.pings.push({ x: m.x, z: m.z, t: PING_LIFE });
+        playSound('ping');
         break;
       }
       case 'laser': {
@@ -1171,6 +1180,15 @@ export class Game {
         if (this.playing) this.send({ t: 'rc' });
         this.targetId = 0;
         break;
+      case 'ping': {
+        if (!this.playing) break;
+        // com o mouse em cima do minimapa, o ping cai no ponto do mapa que ele aponta
+        const mm = this.hud.el.minimap.getBoundingClientRect();
+        const onMap = this.mouse.x >= mm.left && this.mouse.x <= mm.right && this.mouse.y >= mm.top && this.mouse.y <= mm.bottom;
+        const [x, z] = onMap ? this.hud.minimapToWorld(((this.mouse.x - mm.left) / mm.width) * this.hud.el.minimap.width, ((this.mouse.y - mm.top) / mm.height) * this.hud.el.minimap.height) : [this.mouse.wx, this.mouse.wz];
+        this.send({ t: 'pg', x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
+        break;
+      }
       case 'shop':
         this.toggleShop();
         break;
@@ -1490,6 +1508,7 @@ export class Game {
   update(dt) {
     const rt = this.renderTime();
     const visDt = this.paused && !this.online ? 0 : dt;
+    this.pings = this.pings.filter((p) => (p.t -= dt) > 0);
     for (const u of [...this.units.values()]) {
       this.interpolate(u, rt);
       if (u.kind === 'hero' && u.gone) {

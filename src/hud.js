@@ -990,6 +990,23 @@ export class Hud {
       c.strokeStyle = u.id === g.myId ? '#f4c430' : u.team === mine ? '#4aa3ff' : '#f43f5e';
       c.stroke();
     }
+    // ping de dúvida do time: anel pulsando e um ? amarelo
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = 'bold 11px sans-serif';
+    for (const p of g.pings) {
+      const k = (p.t * 2) % 1;
+      c.strokeStyle = `rgba(250,204,21,${k})`;
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.arc(X(p.x), Z(p.z), 4 + (1 - k) * 8, 0, Math.PI * 2);
+      c.stroke();
+      c.fillStyle = '#facc15';
+      c.strokeStyle = 'rgba(0,0,0,0.8)';
+      c.lineWidth = 3;
+      c.strokeText('?', X(p.x), Z(p.z));
+      c.fillText('?', X(p.x), Z(p.z));
+    }
     const view = g.viewPolygon();
     if (view) {
       c.strokeStyle = 'rgba(255,255,255,0.8)';

@@ -124,6 +124,7 @@ Todos os atalhos podem ser trocados em **Configurações**. Lá também dá pra 
 | `A` + clique | Avança atacando o que aparecer (com `Shift`, só heróis) |
 | `S` | Parar |
 | `B` | Voltar pra base |
+| `V` | Ping de dúvida (?) onde está o mouse, ou no ponto do minimapa sob ele. Só o seu time vê e ouve (até 3 a cada 5 s) |
 | `P` | Loja |
 | `Espaço` | Centraliza a câmera no herói |
 | `Y` | Prende ou solta a câmera |
@@ -145,7 +146,7 @@ As teclas andam e o mouse continua mirando. O WASD tem atalhos próprios, separa
 | `H` | Parar |
 | Botão do meio (segurar) | A câmera espia longe pro lado do mouse |
 
-As demais (`C`, `1` a `6`, `B`, `P`, `Espaço`, `Y`, `Tab`, `Esc`) são iguais. Ligar o WASD prende a câmera no herói. Presa, ela espia um pouco pro lado do mouse.
+As demais (`C`, `1` a `6`, `B`, `V`, `P`, `Espaço`, `Y`, `Tab`, `Esc`) são iguais. Ligar o WASD prende a câmera no herói. Presa, ela espia um pouco pro lado do mouse.
 
 Andar não cancela um ataque que já começou. Com uma tecla de andar segurada, quem manda no caminho são as teclas, e o clique de ataque vira um golpe só. Ele sai quando o alvo está ao alcance e a recarga acabou; até lá fica guardado enquanto o herói anda, e depois dele o herói volta a seguir as teclas. Segurando o botão esquerdo, o atirador bate sempre que der sem parar de andar. Pra kitar não ficar mais fácil que no botão direito, herói de distância que segura as teclas na hora do golpe espera um pouco mais por ele. A espera cresce com a velocidade de ataque, é menor pra quem não é atirador, e corpo a corpo não espera.
 

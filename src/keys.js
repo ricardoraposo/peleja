@@ -25,6 +25,7 @@ export const ACTIONS = [
   ['stop', 'Parar', 'KeyS', 'KeyH'],
   ['shop', 'Abrir a loja', 'KeyP', 'KeyP'],
   ['recall', 'Voltar pra base', 'KeyB', 'KeyB'],
+  ['ping', 'Ping de dúvida (?) no mouse, só o time vê', 'KeyV', 'KeyV'],
   ['cam', 'Prender ou soltar a câmera', 'KeyY', 'KeyY'],
   ['center', 'Centralizar no herói (segurar)', 'Space', 'Space'],
   ['peek', 'Espiar longe com a câmera (segurar)', null, 'MouseMiddle'],

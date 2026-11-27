@@ -170,6 +170,11 @@ export function playSound(name, pos = null, gain = 1) {
       tone(d, t, 0.18, 2000, 400, 'sine', 0.25);
       tone(d, t + 0.05, 0.2, 400, 2400, 'sine', 0.15);
       break;
+    case 'ping':
+      // duas notas subindo, como quem pergunta
+      tone(d, t, 0.12, 740, 740, 'triangle', 0.2);
+      tone(d, t + 0.11, 0.2, 990, 1180, 'triangle', 0.2);
+      break;
     case 'level':
       [660, 880, 1320].forEach((f, i) => tone(d, t + i * 0.07, 0.25, f, f, 'triangle', 0.18));
       break;

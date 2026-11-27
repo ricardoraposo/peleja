@@ -135,6 +135,7 @@ class Room {
     for (const m of this.members) {
       if (!m.hero) continue;
       if (opts?.to && m.hero.id !== opts.to) continue;
+      if (opts?.team !== undefined && m.hero.team !== opts.team) continue;
       m.queue.push(out);
     }
   }

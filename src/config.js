@@ -69,6 +69,9 @@ export const MATCH = {
   assistShare: 0.75,
   assistMin: 100,
   firstBloodGold: 100,
+  // ping de dúvida (tecla V): no máximo pingMax a cada pingPer segundos por jogador
+  pingMax: 3,
+  pingPer: 5,
   // abates seguidos contam como multi-abate se cada um vier até multiWindow segundos depois do outro (o quinto tem pentaWindow)
   multiWindow: 10,
   pentaWindow: 30,
