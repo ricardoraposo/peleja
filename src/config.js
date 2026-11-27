@@ -392,7 +392,7 @@ export const HEROES = {
     abilities: {
       q: { name: 'Pérola do Rio', icon: 'pearl', kind: 'proj', cd: 7, cast: 0.2, range: 11, speed: 24, width: 1.1, pierce: true, back: { speed: 30, type: 'true' }, dmg: { b: 36, l: 10, ap: 0.35, type: 'magic' }, color: '#ffc2d1', desc: 'Joga uma pérola que atravessa todo mundo e volta pra sua mão. Na volta, o dano ignora defesas.' },
       w: { name: 'Cardume', icon: 'fish', kind: 'self', cd: 9, cast: 0, buff: { t: 1.5, ms: 0.3 }, bolts: { n: 3, range: 6.5, speed: 20, repeat: 0.3, wait: 2.5, dmg: { b: 30, l: 7, ap: 0.25, type: 'magic' } }, color: '#ff8fab', desc: 'Três peixinhos avançam nos inimigos mais próximos, de preferência heróis. Você acelera por um instante.' },
-      e: { name: 'Galanteio', icon: 'heart', kind: 'proj', cd: 13, cast: 0.2, range: 10, speed: 26, width: 1.0, dmg: { b: 60, l: 16, ap: 0.5, type: 'magic' }, fx: { charm: 1.3 }, color: '#ff5d8f', desc: 'Manda um beijo: o primeiro inimigo fica encantado e anda devagar até você.' },
+      e: { name: 'Galanteio', icon: 'heart', kind: 'proj', cd: 13, cast: 0.2, range: 12, speed: 26, width: 1.0, dmg: { b: 60, l: 16, ap: 0.5, type: 'magic' }, fx: { charm: 1.3 }, color: '#ff5d8f', desc: 'Manda um beijo: o primeiro inimigo fica encantado e anda devagar até você.' },
       r: { name: 'Mergulho', icon: 'dive', kind: 'dash', cd: 75, cast: 0, range: 5.5, speed: 30, charges: { n: 3, t: 10, gap: 0.8 }, bolts: { n: 3, range: 6.5, speed: 24, repeat: 0.4, dmg: { b: 30, l: 6, ap: 0.2, type: 'magic' } }, color: '#ff8fab', desc: 'Mergulha e, ao sair, espirra jatos em até três inimigos próximos. Dá pra usar três vezes em 10 s.' },
     },
   },
