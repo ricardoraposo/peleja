@@ -27,6 +27,7 @@
       <div id="feed"></div>
       <div id="announce"><div class="an-title"></div><div class="an-sub"></div></div>
       <div id="online-tag" class="hidden"></div>
+      <div id="perf" class="hidden"></div>
 
       <div id="dead" class="hidden">
         <div class="dead-title">Você caiu</div>
@@ -270,6 +271,15 @@
             </div>
           </div>
           <label class="field"><span>Velocidade da câmera <b id="camspeed-val">100</b>%</span><input type="range" id="camspeed" min="0.5" max="2" step="0.1" value="1" /></label>
+        </div>
+
+        <h3>Gráficos</h3>
+        <div class="field">
+          <span>Mostrar desempenho</span>
+          <div class="seg" id="perf-show">
+            <button data-v="0" class="on">Não</button><button data-v="1">Sim</button>
+          </div>
+          <small>Mostra no canto da partida os quadros por segundo, o pior quadro, o tempo de CPU de cada parte e a placa de vídeo. Online, também a maior espera entre os pacotes do servidor: o normal é 50 ms, e se ela passar bem do pior quadro a travada vem da conexão.</small>
         </div>
 
         <h3>Atalhos</h3>

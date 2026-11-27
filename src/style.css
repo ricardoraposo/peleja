@@ -265,6 +265,34 @@ kbd {
   letter-spacing: 0.1em;
 }
 
+#perf {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgba(13, 18, 32, 0.72);
+  font: 500 11px/1.4 var(--num);
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+#perf b {
+  font-size: 13px;
+  color: var(--gold);
+}
+
+#perf small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* online, o código da sala fica no canto e o medidor desce */
+#online-tag:not(.hidden) ~ #perf {
+  top: 48px;
+}
+
 #dead {
   position: absolute;
   top: 30%;
@@ -1964,6 +1992,11 @@ input[type='range'] {
   padding: 4px 10px 10px;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+body.perf-on #debug {
+  top: 98px;
+  max-height: calc(100vh - 224px);
 }
 
 #debug.min .dbg-body {

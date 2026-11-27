@@ -78,6 +78,9 @@ export class SocketTransport {
     this.open = false;
     this.closed = false;
     this.snaps = new SnapReader();
+    // maior espera entre dois pacotes do servidor; o medidor de desempenho lê e zera
+    this.gap = 0;
+    this.lastAt = 0;
     this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
     this.ws.addEventListener('open', () => {
@@ -87,6 +90,9 @@ export class SocketTransport {
     });
     this.ws.addEventListener('message', (ev) => {
       if (typeof ev.data === 'string') return;
+      const now = performance.now();
+      if (this.lastAt) this.gap = Math.max(this.gap, now - this.lastAt);
+      this.lastAt = now;
       let list;
       try {
         list = decode(new Uint8Array(ev.data), 'e');

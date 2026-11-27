@@ -42,6 +42,8 @@ const settings = {
   input: stored.input === 'wasd' ? 'wasd' : 'click',
   keys: cleanKeys(stored.keys),
   wasdKeys: cleanKeys(stored.wasdKeys, 'wasd'),
+  // medidor de desempenho no canto da partida
+  perf: stored.perf ? 1 : 0,
   // último herói escolhido: já vem marcado na próxima partida
   hero: HEROES[stored.hero] ? stored.hero : '',
   // feitiços do D e do F: também voltam marcados
@@ -55,6 +57,7 @@ game.grab.mode = settings.mouse;
 game.castMode = settings.cast;
 game.camSpeed = settings.camSpeed;
 game.cam.locked = !!settings.camLock;
+game.perf.show(!!settings.perf);
 // atalhos do esquema escolhido (a troca no menu de configurações mexe neste objeto)
 const keysOf = () => (settings.input === 'wasd' ? settings.wasdKeys : settings.keys);
 setKeyLabel((action) => game.keyLabel(action, true));
@@ -358,6 +361,7 @@ seg('size', 'size', Number);
 seg('grab', 'mouse', Number);
 seg('cast', 'cast');
 seg('camlock', 'camLock', Number);
+seg('perf-show', 'perf', Number);
 
 // ---------- configurações ----------
 
@@ -473,6 +477,7 @@ for (const b of $('input').querySelectorAll('button')) {
 // tela cheia entra por um clique de interface (escolher o modo, dar pronto, começar), nunca pelo botão direito no campo
 for (const id of ['grab', 'ready', 'play', 'again', 'lobby-start', 'resume']) $(id).addEventListener('click', () => game.grab.fullscreen());
 $('camlock').addEventListener('click', () => (game.cam.locked = !!settings.camLock));
+$('perf-show').addEventListener('click', () => game.perf.show(!!settings.perf));
 $('camspeed').addEventListener('input', (e) => {
   settings.camSpeed = Number(e.target.value);
   applySettings();

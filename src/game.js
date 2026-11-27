@@ -10,6 +10,7 @@ import { Hud, esc } from './hud.js';
 import { buildMapView } from './mapview.js';
 import { CannonModel, HeroModel, MinionModel, StructModel, packModel } from './models.js';
 import { Overlay } from './overlay.js';
+import { PerfMeter } from './perf.js';
 import { F, KIND_NAMES } from './sim.js';
 
 const STEP = 1 / 30;
@@ -64,6 +65,7 @@ export class Game {
     this.effects = new Effects(this.scene);
     this.overlay = new Overlay(overlayCanvas);
     this.hud = new Hud(this);
+    this.perf = new PerfMeter(this);
     this.pings = [];
 
     this.packs = PACKS.map((p) => {
@@ -1499,9 +1501,14 @@ export class Game {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     this.time += dt;
+    // o medidor de desempenho separa o tempo da simulação local, da cena e do desenho
+    const t0 = performance.now();
     this.transport?.update(dt);
+    const t1 = performance.now();
     this.update(dt);
+    const t2 = performance.now();
     this.renderer.render(this.scene, this.camera);
+    this.perf.sample(now, t1 - t0, t2 - t1, performance.now() - t2);
     requestAnimationFrame(this.frame);
   }
 
