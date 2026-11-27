@@ -24,6 +24,8 @@ Dois times de até cinco heróis se enfrentam numa ponte só. Cada lado tem **du
 - **Aguenta foco**: tanque e lutador levam 15% menos dano por herói inimigo além do primeiro que bateu neles nos últimos 3 segundos, até 45%. Sozinho contra eles nada muda; quando o time inteiro cai em cima, eles duram o bastante pra agir. Um escudinho laranja do lado da barra de vida mostra quando está valendo.
 - **Morto**: as recargas de habilidades, feitiços e itens continuam correndo enquanto o herói espera pra renascer.
 - **Recompensa e desconto**: derrubar quem está embalado paga 100 de ouro a mais por abate seguido dele além do primeiro, até +700. Quem morre seguido sem matar nem dar assistência vale 15% menos a cada morte, até 40% do normal. O placar (`Tab`) mostra quanto cada herói vale quando foge dos 400.
+- **Recuperação**: herói abaixo do nível médio do time inimigo ganha 15% a mais de XP por nível de diferença, até 60%.
+- **Virada**: o time com 10% ou mais de ouro a menos que o outro ganha +300 de ouro cada por torre derrubada ("Torre da virada!") e +200 em cada abate.
 - **Abates seguidos**: matar de novo em até 10 segundos anuncia **Double kill** (+150 de ouro), **Triple kill** (+300) e **Quadra kill** (+450); o quinto, em até 30 segundos depois do quarto, é **Pentakill** (+600).
 - **Time inteiro no chão**: as tropas do time que derrubou todo mundo ficam 50% mais fortes por 60 segundos.
 - **Torres batem forte** em quem ataca herói perto delas. Deixe as tropas tomarem os tiros primeiro.

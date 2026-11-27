@@ -76,6 +76,14 @@ export const MATCH = {
   // até sobrar deathFloor dele
   deathTax: 0.15,
   deathFloor: 0.4,
+  // recuperação: herói abaixo do nível médio do time inimigo ganha catchupXp a mais de XP por nível de diferença, até catchupMax
+  catchupXp: 0.15,
+  catchupMax: 0.6,
+  // virada: time com comebackGap (fração) a menos de ouro que o outro ganha comebackTower a mais por torre (cada um)
+  // e comebackKill a mais no abate (divide com as assistências como o resto)
+  comebackGap: 0.1,
+  comebackTower: 300,
+  comebackKill: 200,
   // ping de dúvida (tecla V): no máximo pingMax a cada pingPer segundos por jogador
   pingMax: 3,
   pingPer: 5,

@@ -1650,7 +1650,7 @@ queueBolts(h, ab, slot, color) {
 
   giveXp(h, amt) {
     if (this.sandbox || h.level >= MATCH.maxLevel) return;
-    h.xp += amt;
+    h.xp += amt * this.catchup(h);
     let up = false;
     while (h.level < MATCH.maxLevel && h.xp >= xpToNext(h.level)) {
       h.xp -= xpToNext(h.level);
@@ -1662,6 +1662,26 @@ queueBolts(h, ab, slot, color) {
       this.calcStats(h);
       this.emit({ e: 'lvl', id: h.id, l: h.level });
     }
+  }
+
+  // quem ficou abaixo do nível médio dos inimigos aprende mais rápido, pra ninguém ficar quatro níveis atrás
+  catchup(h) {
+    let sum = 0;
+    let n = 0;
+    for (const o of this.heroes) {
+      if (o.team === h.team) continue;
+      sum += o.level;
+      n++;
+    }
+    const behind = n ? sum / n - h.level : 0;
+    return 1 + Math.min(MATCH.catchupMax, Math.max(0, behind) * MATCH.catchupXp);
+  }
+
+  // o time está atrás no ouro a ponto de valer a virada?
+  comeback(team) {
+    const earned = [0, 0];
+    for (const h of this.heroes) earned[h.team] += h.goldEarned;
+    return earned[1 - team] > 0 && earned[team] <= earned[1 - team] * (1 - MATCH.comebackGap);
   }
 
   // gasta um ponto numa habilidade
@@ -1766,7 +1786,7 @@ queueBolts(h, ab, slot, color) {
       killer.kills++;
       killer.streak++;
       killer.deathRun = 0;
-      let gold = worth.gold;
+      let gold = worth.gold + (this.comeback(killer.team) ? MATCH.comebackKill : 0);
       if (!this.firstBlood) {
         gold += MATCH.firstBloodGold;
         this.firstBlood = true;
@@ -1822,13 +1842,14 @@ queueBolts(h, ab, slot, color) {
     const enemy = 1 - t.team;
     this.emit({ e: 'struct', id: t.id, d: 1 });
     if (t.kind === 'tower') {
+      const turn = this.comeback(enemy);
       for (const h of this.heroes) {
         if (h.team !== enemy) continue;
-        this.giveGold(h, MATCH.towerGold, null);
+        this.giveGold(h, MATCH.towerGold + (turn ? MATCH.comebackTower : 0), null);
         this.giveXp(h, 120);
         if (!h.isBot) this.emit({ e: 'xp', v: 120, x: r1(t.x), z: r1(t.z) }, { to: h.id });
       }
-      this.ann('Torre destruída', `Time ${enemy === 0 ? 'Azul' : 'Vermelho'} +${MATCH.towerGold} de ouro`, 'tower', enemy);
+      this.ann(turn ? 'Torre da virada!' : 'Torre destruída', `Time ${enemy === 0 ? 'Azul' : 'Vermelho'} +${MATCH.towerGold + (turn ? MATCH.comebackTower : 0)} de ouro` + (turn ? ' (bônus de quem estava atrás)' : ''), 'tower', enemy);
     } else if (t.kind === 'selo') {
       t.respawnT = MATCH.seloRespawn;
       this.ann('Selo quebrado!', 'Tropas gigantes vão marchar', 'selo', enemy);
